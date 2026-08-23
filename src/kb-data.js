@@ -627,6 +627,148 @@ function koppelPicto(leerlingId, pictoId, k){
   return true;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   BACK-UP
+   Zolang alles in de browser staat, is een back-up het enige
+   vangnet. Een back-up bevat alles: groepen, kinderen, planning,
+   doelen, observaties en de foto's uit de fotokluis.
+
+   Zo'n bestand reist mee naar een USB-stick of een mailbox, dus
+   het kan met een wachtwoord versleuteld worden (AES-GCM 256 met
+   PBKDF2). Kwijt is dan wel kwijt.
+   ══════════════════════════════════════════════════════════════ */
+var BACKUP_TIJD = 'kb_laatste_backup';
+
+function laatsteBackup(){
+  try { return parseInt(localStorage.getItem(BACKUP_TIJD), 10) || 0; }
+  catch (e) { return 0; }
+}
+function noteerBackup(){
+  try { localStorage.setItem(BACKUP_TIJD, String(Date.now())); } catch (e) {}
+}
+function dagenSindsBackup(){
+  var t = laatsteBackup();
+  if (!t) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+
+function maakBackup(){
+  return fkLees().catch(function () { return null; }).then(function (kluis) {
+    return {
+      formaat: 'keuzebord-backup',
+      versie: 1,
+      gemaakt: new Date().toISOString(),
+      groepen: (G.klassen || []).length,
+      gegevens: G,
+      doelen: doelen,
+      fotos: kluis || {}
+    };
+  });
+}
+
+function zetBackupTerug(pak){
+  if (!pak || pak.formaat !== 'keuzebord-backup' || !pak.gegevens) {
+    return Promise.reject(new Error('dit is geen back-upbestand'));
+  }
+  G = pak.gegevens;
+  if (!G.klassen || !G.klassen.length) return Promise.reject(new Error('de back-up bevat geen groepen'));
+  if (pak.doelen && pak.doelen.lijst) {
+    doelen.meta = pak.doelen.meta || null;
+    doelen.lijst = pak.doelen.lijst || [];
+    doelenBewaar();
+  }
+  bewaar();
+  var fotos = pak.fotos || {};
+  if (!Object.keys(fotos).length) return Promise.resolve(0);
+  return fkBewaar(fotos).then(function () {
+    return fkPasToe(fotos);
+  }).then(function (n) { bewaar(); return n; })
+    .catch(function () { return 0; });   // zonder foto's werkt de rest gewoon
+}
+
+/* ── versleutelen ────────────────────────────────────────── */
+function cryptoKan(){ return !!(global.crypto && global.crypto.subtle && global.isSecureContext); }
+function b64van(buf){
+  var a = new Uint8Array(buf), s = '';
+  for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+  return btoa(s);
+}
+function b64naar(s){
+  var b = atob(s), a = new Uint8Array(b.length);
+  for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+  return a;
+}
+function sleutelUit(wachtwoord, salt){
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(wachtwoord), 'PBKDF2', false, ['deriveKey'])
+    .then(function (km) {
+      return crypto.subtle.deriveKey(
+        { name:'PBKDF2', salt:salt, iterations:250000, hash:'SHA-256' },
+        km, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+    });
+}
+function versleutel(tekst, wachtwoord){
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv   = crypto.getRandomValues(new Uint8Array(12));
+  return sleutelUit(wachtwoord, salt).then(function (key) {
+    return crypto.subtle.encrypt({ name:'AES-GCM', iv:iv }, key, new TextEncoder().encode(tekst));
+  }).then(function (ct) {
+    return { formaat:'keuzebord-backup', versie:1, versleuteld:true,
+             algoritme:'AES-GCM-256 / PBKDF2-SHA256-250000',
+             salt:b64van(salt), iv:b64van(iv), data:b64van(ct) };
+  });
+}
+function ontsleutel(pak, wachtwoord){
+  return sleutelUit(wachtwoord, b64naar(pak.salt)).then(function (key) {
+    return crypto.subtle.decrypt({ name:'AES-GCM', iv:b64naar(pak.iv) }, key, b64naar(pak.data));
+  }).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
+}
+
+/* Zet een back-up klaar als bestand. Geeft de grootte in KB terug. */
+function downloadBackup(wachtwoord){
+  return maakBackup().then(function (pak) {
+    if (!wachtwoord) return pak;
+    if (!cryptoKan()) throw new Error('versleutelen kan alleen via een https-adres');
+    return versleutel(JSON.stringify(pak), wachtwoord);
+  }).then(function (pak) {
+    var tekst = JSON.stringify(pak);
+    var datum = new Date().toISOString().slice(0, 10);
+    var naam = 'keuzebord-backup-' + datum + (wachtwoord ? '-versleuteld' : '') + '.json';
+    var blob = new Blob([tekst], { type:'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = naam;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    noteerBackup();
+    return { naam: naam, kb: Math.round(tekst.length / 1024) };
+  });
+}
+
+/* Leest een back-upbestand. vraagWachtwoord wordt aangeroepen als het
+   bestand versleuteld is en moet een Promise met het wachtwoord geven. */
+function leesBackupBestand(file, vraagWachtwoord){
+  return new Promise(function (res, rej) {
+    var r = new FileReader();
+    r.onload = function (e) {
+      var pak;
+      try { pak = JSON.parse(e.target.result); }
+      catch (err) { rej(new Error('onleesbaar bestand')); return; }
+      if (!pak || pak.formaat !== 'keuzebord-backup') { rej(new Error('dit is geen back-upbestand')); return; }
+      if (!pak.versleuteld) { res(pak); return; }
+      if (!cryptoKan()) { rej(new Error('versleutelde bestanden vragen een https-adres')); return; }
+      Promise.resolve(vraagWachtwoord()).then(function (ww) {
+        if (!ww) { rej(new Error('geen wachtwoord ingevuld')); return; }
+        ontsleutel(pak, ww).then(res).catch(function () {
+          rej(new Error('wachtwoord klopt niet, of het bestand is beschadigd'));
+        });
+      });
+    };
+    r.onerror = function () { rej(new Error('kon het bestand niet lezen')); };
+    r.readAsText(file);
+  });
+}
+
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
@@ -648,6 +790,10 @@ global.KB = {
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
   verklein: verklein,
   beheerKlasId: beheerKlasId, zetBeheerKlas: zetBeheerKlas,
+  laatsteBackup: laatsteBackup, dagenSindsBackup: dagenSindsBackup,
+  maakBackup: maakBackup, zetBackupTerug: zetBackupTerug,
+  downloadBackup: downloadBackup, leesBackupBestand: leesBackupBestand,
+  cryptoKan: cryptoKan,
 
   DAGEN_KORT: DAGEN_KORT, DAGEN_LANG: DAGEN_LANG, WERKPLAATS_PLEKKEN: WERKPLAATS_PLEKKEN,
   STANDEN: STANDEN,

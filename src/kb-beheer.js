@@ -215,6 +215,18 @@ panelen.vandaag = function (v){
   naarBord.href = 'bord.html';
   v.appendChild(kopregel('Vandaag', k.naam + ' · ' + KB.DAGEN_LANG[dag], naarBord));
 
+  var backupStand = backupTekst();
+  if (backupStand.dringend) {
+    var waarschuwing = paneel();
+    waarschuwing.style.borderLeft = '3px solid var(--let-op)';
+    var kop = el('div', 'rij-naam', 'Maak even een back-up');
+    waarschuwing.appendChild(kop);
+    waarschuwing.appendChild(el('div', 'rij-sub',
+      backupStand.tekst + ' Alles staat nog in de browser van dit apparaat.'));
+    waarschuwing.appendChild(knop('Nu doen', 'primair', downloadBackup)).style.marginTop = '12px';
+    v.appendChild(waarschuwing);
+  }
+
   var rooster = el('div', 'rooster2');
 
   /* wie is er vandaag aan de beurt in de werkplaats */
@@ -894,6 +906,8 @@ panelen.functies = function (v){
 
   v.appendChild(rooster);
 
+  v.appendChild(backupPaneel());
+
   var kluis = paneel('Foto\'s op dit apparaat');
   var stand = el('p', 'hint', 'Bezig met kijken…');
   kluis.appendChild(stand);
@@ -934,6 +948,97 @@ panelen.functies = function (v){
   kluis.appendChild(kluisRij);
   v.appendChild(kluis);
 };
+
+function backupTekst(){
+  var dagen = KB.dagenSindsBackup();
+  if (dagen === null) return { tekst:'Je hebt nog geen back-up gemaakt.', dringend:true };
+  if (dagen === 0)    return { tekst:'Laatste back-up: vandaag.', dringend:false };
+  if (dagen === 1)    return { tekst:'Laatste back-up: gisteren.', dringend:false };
+  return { tekst:'Laatste back-up: ' + dagen + ' dagen geleden.', dringend: dagen >= 14 };
+}
+
+function backupPaneel(){
+  var p = paneel('Back-up');
+  var stand = backupTekst();
+  var regel = el('p', 'hint', stand.tekst +
+    ' Alle gegevens staan nu in de browser van dit apparaat. Een back-up is je enige vangnet: ' +
+    'hij bevat de groepen, kinderen, planning, doelen, observaties en de foto\'s.');
+  p.appendChild(regel);
+  if (stand.dringend) {
+    var waarschuwing = el('div', 'signaal');
+    waarschuwing.appendChild(el('div', 'signaal-kop', 'Maak even een back-up'));
+    waarschuwing.appendChild(el('div', 'hint',
+      'Raakt dit apparaat kwijt of wordt de browser opgeschoond, dan is je werk weg.'));
+    p.appendChild(waarschuwing);
+  }
+  var rij = el('div', 'knoprij');
+  rij.appendChild(knop('Back-up downloaden', 'primair', downloadBackup));
+  rij.appendChild(bestandKnop('Back-up terugzetten', 'application/json,.json', false, terugzetten));
+  p.appendChild(rij);
+  return p;
+}
+
+function downloadBackup(){
+  toonBlad(function (blad) {
+    blad.appendChild(bladTitel('Back-up downloaden',
+      'Geef een wachtwoord als het bestand dit apparaat verlaat — op een USB-stick, ' +
+      'in de mail of in een schoolomgeving. Er staan namen en foto\'s van kinderen in.'));
+    var veld = el('div', 'veld');
+    veld.appendChild(el('label', null, 'Wachtwoord (leeg = onversleuteld)'));
+    var invoer = el('input');
+    invoer.type = 'password'; invoer.autocomplete = 'new-password';
+    veld.appendChild(invoer);
+    veld.appendChild(el('p', 'hint',
+      'Kwijt is kwijt: zonder wachtwoord is een versleuteld bestand niet meer te openen.'));
+    blad.appendChild(veld);
+    var rij = el('div', 'knoprij');
+    rij.appendChild(knop('Downloaden', 'primair', function () {
+      var ww = invoer.value || '';
+      KB.downloadBackup(ww).then(function (uit) {
+        sluitBlad(); teken();
+        meld('Back-up gedownload · ' + uit.kb + ' KB');
+      }).catch(function (e) { meld('Lukte niet: ' + (e.message || 'onbekend')); });
+    }));
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    blad.appendChild(rij);
+    setTimeout(function () { invoer.focus(); }, 60);
+  });
+}
+
+function terugzetten(file){
+  KB.leesBackupBestand(file, vraagWachtwoord).then(function (pak) {
+    var aantal = (pak.gegevens && pak.gegevens.klassen) ? pak.gegevens.klassen.length : 0;
+    vraagBevestiging('Back-up terugzetten?',
+      'Deze back-up bevat ' + aantal + ' groepen, gemaakt op ' +
+      (pak.gemaakt || '').slice(0, 10) + '. Alles wat nu op dit apparaat staat wordt vervangen. ' +
+      'Dit kan niet terug.',
+      'Terugzetten', function () {
+        KB.zetBackupTerug(pak).then(function () {
+          tekenMenu(); teken(); meld('Back-up teruggezet');
+        }).catch(function (e) { meld('Lukte niet: ' + (e.message || 'onbekend')); });
+      });
+  }).catch(function (e) { meld(e.message || 'Lukte niet'); });
+}
+
+function vraagWachtwoord(){
+  return new Promise(function (res) {
+    toonBlad(function (blad) {
+      blad.appendChild(bladTitel('Wachtwoord van de back-up'));
+      var veld = el('div', 'veld');
+      veld.appendChild(el('label', null, 'Wachtwoord'));
+      var invoer = el('input'); invoer.type = 'password'; invoer.autocomplete = 'current-password';
+      veld.appendChild(invoer);
+      blad.appendChild(veld);
+      var rij = el('div', 'knoprij');
+      rij.appendChild(knop('Openen', 'primair', function () {
+        var v = invoer.value || ''; sluitBlad(); res(v);
+      }));
+      rij.appendChild(knop('Annuleren', 'stil', function () { sluitBlad(); res(''); }));
+      blad.appendChild(rij);
+      setTimeout(function () { invoer.focus(); }, 60);
+    });
+  });
+}
 
 function functieRij(k, sleutel, naam, uitleg){
   var rij = el('div', 'rij');

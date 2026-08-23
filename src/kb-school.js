@@ -116,20 +116,31 @@ function teken(){
   })());
 
   var klassen = KB.G.klassen;
-  $('school-sub').textContent = klassen.length
-    ? klassen.length + ' groepen · dit apparaat beheert ' +
-      (beheerd ? KB.klas(beheerd).naam : 'nog geen groep')
-    : 'Nog geen groepen aangemaakt';
 
-  if (!klassen.length) {
+  // De app maakt bij een lege start altijd één groep aan zodat er iets
+  // te tonen valt. Die telt hier niet mee: zolang er niemand in zit en er
+  // geen hoeken zijn, is de school nog niet ingericht.
+  var nogLeeg = !klassen.length || (klassen.length === 1 &&
+    !(klassen[0].leerlingen || []).length && !(klassen[0].hoekLib || []).length);
+
+  $('school-sub').textContent = nogLeeg
+    ? 'Nog niet ingericht'
+    : klassen.length + ' groepen · dit apparaat beheert ' +
+      (beheerd ? KB.klas(beheerd).naam : 'nog geen groep');
+
+  if (nogLeeg) {
     var leegP = el('div', 'paneel');
     var vak = el('div', 'leegvak');
     vak.appendChild(el('p', 'hint',
-      'Er staan nog geen groepen klaar. Zet de zes kleutergroepen in één keer neer.'));
+      'De school is nog niet ingericht. Zet de zes kleutergroepen in één keer neer — ' +
+      '1A, 1B, 1C, 2A, 2B en 2C, elk met de standaardhoeken en een werkplaats.'));
     var rij0 = el('div', 'knoprij-onder');
     rij0.style.justifyContent = 'center';
     rij0.appendChild(knop('Zes groepen aanmaken', 'primair', function () {
-      maakSchoolgroepen(true); teken(); meld('Zes groepen klaargezet');
+      maakSchoolgroepen(false); teken(); meld('Zes groepen klaargezet');
+    }));
+    rij0.appendChild(knop('Met testkinderen in 1A', 'stil', function () {
+      maakSchoolgroepen(true); teken(); meld('Zes groepen klaargezet, 1A gevuld');
     }));
     vak.appendChild(rij0);
     leegP.appendChild(vak);
