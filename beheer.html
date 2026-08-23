@@ -102,6 +102,124 @@
   .zij-knop{ white-space: nowrap; }
   .inhoud{ padding: 20px 16px 50px; }
 }
+
+/* ── nieuwe onderdelen ───────────────────────────────────── */
+.zij-scheiding{ height:1px; background:var(--lijn); margin:8px 10px; }
+.knoprij{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.kopregel .knoprij{ margin-top:0; }
+.stip{ width:11px; height:11px; border-radius:50%; flex:none; }
+.merkje{ font-size:.68rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+         background:var(--accent-zacht); color:var(--accent); padding:2px 8px;
+         border-radius:var(--rond-vol); margin-left:8px; vertical-align:middle; }
+.kindrij{ display:flex; gap:10px; flex-wrap:wrap; }
+.leegvak{ padding:22px; border:1.5px dashed var(--lijn); border-radius:var(--rond-m); text-align:center; }
+.tekstvak{ width:100%; min-height:110px; border:1.5px solid var(--lijn); border-radius:10px;
+           padding:10px 12px; font-family:inherit; font-size:.9rem; resize:vertical; }
+.signaal{ margin-top:14px; padding:12px 14px; border-radius:10px; background:var(--let-op-zacht); }
+.signaal-kop{ font-size:.74rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+              color:var(--let-op); margin-bottom:4px; }
+.aanvink{ display:flex; align-items:center; gap:9px; font-size:.86rem; color:var(--inkt-2); cursor:pointer; }
+.aanvink input{ width:16px; height:16px; accent-color:var(--accent); }
+.kleurstip{ width:34px; height:34px; border-radius:50%; }
+.kleurstip.aan{ box-shadow:0 0 0 3px var(--vlak), 0 0 0 5px currentColor; }
+.fotovoorbeeld{ width:100%; height:96px; border-radius:12px; background:var(--vlak-2);
+                background-size:cover; background-position:center; margin-bottom:8px; }
+.wordrooster{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;
+              max-height:46vh; overflow-y:auto; padding:2px; }
+.wordvak{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:10px;
+          border-radius:var(--rond-m); background:var(--vlak-2); }
+.wordvak input{ width:100%; text-align:center; border:1.5px solid var(--lijn); border-radius:8px;
+                padding:6px 8px; font-size:.85rem; background:var(--vlak); }
+
+/* doelen */
+.zoekregel{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.zoekregel input[type=search]{ flex-grow:1; min-width:200px; border:1.5px solid var(--lijn);
+  border-radius:10px; padding:9px 12px; font-size:.9rem; background:var(--vlak); }
+.tweeluik{ display:grid; grid-template-columns:290px minmax(0,1fr); gap:18px; align-items:start; margin-top:18px; }
+.luik-links{ max-height:70vh; overflow-y:auto; }
+.luik-rechts{ max-height:70vh; overflow-y:auto; }
+.domeinkop{ font-size:.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--inkt-4); margin:14px 0 6px; }
+.luikknop{ display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
+           border-radius:var(--rond-s); text-align:left; transition:background .15s ease; }
+.luikknop:hover{ background:var(--vlak-2); }
+.luikknop.aan{ background:var(--accent-zacht); }
+.luiknaam{ flex-grow:1; font-size:.88rem; font-weight:500; }
+.luikteller{ font-size:.72rem; font-weight:600; color:var(--inkt-4); background:var(--vlak-2);
+             padding:2px 8px; border-radius:var(--rond-vol); }
+.luikteller.vol{ background:var(--goed-zacht); color:var(--goed); }
+.doelkaart{ display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left;
+            padding:11px 13px; border-radius:12px; border:1.5px solid var(--lijn);
+            background:var(--vlak); margin-bottom:8px; transition:border-color .15s ease, background .15s ease; }
+.doelkaart:hover{ border-color:var(--line-2, #c9d1e0); background:var(--vlak-2); }
+.doelkaart.aan{ border-color:var(--accent); background:var(--accent-zacht); }
+.doelvink{ width:22px; height:22px; border-radius:7px; border:2px solid var(--lijn); flex:none;
+           display:flex; align-items:center; justify-content:center; color:transparent; margin-top:1px; }
+.doelkaart.aan .doelvink{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.doelvink svg{ width:13px; height:13px; }
+.doelinhoud{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.doelaspect{ font-size:.7rem; font-weight:700; letter-spacing:.05em; color:var(--inkt-3); }
+.doelzin{ font-size:.9rem; line-height:1.45; }
+
+/* taken */
+.minichips{ display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+.minichip{ font-size:.7rem; font-weight:600; color:var(--inkt-3); background:var(--vlak-2);
+           padding:2px 8px; border-radius:var(--rond-vol); }
+.gekozendoelen{ display:flex; flex-direction:column; gap:7px; margin-bottom:10px; }
+.doelchip{ display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:10px;
+           background:var(--accent-zacht); font-size:.85rem; line-height:1.4; }
+.doelchip-niveau{ font-size:.7rem; font-weight:700; color:var(--accent); background:var(--vlak);
+                  padding:2px 7px; border-radius:var(--rond-vol); flex:none; }
+.doelchip-weg{ margin-left:auto; font-size:1.1rem; color:var(--inkt-3); line-height:1; flex:none; }
+.kieslijst{ max-height:48vh; overflow-y:auto; padding:2px; }
+.kiesrij{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px;
+          border-radius:12px; transition:background .15s ease; }
+.kiesrij:hover{ background:var(--vlak-2); }
+
+/* weekplan */
+.taakkop{ display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.weekrooster{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+.weekdag{ background:var(--vlak-2); border-radius:12px; padding:10px; min-height:120px; }
+.weekdag-kop{ display:flex; align-items:center; justify-content:space-between; gap:6px;
+              font-size:.78rem; font-weight:600; color:var(--inkt-2); margin-bottom:8px; }
+.weekdag-telling{ font-size:.68rem; font-weight:600; color:var(--inkt-3); background:var(--vlak);
+                  padding:1px 7px; border-radius:var(--rond-vol); }
+.weekdag-telling.vol{ background:var(--goed-zacht); color:var(--goed); }
+.weekdag-vak{ display:flex; flex-direction:column; gap:6px; }
+.weekdag-leeg{ font-size:.76rem; color:var(--inkt-4); padding:6px 2px; }
+.kindchip{ display:flex; align-items:center; gap:8px; padding:5px 10px 5px 5px; border-radius:var(--rond-vol);
+           background:var(--vlak); font-size:.82rem; font-weight:500; box-shadow:var(--schaduw-1);
+           transition:transform .15s var(--veer); }
+.kindchip:active{ transform:scale(.96); }
+.restvak{ margin-top:16px; padding-top:14px; border-top:1px solid var(--vlak-2); }
+.dagkeuze{ display:flex; flex-direction:column; gap:8px; }
+.dagknop{ display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+          padding:13px 16px; border-radius:12px; border:1.5px solid var(--lijn); text-align:left; }
+.dagknop.aan{ border-color:var(--accent); background:var(--accent-zacht); }
+.dagknop.vol{ opacity:.45; }
+.dagnaam{ font-weight:600; font-size:.92rem; }
+.dagtelling{ font-size:.78rem; color:var(--inkt-3); }
+
+/* observaties */
+.observatierooster{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:9px; }
+.observatiekaart{ display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:12px;
+                  border:1.5px solid var(--lijn); background:var(--vlak); text-align:left;
+                  transition:border-color .15s ease, background .15s ease; }
+.observatiekaart.nietingedeeld{ opacity:.55; }
+.observatiekaart.stand-bezig{ border-color:var(--let-op); background:var(--let-op-zacht); }
+.observatiekaart.stand-behaald{ border-color:var(--goed); background:var(--goed-zacht); }
+.observatietekst{ min-width:0; }
+.observatienaam{ font-size:.88rem; font-weight:600; }
+.observatiestand{ font-size:.74rem; color:var(--inkt-3); }
+.observatiekaart.stand-bezig .observatiestand{ color:var(--let-op); font-weight:600; }
+.observatiekaart.stand-behaald .observatiestand{ color:var(--goed); font-weight:600; }
+
+@media (max-width: 900px){
+  .tweeluik{ grid-template-columns:minmax(0,1fr); }
+  .luik-links, .luik-rechts{ max-height:none; }
+  .weekrooster{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
 </style>
 </head>
 <body class="beheer">
@@ -127,6 +245,9 @@
 <div class="melding" id="melding"></div>
 
 <script src="src/kb-data.js"></script>
+<script src="src/kb-docx.js"></script>
 <script src="src/kb-beheer.js"></script>
+<script src="src/kb-plan.js"></script>
+<script>KB.laad(); KB.doelenLaad(); BH.start();</script>
 </body>
 </html>

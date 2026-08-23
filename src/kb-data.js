@@ -352,6 +352,262 @@ function verklein(file, maxPx, kwaliteit){
   });
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   WERKWIJZE: TAKEN, BEURTEN EN DE WERKPLAATS
+
+   Zo werkt het in de klas:
+   elke week staan er een of meer taken klaar die bij een doel horen.
+   Alle kinderen komen aan de beurt, verspreid over de week, en worden
+   per doel beoordeeld. Ze werken eraan tijdens de speel-werkmomenten,
+   in de werkplaats — een hoek op het bord met een beperkt aantal
+   plekken. Daarom kent een taak een verdeling: wie doet het op welke
+   dag.
+   ══════════════════════════════════════════════════════════════ */
+
+var DAGEN_KORT = ['ma','di','wo','do','vr'];
+var DAGEN_LANG = { ma:'Maandag', di:'Dinsdag', wo:'Woensdag', do:'Donderdag', vr:'Vrijdag' };
+var WERKPLAATS_PLEKKEN = 6;
+
+/* De maandag van de week waarin een datum valt, als "2026-08-24". */
+function weekSleutel(datum){
+  var d = datum ? new Date(datum) : new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getFullYear() + '-' +
+         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
+function weekVerschoven(sleutel, aantalWeken){
+  var d = new Date(sleutel + 'T12:00:00');
+  d.setDate(d.getDate() + aantalWeken * 7);
+  return weekSleutel(d);
+}
+function weekLabel(sleutel){
+  var d = new Date(sleutel + 'T12:00:00');
+  var eind = new Date(d); eind.setDate(eind.getDate() + 4);
+  var m = ['januari','februari','maart','april','mei','juni','juli','augustus',
+           'september','oktober','november','december'];
+  return d.getDate() + ' ' + m[d.getMonth()] + ' t/m ' + eind.getDate() + ' ' + m[eind.getMonth()];
+}
+function dagVanVandaag(){
+  var i = (new Date().getDay() + 6) % 7;
+  return i < 5 ? DAGEN_KORT[i] : 'ma';
+}
+
+function week(sleutel, k){
+  k = k || klas();
+  if (!k.weken) k.weken = {};
+  sleutel = sleutel || weekSleutel();
+  if (!k.weken[sleutel]) k.weken[sleutel] = { centraleDoelIds: [], taken: [] };
+  var w = k.weken[sleutel];
+  if (!w.centraleDoelIds) w.centraleDoelIds = [];
+  if (!w.taken) w.taken = [];
+  return w;
+}
+
+/* ── taken ───────────────────────────────────────────────── */
+function taken(k){ k = k || klas(); if (!k.taken) k.taken = []; return k.taken; }
+function taakVan(id, k){
+  return taken(k).filter(function (t) { return t.id === id; })[0] || null;
+}
+function nieuweTaak(gegevens, k){
+  k = k || klas();
+  var t = {
+    id: 't' + uid(),
+    naam: gegevens.naam || 'Nieuwe taak',
+    omschrijving: gegevens.omschrijving || '',
+    doelIds: gegevens.doelIds || [],
+    plekken: gegevens.plekken || WERKPLAATS_PLEKKEN,
+    kleur: gegevens.kleur || KIND_KLEUREN[taken(k).length % KIND_KLEUREN.length],
+    gemaakt: Date.now()
+  };
+  taken(k).push(t);
+  return t;
+}
+
+/* ── de werkplaats ───────────────────────────────────────── */
+function werkplaatsHoek(k){
+  k = k || klas();
+  return (k.hoekLib || []).filter(function (h) { return h.werkplaats; })[0] || null;
+}
+function zorgVoorWerkplaats(k){
+  k = k || klas();
+  var h = werkplaatsHoek(k);
+  if (h) return h;
+  h = { id: 'hl' + uid(), naam: 'Werkplaats', maxKinderen: WERKPLAATS_PLEKKEN,
+        timerMinuten: 0, fotoId: null, werkplaats: true };
+  k.hoekLib.push(h);
+  var b = bord(k);
+  if ((b.hoekLibIds || []).indexOf(h.id) < 0) b.hoekLibIds.push(h.id);
+  if (!b.plaatsingen[h.id]) b.plaatsingen[h.id] = [];
+  return h;
+}
+
+/* ── beurten: wie doet welke taak op welke dag ───────────── */
+function weekTaak(sleutel, taakId, k){
+  var w = week(sleutel, k);
+  var wt = w.taken.filter(function (x) { return x.taakId === taakId; })[0];
+  if (!wt) {
+    wt = { taakId: taakId, verdeling: {}, afgerond: {} };
+    DAGEN_KORT.forEach(function (d) { wt.verdeling[d] = []; });
+    w.taken.push(wt);
+  }
+  if (!wt.verdeling) { wt.verdeling = {}; DAGEN_KORT.forEach(function (d) { wt.verdeling[d] = []; }); }
+  DAGEN_KORT.forEach(function (d) { if (!wt.verdeling[d]) wt.verdeling[d] = []; });
+  if (!wt.afgerond) wt.afgerond = {};
+  return wt;
+}
+function haalWeekTaakWeg(sleutel, taakId, k){
+  var w = week(sleutel, k);
+  w.taken = w.taken.filter(function (x) { return x.taakId !== taakId; });
+}
+
+/* Alle kinderen die deze week aan deze taak toegewezen zijn. */
+function toegewezen(wt){
+  var uit = [];
+  DAGEN_KORT.forEach(function (d) {
+    (wt.verdeling[d] || []).forEach(function (id) { if (uit.indexOf(id) < 0) uit.push(id); });
+  });
+  return uit;
+}
+function dagVanKind(wt, leerlingId){
+  for (var i = 0; i < DAGEN_KORT.length; i++) {
+    if ((wt.verdeling[DAGEN_KORT[i]] || []).indexOf(leerlingId) >= 0) return DAGEN_KORT[i];
+  }
+  return null;
+}
+function zetKindOpDag(sleutel, taakId, leerlingId, dag, k){
+  var wt = weekTaak(sleutel, taakId, k);
+  DAGEN_KORT.forEach(function (d) {
+    wt.verdeling[d] = wt.verdeling[d].filter(function (id) { return id !== leerlingId; });
+  });
+  if (dag) wt.verdeling[dag].push(leerlingId);
+  return wt;
+}
+
+/* Hoe vaak een kind eerder aan de beurt was — de basis voor een
+   eerlijke verdeling. Telt alle weken mee die al in de groep staan. */
+function beurtenTot(sleutel, k){
+  k = k || klas();
+  var telling = {};
+  (k.leerlingen || []).forEach(function (l) { telling[l.id] = { aantal: 0, laatst: 0 }; });
+  Object.keys(k.weken || {}).forEach(function (ws) {
+    if (ws >= sleutel) return;
+    (k.weken[ws].taken || []).forEach(function (wt) {
+      toegewezen(wt).forEach(function (id) {
+        if (!telling[id]) telling[id] = { aantal: 0, laatst: 0 };
+        telling[id].aantal++;
+        if (ws > telling[id].laatst) telling[id].laatst = ws;
+      });
+    });
+  });
+  return telling;
+}
+
+/* Verdeel alle kinderen eerlijk over de dagen van de week.
+   Wie het langst niet aan de beurt was, staat vooraan. */
+function verdeelAutomatisch(sleutel, taakId, opties, k){
+  k = k || klas();
+  opties = opties || {};
+  var t = taakVan(taakId, k);
+  var plekken = (t && t.plekken) || WERKPLAATS_PLEKKEN;
+  var dagen = (opties.dagen && opties.dagen.length) ? opties.dagen : DAGEN_KORT.slice();
+  var wt = weekTaak(sleutel, taakId, k);
+
+  var telling = beurtenTot(sleutel, k);
+  var kinderen = (k.leerlingen || [])
+    .filter(function (l) { return l.lid !== false; })
+    .slice()
+    .sort(function (a, b) {
+      var ta = telling[a.id] || { aantal:0, laatst:0 }, tb = telling[b.id] || { aantal:0, laatst:0 };
+      if (ta.aantal !== tb.aantal) return ta.aantal - tb.aantal;       // minst aan de beurt eerst
+      if (ta.laatst !== tb.laatst) return ta.laatst < tb.laatst ? -1 : 1; // langst geleden eerst
+      return (a.naam || '').localeCompare(b.naam || '');
+    });
+
+  dagen.forEach(function (d) { wt.verdeling[d] = []; });
+  DAGEN_KORT.forEach(function (d) { if (dagen.indexOf(d) < 0) wt.verdeling[d] = wt.verdeling[d] || []; });
+
+  // Zo gelijk mogelijke groepjes: liever 5+5+5+4 dan 6+6+6+2.
+  var perDag = Math.ceil(kinderen.length / dagen.length);
+  if (perDag > plekken) perDag = plekken;
+  var i = 0;
+  dagen.forEach(function (d) {
+    for (var n = 0; n < perDag && i < kinderen.length; n++) {
+      wt.verdeling[d].push(kinderen[i++].id);
+    }
+  });
+  // Wat overblijft omdat de plekken op zijn: aanvullen waar nog ruimte is.
+  while (i < kinderen.length) {
+    var geplaatst = false;
+    for (var j = 0; j < dagen.length && i < kinderen.length; j++) {
+      if (wt.verdeling[dagen[j]].length < plekken) {
+        wt.verdeling[dagen[j]].push(kinderen[i++].id);
+        geplaatst = true;
+      }
+    }
+    if (!geplaatst) break;   // echt geen ruimte meer deze week
+  }
+  return { wt: wt, nietGeplaatst: kinderen.slice(i).map(function (l) { return l.id; }) };
+}
+
+/* Wie staat er vandaag in de werkplaats? */
+function geplandVandaag(sleutel, dag, k){
+  k = k || klas();
+  sleutel = sleutel || weekSleutel();
+  dag = dag || dagVanVandaag();
+  var w = week(sleutel, k);
+  var uit = [];
+  w.taken.forEach(function (wt) {
+    (wt.verdeling[dag] || []).forEach(function (id) {
+      uit.push({ leerlingId: id, taakId: wt.taakId });
+    });
+  });
+  return uit;
+}
+function heeftBeurtVandaag(leerlingId, k){
+  return geplandVandaag(null, null, k).some(function (x) { return x.leerlingId === leerlingId; });
+}
+
+/* ── beoordelen ──────────────────────────────────────────── */
+var STANDEN = ['nog', 'bezig', 'behaald'];
+
+function beoordelingen(k){ k = k || klas(); if (!k.beoordelingen) k.beoordelingen = {}; return k.beoordelingen; }
+function beoordelingSleutel(leerlingId, doelId){ return leerlingId + '|' + doelId; }
+function standVan(leerlingId, doelId, k){
+  var b = beoordelingen(k)[beoordelingSleutel(leerlingId, doelId)];
+  return b ? b.stand : 'nog';
+}
+function zetStand(leerlingId, doelId, stand, taakId, k){
+  k = k || klas();
+  var sleutel = beoordelingSleutel(leerlingId, doelId);
+  if (stand === 'nog') delete beoordelingen(k)[sleutel];
+  else beoordelingen(k)[sleutel] = { stand: stand, taakId: taakId || null, datum: Date.now() };
+}
+function volgendeStand(huidig){
+  var i = STANDEN.indexOf(huidig);
+  return STANDEN[(i + 1) % STANDEN.length];
+}
+
+/* ── picto-bibliotheek per groep ─────────────────────────── */
+function pictos(k){ k = k || klas(); if (!k.pictos) k.pictos = []; return k.pictos; }
+function voegPictoToe(naam, data, k){
+  var p = { id: 'p' + uid(), naam: naam || 'Picto', data: data, gemaakt: Date.now() };
+  pictos(k).push(p);
+  return p;
+}
+function pictoVan(id, k){
+  return pictos(k).filter(function (p) { return p.id === id; })[0] || null;
+}
+function koppelPicto(leerlingId, pictoId, k){
+  k = k || klas();
+  var l = leerling(leerlingId, k), p = pictoVan(pictoId, k);
+  if (!l || !p) return false;
+  l.image = p.data; l.pictoId = p.id; l._c = false;
+  return true;
+}
+
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
@@ -371,7 +627,21 @@ global.KB = {
   doelen: doelen, doelenLaad: doelenLaad, doelenNeemOver: doelenNeemOver,
   doelenBewaar: doelenBewaar, klasNiveaus: klasNiveaus, doelenVanKlas: doelenVanKlas,
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
-  verklein: verklein
+  verklein: verklein,
+
+  DAGEN_KORT: DAGEN_KORT, DAGEN_LANG: DAGEN_LANG, WERKPLAATS_PLEKKEN: WERKPLAATS_PLEKKEN,
+  STANDEN: STANDEN,
+  weekSleutel: weekSleutel, weekVerschoven: weekVerschoven, weekLabel: weekLabel,
+  dagVanVandaag: dagVanVandaag, week: week,
+  taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak,
+  werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
+  weekTaak: weekTaak, haalWeekTaakWeg: haalWeekTaakWeg,
+  toegewezen: toegewezen, dagVanKind: dagVanKind, zetKindOpDag: zetKindOpDag,
+  beurtenTot: beurtenTot, verdeelAutomatisch: verdeelAutomatisch,
+  geplandVandaag: geplandVandaag, heeftBeurtVandaag: heeftBeurtVandaag,
+  standVan: standVan, zetStand: zetStand, volgendeStand: volgendeStand,
+  beoordelingen: beoordelingen,
+  pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto
 };
 
 })(window);

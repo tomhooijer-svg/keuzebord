@@ -107,11 +107,38 @@
 .rij-plek.ikzelf .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
 .rij-ring{ padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14); }
 
+/* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
+   die meegroeit. Dat leest als oppakken in plaats van als slepen. */
 .sleep-geest{
   position: fixed; z-index: 500; pointer-events: none;
-  transform: translate(-50%, -50%) scale(1.12);
-  filter: drop-shadow(0 10px 22px rgba(20,28,44,.28));
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
+  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
 }
+.sleep-geest.opgetild{
+  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+  filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
+  transition: transform .18s var(--veer), filter .18s ease;
+}
+.sleep-geest.landt{
+  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+  filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
+  opacity: .7;
+}
+.sleep-geest.valt-terug{
+  transform: translate(-50%, -50%) scale(.8);
+  opacity: 0;
+}
+.picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
+
+/* wie vandaag aan de beurt is in de werkplaats staat er alvast, wachtend */
+.gereserveerd{
+  position: relative; flex: none;
+  padding: 3px; border-radius: 50%;
+  border: 2px dashed rgba(59,111,240,.45);
+}
+.gereserveerd .picto-rond{ opacity: .45; box-shadow: none; }
+.beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
 
 @media (max-width: 760px){
   .balk{ padding: 16px 20px 10px; }

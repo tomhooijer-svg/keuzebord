@@ -142,9 +142,18 @@ function tekenBord(){
   tik();
 }
 
+function gereserveerdVoor(hoek, k, b){
+  if (!hoek.werkplaats || !KB.instelling('werkplaatsAan', k)) return [];
+  var aanwezig = KB.bezetting(hoek.id, b).map(function (p) { return p.leerlingId; });
+  return KB.geplandVandaag(null, null, k)
+    .filter(function (g) { return aanwezig.indexOf(g.leerlingId) < 0; })
+    .map(function (g) { return g.leerlingId; });
+}
+
 function maakHoekKaart(hoek, index, k, b){
   var tint = tintVan(index);
   var kinderen = KB.bezetting(hoek.id, b);
+  var gereserveerd = gereserveerdVoor(hoek, k, b);
   var vol = kinderen.length >= hoek.maxKinderen;
   var rij = KB.wachtrijVoor(hoek.id, k);
 
@@ -178,12 +187,28 @@ function maakHoekKaart(hoek, index, k, b){
     maakSleepbaar(picto, l, hoek.id);
     rijKinderen.appendChild(picto);
   });
-  if (!vol) rijKinderen.appendChild(el('div', 'leeg-plekje'));
+  // De kinderen die vandaag aan de beurt zijn krijgen alvast hun plek te zien.
+  gereserveerd.slice(0, Math.max(0, hoek.maxKinderen - kinderen.length)).forEach(function (id) {
+    var l = KB.leerling(id, k);
+    if (!l) return;
+    var plek = el('div', 'gereserveerd');
+    var bol = el('div', 'picto-rond');
+    bol.style.width = bol.style.height = '46px';
+    bol.style.background = l.kleur || '#3b6ff0';
+    if (l.image) bol.style.backgroundImage = 'url(' + l.image + ')';
+    else bol.textContent = (l.naam || '?').charAt(0).toUpperCase();
+    plek.appendChild(bol);
+    plek.title = l.naam + ' is vandaag aan de beurt';
+    rijKinderen.appendChild(plek);
+  });
+  if (!vol && !gereserveerd.length) rijKinderen.appendChild(el('div', 'leeg-plekje'));
 
   if (vol) {
     var label = el('div', 'vol-label' + (rij.length ? ' wacht-label' : ''),
                    rij.length ? rij.length + ' wacht' + (rij.length === 1 ? 't' : 'en') : 'Vol');
     rijKinderen.appendChild(label);
+  } else if (gereserveerd.length) {
+    rijKinderen.appendChild(el('div', 'vol-label beurt-label', 'aan de beurt'));
   }
   onder.appendChild(rijKinderen);
   kaart.appendChild(onder);
@@ -275,11 +300,24 @@ function maakSleepbaar(picto, leerling, vanHoekId){
     }
 
     start.preventDefault();
-    var geest = picto.cloneNode(true);
-    geest.classList.add('sleep-geest');
+
+    // Alleen de bol meenemen, niet de naam eronder: dat leest als een
+    // kaartje dat je optilt in plaats van als een stukje tekst.
+    var bron = picto.querySelector('.picto-rond');
+    var maat = bron ? bron.getBoundingClientRect().width : 60;
+    var geest = document.createElement('div');
+    geest.className = 'sleep-geest';
+    var bol = bron.cloneNode(true);
+    var ring = bol.querySelector('.ring');
+    if (ring) ring.remove();                 // de timer hoort bij de hoek, niet bij je hand
+    bol.style.width = bol.style.height = maat + 'px';
+    geest.appendChild(bol);
     geest.style.left = start.clientX + 'px';
     geest.style.top  = start.clientY + 'px';
     document.body.appendChild(geest);
+    // eerst op ware grootte tekenen, dan optillen — anders slaat de
+    // browser de overgang over
+    requestAnimationFrame(function () { geest.classList.add('opgetild'); });
     picto.classList.add('sleept');
 
     var laatsteDoel = null;
@@ -300,14 +338,28 @@ function maakSleepbaar(picto, leerling, vanHoekId){
       document.removeEventListener('pointermove', beweeg);
       document.removeEventListener('pointerup', los);
       document.removeEventListener('pointercancel', los);
-      geest.remove();
       picto.classList.remove('sleept');
       if (laatsteDoel) laatsteDoel.classList.remove('doelwit');
 
       var onder = document.elementFromPoint(e.clientX, e.clientY);
       var kaart = onder && onder.closest ? onder.closest('.hoek') : null;
-      if (!kaart) { tekenBord(); return; }
-      leg(leerling, kaart.dataset.hoekId);
+
+      if (kaart) {
+        // even naar het midden van de hoek toe zakken voordat het bord
+        // opnieuw tekent: dat leest als "hij is er"
+        var doos = kaart.getBoundingClientRect();
+        geest.classList.remove('opgetild');
+        geest.classList.add('landt');
+        geest.style.left = (doos.left + doos.width / 2) + 'px';
+        geest.style.top  = (doos.top + doos.height / 2) + 'px';
+        setTimeout(function () {
+          geest.remove();
+          leg(leerling, kaart.dataset.hoekId);
+        }, 170);
+      } else {
+        geest.classList.add('valt-terug');
+        setTimeout(function () { geest.remove(); tekenBord(); }, 150);
+      }
     }
     document.addEventListener('pointermove', beweeg);
     document.addEventListener('pointerup', los);
@@ -316,6 +368,21 @@ function maakSleepbaar(picto, leerling, vanHoekId){
 }
 
 function leg(leerling, hoekId){
+  var k = KB.klas(), b = KB.bord(k);
+  var hoek = KB.hoekVan(hoekId, k);
+
+  // Staat er vandaag een groepje ingepland in de werkplaats, dan zijn de
+  // plekken van hen. Een ander kind mag alleen bij wat overblijft.
+  if (hoek && hoek.werkplaats && KB.instelling('werkplaatsAan', k)) {
+    var gereserveerd = gereserveerdVoor(hoek, k, b);
+    var isAanDeBeurt = KB.heeftBeurtVandaag(leerling.id, k);
+    var bezet = KB.bezetting(hoek.id, b).length;
+    if (!isAanDeBeurt && bezet + gereserveerd.length >= hoek.maxKinderen) {
+      toonBeurtUitleg(leerling, hoek, gereserveerd, k);
+      return;
+    }
+  }
+
   var uitkomst = KB.plaats(leerling.id, hoekId);
   if (uitkomst.ok) {
     tekenBord();
@@ -369,6 +436,26 @@ function toonNogEven(leerling, hoek, restMs){
     var knop = el('button', 'knop knop-primair knop-groot', 'Oké');
     knop.addEventListener('click', sluitBlad);
     blad.appendChild(knop);
+  });
+}
+
+function toonBeurtUitleg(leerling, hoek, gereserveerd, k){
+  toonBlad(function (blad) {
+    blad.style.textAlign = 'center';
+    var titel = el('div', null, 'De werkplaats is vandaag bezet');
+    titel.style.cssText = 'font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:10px';
+    blad.appendChild(titel);
+    var namen = gereserveerd.map(function (id) {
+      var l = KB.leerling(id, k); return l ? l.naam : null;
+    }).filter(Boolean);
+    var sub = el('div', null, namen.length
+      ? 'Vandaag zijn ' + namen.join(', ') + ' aan de beurt. Jij komt op een andere dag.'
+      : 'Vandaag is er geen plek meer. Je komt op een andere dag aan de beurt.');
+    sub.style.cssText = 'font-size:1.05rem;color:var(--inkt-2);line-height:1.5;max-width:34ch;margin:0 auto 24px';
+    blad.appendChild(sub);
+    var k2 = el('button', 'knop knop-primair knop-groot', 'Andere hoek kiezen');
+    k2.addEventListener('click', function () { sluitBlad(); tekenBord(); });
+    blad.appendChild(k2);
   });
 }
 
