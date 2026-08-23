@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Keuzebord</title>
+<link rel="stylesheet" href="src/kb-stijl.css">
+<style>
+/* ── het bord ─────────────────────────────────────────── */
+.scherm{ display: none; height: 100vh; flex-direction: column; }
+.scherm.aan{ display: flex; }
+
+.balk{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 40px 14px; flex: none;
+}
+.balk-links{ display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.groepnaam{ font-size: 1.35rem; font-weight: 600; letter-spacing: -.02em; }
+.datum{ font-size: 1.05rem; color: var(--inkt-3); }
+.balk-rechts{ display: flex; align-items: center; gap: 20px; }
+.klok{ font-size: 1.15rem; color: var(--inkt-2); font-variant-numeric: tabular-nums; }
+.rondje{
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
+  transition: background .18s ease;
+}
+.rondje:hover{ background: rgba(20,28,44,.1); }
+
+.rooster{
+  flex-grow: 1; display: grid; gap: 22px; padding: 0 40px; min-height: 0;
+  grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
+  align-content: stretch;
+}
+
+.hoek{
+  display: flex; flex-direction: column; min-height: 0; cursor: pointer;
+  transition: transform .2s var(--veer), box-shadow .2s ease;
+  position: relative;
+}
+.hoek:active{ transform: scale(.985); }
+.hoek.doelwit{ box-shadow: 0 0 0 4px var(--accent), var(--schaduw-3); transform: translateY(-3px); }
+.hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), var(--schaduw-3); }
+
+.hoek-beeld{
+  height: 52%; min-height: 92px; background: var(--vlak-2);
+  display: flex; align-items: center; justify-content: center; flex: none;
+  background-size: cover; background-position: center;
+}
+.hoek-onder{ padding: 13px 20px 16px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; min-height: 0; }
+.hoek-kop{ display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hoek-naam{ font-size: 1.25rem; font-weight: 600; letter-spacing: -.015em;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plekjes{ display: flex; gap: 5px; flex: none; }
+.plek{ width: 9px; height: 9px; border-radius: 50%; background: rgba(20,28,44,.12); }
+.plek.bezet{ background: var(--hoekkleur, var(--accent)); }
+.hoek-kinderen{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                margin-top: auto; }
+.leeg-plekje{ width: 46px; height: 46px; border-radius: 50%;
+              border: 2px dashed rgba(20,28,44,.16); flex: none; }
+.vol-label{
+  margin-left: auto; font-size: .82rem; font-weight: 600; color: var(--inkt-2);
+  background: rgba(20,28,44,.06); padding: 5px 13px; border-radius: var(--rond-vol);
+}
+.wacht-label{ background: var(--let-op-zacht); color: var(--let-op); }
+
+.strook{
+  flex: none; padding: 20px 40px 26px; display: flex; align-items: center; gap: 26px;
+  min-height: 0;
+}
+.strook-kop{ font-size: 1rem; font-weight: 600; color: var(--inkt-3); white-space: nowrap; flex: none; }
+.strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
+.strook .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.hoek-kinderen .picto-rond{ width: 46px; height: 46px; font-size: 1.05rem; }
+.hoek-kinderen .picto-naam{ display: none; }
+
+/* ── klas kiezen ──────────────────────────────────────── */
+#scherm-klassen{ align-items: center; justify-content: center; padding: 30px; }
+.klas-titel{ font-size: 2.4rem; font-weight: 600; letter-spacing: -.03em; margin: 0 0 8px; }
+.klas-sub{ font-size: 1.05rem; color: var(--inkt-3); margin: 0 0 36px; }
+.klas-rooster{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 220px)); gap: 18px; justify-content: center; }
+.klas-kaart{ padding: 22px; text-align: left; transition: transform .2s var(--veer); }
+.klas-kaart:hover{ transform: translateY(-3px); }
+.klas-kaart .n{ font-size: 1.2rem; font-weight: 600; margin-bottom: 3px; }
+.klas-kaart .s{ font-size: .9rem; color: var(--inkt-3); }
+
+/* ── hoekdetail ───────────────────────────────────────── */
+.detail-kop{ display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
+.detail-icoon{ width: 62px; height: 62px; border-radius: 20px; background: var(--vlak-2);
+               display: flex; align-items: center; justify-content: center; flex: none;
+               background-size: cover; background-position: center; }
+.detail-plekken{ display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 18px; }
+.detail-plek{ display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.detail-plek .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.detail-plek .ring{ inset: -10px; }
+.detail-plek .ring circle{ stroke-width: 5; }
+.detail-stand{ font-size: .85rem; color: var(--inkt-3); text-align: center; }
+.detail-stand.vrij{ color: var(--goed); font-weight: 600; }
+.detail-leeg{ width: 104px; height: 104px; border-radius: 50%;
+              border: 3px dashed rgba(20,28,44,.15); display: flex;
+              align-items: center; justify-content: center; }
+
+.rij-wacht{ display: flex; align-items: flex-end; justify-content: center; gap: 24px; margin: 26px 0; }
+.rij-plek{ display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rij-nummer{ font-size: .9rem; font-weight: 600; color: var(--inkt-3); }
+.rij-plek.ikzelf .rij-nummer{ color: var(--accent); font-weight: 700; }
+.rij-plek .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.rij-plek.ikzelf .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.rij-ring{ padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14); }
+
+.sleep-geest{
+  position: fixed; z-index: 500; pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.12);
+  filter: drop-shadow(0 10px 22px rgba(20,28,44,.28));
+}
+
+@media (max-width: 760px){
+  .balk{ padding: 16px 20px 10px; }
+  .rooster{ padding: 0 20px; gap: 14px; }
+  .strook{ padding: 14px 20px 20px; gap: 14px; }
+  .groepnaam{ font-size: 1.1rem; } .datum{ display: none; }
+}
+</style>
+</head>
+<body class="bord">
+
+<!-- klas kiezen -->
+<div id="scherm-klassen" class="scherm">
+  <h1 class="klas-titel">Keuzebord</h1>
+  <p class="klas-sub" id="klas-datum"></p>
+  <div class="klas-rooster" id="klas-rooster"></div>
+  <div style="margin-top:34px;display:flex;gap:10px">
+    <a class="knop knop-stil" href="beheer.html">Beheer</a>
+  </div>
+</div>
+
+<!-- het bord -->
+<div id="scherm-bord" class="scherm">
+  <div class="balk">
+    <div class="balk-links">
+      <div class="groepnaam" id="bord-groep"></div>
+      <div class="datum" id="bord-datum"></div>
+    </div>
+    <div class="balk-rechts">
+      <div class="klok" id="bord-klok"></div>
+      <button class="rondje" id="knop-menu" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="5"  cy="12" r="1.5" fill="#6b7a94"></circle>
+          <circle cx="12" cy="12" r="1.5" fill="#6b7a94"></circle>
+          <circle cx="19" cy="12" r="1.5" fill="#6b7a94"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="rooster" id="rooster"></div>
+  <div class="strook">
+    <div class="strook-kop" id="strook-kop"></div>
+    <div class="strook-kinderen" id="strook"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
+<div class="melding" id="melding"></div>
+
+<script src="src/kb-data.js"></script>
+<script src="src/kb-bord.js"></script>
+</body>
+</html>
