@@ -150,6 +150,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);touch
 #admin-tabs{display:flex;gap:0;padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
 .atab{font-family:'Inter',sans-serif;font-weight:600;font-size:.79rem;padding:10px 14px;border:none;border-bottom:2.5px solid transparent;cursor:pointer;background:transparent;color:var(--sub);transition:all .12s;white-space:nowrap}
 .atab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.doelrij{display:flex;gap:10px;align-items:flex-start;padding:8px 11px;border-radius:9px;cursor:pointer;font-size:.84rem;line-height:1.45;color:var(--text);border:1.5px solid transparent}
+.doelrij:hover{background:var(--faint)}
+.doelrij.doel-aan{background:#eef3fe;border-color:#c9d9fb}
+.doelrij input{margin-top:3px;width:16px;height:16px;accent-color:var(--primary);flex:none}
+.doelrij b{font-weight:700;color:var(--sub);font-size:.76rem;letter-spacing:.03em}
+.doel-ster{color:var(--sub);font-weight:700}
 .atab:hover:not(.active){color:var(--text);background:var(--faint)}
 #admin-content{flex:1;overflow:auto;padding:20px 18px}
 .apanel{display:none}.apanel.active{display:block}
@@ -372,6 +378,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);touch
     <button class="atab" onclick="switchTab('weekplanner',this)">📅 Weekplanner</button>
     <button class="atab" onclick="switchTab('werkplaats',this)">🔨 Werkplaats</button>
     <button class="atab" onclick="switchTab('groepjes',this)">👥 Groepjes</button>
+    <button class="atab" onclick="switchTab('doelen',this)">🎯 Doelen</button>
   </div>
   <div id="admin-content">
     <div id="panel-klassen" class="apanel active"></div>
@@ -385,6 +392,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);touch
     <div id="panel-weekplanner" class="apanel"></div>
     <div id="panel-werkplaats" class="apanel"></div>
     <div id="panel-groepjes" class="apanel"></div>
+    <div id="panel-doelen" class="apanel"></div>
   </div>
 </div>
 
@@ -1102,15 +1110,112 @@ function switchTab(tab,el){
   if(tab==='weekplanner')  renderWeekplannerPanel();
   if(tab==='werkplaats')   renderWerkplaatsPanel();
   if(tab==='groepjes')     renderGroepjesPanel();
+  if(tab==='doelen')       renderDoelenPanel();
 }
 
 // ── KLASSEN ──
+
+// ══════════════════════════════════════════════════════════
+// VOORBEELDGROEPEN
+// Zes kleutergroepen met verzonnen kinderen, om mee te proeven zonder dat
+// er ook maar één echt kindgegeven aan te pas komt. In één klik weer weg.
+// ══════════════════════════════════════════════════════════
+var VOORBEELD_NAMEN={
+  '1A':['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne','Joep','Nora',
+        'Timo','Wies','Levi','Roos','Cas','Maud','Bas','Lotte','Sef','Fien'],
+  '1B':['Mees','Sanne','Aiden','Vera','Job','Elin','Ties','Mila','Guus','Noor',
+        'Pim','Saar','Jesse','Anne','Ruben','Liv','Boaz','Tess','Hidde','Jill'],
+  '1C':['Daan','Fleur','Milan','Nienke','Stijn','Evi','Luuk','Emma','Sven','Julia',
+        'Mats','Lieke','Thijs','Sofie','Jens','Hanne','Kars','Britt','Niek','Zoë'],
+  '2A':['Finn','Nina','Lars','Amber','Teun','Merel','Jurre','Lynn','Koen','Iris',
+        'Siem','Puck','Wout','Nova','Gijs','Feline','Tim','Sara','Bo','Jade','Ravi','Nell'],
+  '2B':['Noud','Marit','Ivan','Junia','Mason','Elif','Sepp','Nova','Yusuf','Isabel',
+        'Floris','Nienke','Arend','Lena','Bram','Amira','Tygo','Roos','Dex','Hala','Nout','Vera'],
+  '2C':['Benjamin','Mia','Hugo','Abbey','Tomer','Nore','Abel','Hanami','Owen','Floor',
+        'Rida','Senne','Maeven','Lenn','Wess','Anna','Ben','Lorena','Max','Evan','Suze','Kaan'],
+};
+var VOORBEELD_HOEKEN=[
+  {naam:'Bouwhoek',max:4},{naam:'Huishoek',max:3},{naam:'Zandtafel',max:4},
+  {naam:'Knutselhoek',max:4},{naam:'Werktafel',max:5},{naam:'Leeshoek',max:3},
+];
+
+function voorbeeldGroepenAanwezig(){
+  return G.klassen.some(function(k){return k.voorbeeld;});
+}
+
+function maakVoorbeeldgroepen(){
+  var gemaakt=0;
+  Object.keys(VOORBEELD_NAMEN).forEach(function(code){
+    var basis='Groep '+code, naam=basis;
+    var bestaat=function(n){return G.klassen.some(function(k){return k.naam===n;});};
+    if(bestaat(basis)){
+      // Staat er al een voorbeeldgroep onder deze naam, dan is er niets te doen.
+      if(G.klassen.some(function(k){return k.naam===basis&&k.voorbeeld;})) return;
+      // Anders botst hij met een echte klas en krijgt de voorbeeldgroep een eigen naam.
+      naam=basis+' (voorbeeld)';
+    }
+    if(bestaat(naam)) return;
+    var k=newKlas(naam);
+    k.voorbeeld=true;
+    k.doelNiveaus=NIVEAUS_PER_GROEP[code.charAt(0)]||NIVEAUS_PER_GROEP['2'];
+    k.doelActief={};
+
+    // eigen hoeken in plaats van de standaardset
+    k.hoekLib=VOORBEELD_HOEKEN.map(function(h,i){
+      return {id:'hl-'+code.toLowerCase()+'-'+i,naam:h.naam,maxKinderen:h.max,fotoId:null};
+    });
+    var b=k.borden[0];
+    b.naam='Keuzebord '+naam;
+    b.hoekLibIds=k.hoekLib.map(function(h){return h.id;});
+    b.plaatsingen={};
+    k.hoekLib.forEach(function(h){b.plaatsingen[h.id]=[];});
+
+    VOORBEELD_NAMEN[code].forEach(function(n,i){
+      k.leerlingen.push({
+        id:'ll-'+code.toLowerCase()+'-'+i,
+        naam:n,
+        kleur:KID_COLORS[i%KID_COLORS.length],
+        image:null, status:'aanwezig', lid:true
+      });
+    });
+    G.klassen.push(k);
+    gemaakt++;
+  });
+  save();
+  renderKlassenPanel();
+  toast(gemaakt?gemaakt+' voorbeeldgroepen aangemaakt':'Ze bestonden al');
+}
+
+function verwijderVoorbeeldgroepen(){
+  var aantal=G.klassen.filter(function(k){return k.voorbeeld;}).length;
+  if(!aantal){toast('Er zijn geen voorbeeldgroepen');return;}
+  openModal('Voorbeeldgroepen verwijderen?',
+    '<p style="font-size:.85rem">'+aantal+' groepen met verzonnen kinderen worden verwijderd. '+
+    'Je eigen groepen blijven staan.</p>',
+    [{label:'Annuleer',cls:'btn-ghost',action:closeModal},
+     {label:'Verwijderen',cls:'btn-danger',action:function(){
+       G.klassen=G.klassen.filter(function(k){return !k.voorbeeld;});
+       if(!G.klassen.length) G.klassen=[newKlas('Mijn klas')];
+       if(!G.klassen.some(function(k){return k.id===G.activeKlasId;})) G.activeKlasId=G.klassen[0].id;
+       save();closeModal();renderKlassenPanel();renderKlasSelect();
+       toast('Voorbeeldgroepen verwijderd');
+     }}]);
+}
+
 function renderKlassenPanel(){
   const p=document.getElementById('panel-klassen');
   p.innerHTML=`<div class="stitle">Klassen<span class="badge">${G.klassen.length}</span></div>
     <p class="hint" style="margin-bottom:14px">De actieve klas bepaalt welke leerlingen, hoeken en borden je ziet. Klik op een klas om naar die klas te wisselen.</p>
     <div id="kl-list"></div>
-    <button class="btn btn-primary" onclick="openAddKlas()">Nieuwe klas aanmaken</button>`;
+    <button class="btn btn-primary" onclick="openAddKlas()">Nieuwe klas aanmaken</button>
+    <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sub);margin-bottom:6px">Uitproberen</div>
+      <p class="hint" style="margin-bottom:10px">Zes kleutergroepen met verzonnen kinderen, om de app mee te leren kennen. Er komt geen echt kindgegeven aan te pas.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="maakVoorbeeldgroepen()">Zes voorbeeldgroepen aanmaken</button>
+        \${voorbeeldGroepenAanwezig()?'<button class="btn btn-ghost btn-sm" onclick="verwijderVoorbeeldgroepen()">Voorbeeldgroepen verwijderen</button>':''}
+      </div>
+    </div>`;
   const list=document.getElementById('kl-list');
   G.klassen.forEach(k=>{
     const isActive=k.id===G.activeKlasId;
@@ -1118,7 +1223,7 @@ function renderKlassenPanel(){
     card.className='klcard'+(isActive?' klactive':'');
     card.innerHTML=`
       <div class="kl-info">
-        <div class="kl-name">${k.naam}${isActive?' <span style="color:var(--success);font-size:.7rem;font-weight:700">● actief</span>':''}</div>
+        <div class="kl-name">${k.naam}${isActive?' <span style="color:var(--success);font-size:.7rem;font-weight:700">● actief</span>':''}${k.voorbeeld?' <span style="color:var(--sub);font-size:.7rem;font-weight:700">voorbeeld</span>':''}</div>
         <div class="kl-sub">${k.leerlingen.length} leerlingen · ${k.hoekLib.length} hoeken · ${k.borden.length} borden</div>
       </div>
       <div class="kl-act">
@@ -1853,6 +1958,183 @@ function renderSuggesties(){
 // GROEPJES
 // ══════════════════════════════════════════════════════════
 function getGroepjes(){return getKlas().groepjes||[];}
+
+
+// ══════════════════════════════════════════════════════════
+// DOELEN
+// De catalogus (480 doelen uit de leer- en ontwikkelingslijnen jonge kind)
+// staat los van G, onder een eigen sleutel. Zo blijft hij buiten elke save()
+// van de klasgegevens en telt hij niet mee voor de opslaglimiet daarvan.
+// Per klas bewaren we alleen welke doelen aanstaan, plus het niveaubereik.
+// ══════════════════════════════════════════════════════════
+var DOELEN_KEY='kb_doelen';
+var DOELEN={meta:null, lijst:[]};
+
+// Welke beheersingsniveaus horen standaard bij welke groep.
+// Halfjaarniveaus (1a/1b) dragen spel, taal en rekenen; de hele-jaarniveaus
+// (0/1/2/3) dragen motoriek en sociaal-emotioneel.
+var NIVEAUS_PER_GROEP={
+  1:['0','1a','1b','1'],
+  2:['2a','2b','2'],
+  3:['3a','3b','3']
+};
+
+function doelenLaad(){
+  try{
+    var s=localStorage.getItem(DOELEN_KEY);
+    if(s){var p=JSON.parse(s);DOELEN.meta=p.meta||null;DOELEN.lijst=p.lijst||[];}
+  }catch(e){DOELEN={meta:null,lijst:[]};}
+}
+function doelenBewaar(){
+  try{localStorage.setItem(DOELEN_KEY,JSON.stringify(DOELEN));return true;}
+  catch(e){toast('Doelen passen niet in de opslag van deze browser');return false;}
+}
+
+function doelenNeemOver(pak){
+  if(!pak||pak.formaat!=='keuzebord-doelen'||!Array.isArray(pak.doelen)){
+    toast('Dit is geen doelenbestand');return false;
+  }
+  DOELEN.meta={bron:pak.bron||'',versie:pak.versie||1,niveaus:pak.niveaus||[],domeinen:pak.domeinen||[]};
+  DOELEN.lijst=pak.doelen;
+  if(!doelenBewaar()) return false;
+  toast(DOELEN.lijst.length+' doelen ingeladen');
+  renderDoelenPanel();
+  return true;
+}
+
+function doelenHaalOp(){
+  // Zit de lijst in de pagina zelf (voorvertoning, of los geopend bestand),
+  // dan gebruiken we die. Anders halen we hem op van naast de app.
+  var ingebouwd=document.getElementById('doelen-ingebouwd');
+  if(ingebouwd){
+    try{doelenNeemOver(JSON.parse(ingebouwd.textContent));return;}
+    catch(e){/* dan alsnog ophalen */}
+  }
+  fetch('data/doelen-gouwe-academie.json')
+    .then(function(r){if(!r.ok) throw new Error(r.status);return r.json();})
+    .then(doelenNeemOver)
+    .catch(function(){toast('Kon de lijst niet ophalen — kies het bestand zelf');});
+}
+function doelenImporteerBestand(input){
+  var f=input.files&&input.files[0];input.value='';
+  if(!f) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var pak;try{pak=JSON.parse(e.target.result);}catch(err){toast('Onleesbaar bestand');return;}
+    doelenNeemOver(pak);
+  };
+  r.readAsText(f);
+}
+
+function klasNiveaus(k){
+  k=k||getKlas();
+  if(Array.isArray(k.doelNiveaus)&&k.doelNiveaus.length) return k.doelNiveaus;
+  var m=(k.naam||'').match(/\b([123])\b/);        // "Groep 2C" -> 2
+  return NIVEAUS_PER_GROEP[m?m[1]:2]||NIVEAUS_PER_GROEP[2];
+}
+function doelActief(k,id){return !!(k.doelActief&&k.doelActief[id]);}
+function telActieveDoelen(k){k=k||getKlas();return Object.keys(k.doelActief||{}).length;}
+
+function zetDoel(id,aan){
+  var k=getKlas();
+  if(!k.doelActief) k.doelActief={};
+  if(aan) k.doelActief[id]=true; else delete k.doelActief[id];
+  save();
+  var el=document.getElementById('doel-teller');
+  if(el) el.textContent=telActieveDoelen(k);
+  var rij=document.getElementById('doelrij-'+id);
+  if(rij) rij.classList.toggle('doel-aan',aan);
+}
+
+function zetHeleLeerlijn(niveau,leerlijn,aan){
+  var k=getKlas();
+  if(!k.doelActief) k.doelActief={};
+  DOELEN.lijst.forEach(function(d){
+    if(d.niveau===niveau&&d.leerlijn===leerlijn){
+      if(aan) k.doelActief[d.id]=true; else delete k.doelActief[d.id];
+    }
+  });
+  save();renderDoelenPanel();
+}
+
+var _doelNiveau=null, _doelZoek='';
+function doelenKiesNiveau(n){_doelNiveau=n;renderDoelenPanel();}
+function doelenZoek(v){_doelZoek=(v||'').toLowerCase();renderDoelenPanel();}
+
+function renderDoelenPanel(){
+  var p=document.getElementById('panel-doelen');
+  if(!p) return;
+  var k=getKlas();
+  var niveaus=klasNiveaus(k);
+  if(!_doelNiveau||niveaus.indexOf(_doelNiveau)<0) _doelNiveau=niveaus[0];
+
+  if(!DOELEN.lijst.length){
+    p.innerHTML='<div class="stitle">Doelen</div>'+
+      '<p class="hint" style="margin-bottom:14px">Er is nog geen doelenlijst ingeladen. '+
+      'De lijst hoort bij de app en bevat de leer- en ontwikkelingslijnen jonge kind, geordend per beheersingsniveau.</p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-primary btn-sm" onclick="doelenHaalOp()">Doelenlijst inladen</button>'+
+      '<label class="btn btn-ghost btn-sm" style="margin:0;cursor:pointer">Bestand kiezen'+
+      '<input type="file" accept="application/json,.json" style="display:none" onchange="doelenImporteerBestand(this)"></label>'+
+      '</div>';
+    return;
+  }
+
+  var zichtbaar=DOELEN.lijst.filter(function(d){
+    if(d.niveau!==_doelNiveau) return false;
+    if(!_doelZoek) return true;
+    return ((d.aspect||'')+' '+d.doel+' '+d.leerlijn).toLowerCase().indexOf(_doelZoek)>=0;
+  });
+
+  // groeperen: domein -> leerlijn
+  var boom={},volgorde=[];
+  zichtbaar.forEach(function(d){
+    if(!boom[d.domein]){boom[d.domein]={};volgorde.push(d.domein);}
+    if(!boom[d.domein][d.leerlijn]) boom[d.domein][d.leerlijn]=[];
+    boom[d.domein][d.leerlijn].push(d);
+  });
+
+  var tabs=niveaus.map(function(n){
+    var telling=DOELEN.lijst.filter(function(d){return d.niveau===n;}).length;
+    return '<button class="btn '+(n===_doelNiveau?'btn-primary':'btn-ghost')+' btn-sm" '+
+           'onclick="doelenKiesNiveau(\''+n+'\')">'+n+' <span style="opacity:.65">'+telling+'</span></button>';
+  }).join('');
+
+  var html='<div class="stitle">Doelen – '+escHtml(k.naam)+
+    '<span class="badge" id="doel-teller">'+telActieveDoelen(k)+'</span></div>'+
+    '<p class="hint" style="margin-bottom:12px">Vink aan waar je dit jaar aan werkt. Alleen aangevinkte doelen '+
+    'verschijnen straks bij taken en observaties. Deze groep werkt op niveau '+niveaus.join(', ')+'.</p>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+tabs+'</div>'+
+    '<input type="text" placeholder="Zoek in doelen…" value="'+escHtml(_doelZoek)+'" oninput="doelenZoek(this.value)" '+
+    'style="width:100%;font-family:inherit;font-size:.85rem;border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;margin-bottom:14px">';
+
+  if(!zichtbaar.length){
+    html+='<p class="hint">Geen doelen gevonden.</p>';
+    p.innerHTML=html;return;
+  }
+
+  volgorde.forEach(function(dom){
+    html+='<div style="font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;'+
+          'color:var(--sub);margin:18px 0 8px">'+escHtml(dom)+'</div>';
+    Object.keys(boom[dom]).forEach(function(ll){
+      var rij=boom[dom][ll];
+      var allesAan=rij.every(function(d){return doelActief(k,d.id);});
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 6px">'+
+            '<div style="font-size:.85rem;font-weight:600;color:var(--text)">'+escHtml(ll)+'</div>'+
+            '<button class="btn btn-ghost btn-sm" onclick="zetHeleLeerlijn(\''+_doelNiveau+'\',\''+
+            ll.replace(/'/g,"\\'")+'\','+(!allesAan)+')">'+(allesAan?'Alles uit':'Alles aan')+'</button></div>';
+      rij.forEach(function(d){
+        var aan=doelActief(k,d.id);
+        html+='<label id="doelrij-'+d.id+'" class="doelrij'+(aan?' doel-aan':'')+'">'+
+              '<input type="checkbox" '+(aan?'checked':'')+' onchange="zetDoel(\''+d.id+'\',this.checked)">'+
+              '<span>'+(d.aspect?'<b>'+escHtml(d.aspect)+':</b> ':'')+escHtml(d.doel)+
+              (d.ster?' <span class="doel-ster" title="Stond in het bronbestand met een sterretje">*</span>':'')+
+              '</span></label>';
+      });
+    });
+  });
+  p.innerHTML=html;
+}
 
 function renderGroepjesPanel(){
   var k=getKlas();
@@ -2864,6 +3146,7 @@ G.klassen.forEach(k=>k.borden.forEach(b=>getBordHoeken(b,k).forEach(h=>{
   // Foto's staan op dit apparaat, niet in de code. Laden vóór de eerste render,
   // zodat de picto's meteen goed staan. Lukt het niet, dan draait de app door
   // met gekleurde cirkels en de beginletter van elk kind.
+  doelenLaad();
   fkLaad().then(function(){
     initGroep1D();
     initGroep1C();
