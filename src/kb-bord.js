@@ -19,13 +19,18 @@ var DAGEN   = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Za
 var MAANDEN = ['januari','februari','maart','april','mei','juni','juli','augustus',
                'september','oktober','november','december'];
 
-/* Rustige tinten per hoek, in de volgorde waarin ze op het bord staan.
-   De kleur zegt wélke hoek het is; verder betekent hij niets. */
+/* Elke hoek heeft een eigen kleur — dat maakt het bord vrolijk en helpt
+   kleuters de hoek herkennen voordat ze de naam kunnen lezen. De kleur
+   loopt door de hele kaart: sterk in het beeldvlak, zacht eronder. */
 var HOEKTINTEN = [
-  { tint:'#eaf0fe', kleur:'#3b6ff0' }, { tint:'#fceef2', kleur:'#b8436d' },
-  { tint:'#fdf3e2', kleur:'#c8820a' }, { tint:'#f2eefb', kleur:'#7c5cbf' },
-  { tint:'#e8f6f8', kleur:'#1a9aad' }, { tint:'#e9f6f0', kleur:'#2e9e6b' },
-  { tint:'#fdeeee', kleur:'#d94f4f' }, { tint:'#f3f0ea', kleur:'#c06428' }
+  { kleur:'#3b6ff0', tint:'#dfe9fd', zacht:'#f2f6ff' },   // blauw
+  { kleur:'#e2607f', tint:'#fde0e8', zacht:'#fff3f6' },   // roze
+  { kleur:'#e79a1f', tint:'#fdeecd', zacht:'#fff9ed' },   // oker
+  { kleur:'#8b6ad0', tint:'#ebe3fb', zacht:'#f8f5ff' },   // paars
+  { kleur:'#17a9bd', tint:'#d6f1f5', zacht:'#effbfc' },   // turkoois
+  { kleur:'#37ab74', tint:'#d9f2e5', zacht:'#f1fbf6' },   // groen
+  { kleur:'#e8674f', tint:'#fde2dc', zacht:'#fff4f2' },   // koraal
+  { kleur:'#c9772f', tint:'#fbe8d5', zacht:'#fff6ee' }    // oranje
 ];
 
 var GEKOZEN_KLAS = 'kb_bord_klas';   // welke groep dit apparaat draait
@@ -160,11 +165,14 @@ function maakHoekKaart(hoek, index, k, b){
   var kaart = el('div', 'kaart hoek' + (vol ? ' vol' : ''));
   kaart.dataset.hoekId = hoek.id;
   kaart.style.setProperty('--hoekkleur', tint.kleur);
+  kaart.style.setProperty('--hoektint', tint.tint);
+  kaart.style.setProperty('--hoekzacht', tint.zacht);
+  kaart.style.setProperty('--hoekschaduw', tint.kleur + '33');
 
   var beeld = el('div', 'hoek-beeld');
   var f = KB.foto(hoek.fotoId, k);
   if (f) { beeld.style.backgroundImage = 'url(' + f + ')'; }
-  else   { beeld.style.background = tint.tint; beeld.appendChild(hoekIcoon(tint.kleur, hoek.naam)); }
+  else   { beeld.appendChild(hoekIcoon(tint.kleur, hoek.naam)); }
   kaart.appendChild(beeld);
 
   var onder = el('div', 'hoek-onder');

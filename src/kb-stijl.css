@@ -50,7 +50,6 @@ body{
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
-body.bord  { background: #f7f6f4; }
 body.beheer{ background: var(--vlak-2); }
 
 button{ font: inherit; color: inherit; border: none; background: none; cursor: pointer; }

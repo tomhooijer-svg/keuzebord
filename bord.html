@@ -7,6 +7,16 @@
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
+/* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
+   vrolijk zonder dat het onrustig wordt achter de picto's. */
+body.bord{
+  background:
+    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
+    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
+    #fbf8f4;
+  background-attachment: fixed;
+}
 .scherm{ display: none; height: 100vh; flex-direction: column; }
 .scherm.aan{ display: flex; }
 
@@ -15,7 +25,7 @@
   padding: 22px 40px 14px; flex: none;
 }
 .balk-links{ display: flex; align-items: baseline; gap: 14px; min-width: 0; }
-.groepnaam{ font-size: 1.35rem; font-weight: 600; letter-spacing: -.02em; }
+.groepnaam{ font-size: 1.42rem; font-weight: 650; letter-spacing: -.02em; }
 .datum{ font-size: 1.05rem; color: var(--inkt-3); }
 .balk-rechts{ display: flex; align-items: center; gap: 20px; }
 .klok{ font-size: 1.15rem; color: var(--inkt-2); font-variant-numeric: tabular-nums; }
@@ -34,24 +44,30 @@
 
 .hoek{
   display: flex; flex-direction: column; min-height: 0; cursor: pointer;
+  position: relative; background: var(--hoekzacht, #fff);
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 10px 26px var(--hoekschaduw, rgba(20,28,44,.06));
   transition: transform .2s var(--veer), box-shadow .2s ease;
-  position: relative;
 }
 .hoek:active{ transform: scale(.985); }
-.hoek.doelwit{ box-shadow: 0 0 0 4px var(--accent), var(--schaduw-3); transform: translateY(-3px); }
-.hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), var(--schaduw-3); }
+.hoek.doelwit{
+  box-shadow: 0 0 0 4px var(--hoekkleur), 0 16px 34px var(--hoekschaduw);
+  transform: translateY(-4px) scale(1.012);
+}
+.hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), 0 16px 34px rgba(200,130,10,.3); }
 
 .hoek-beeld{
-  height: 52%; min-height: 92px; background: var(--vlak-2);
+  height: 52%; min-height: 92px; background: var(--hoektint, #f2f4f7);
   display: flex; align-items: center; justify-content: center; flex: none;
   background-size: cover; background-position: center;
 }
-.hoek-onder{ padding: 13px 20px 16px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; min-height: 0; }
+.hoek-onder{ padding: 13px 20px 16px; display: flex; flex-direction: column; gap: 10px;
+             flex-grow: 1; min-height: 0; }
 .hoek-kop{ display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.hoek-naam{ font-size: 1.25rem; font-weight: 600; letter-spacing: -.015em;
+.hoek-naam{ font-size: 1.28rem; font-weight: 650; letter-spacing: -.015em;
+            color: var(--hoekkleur); filter: brightness(.82);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plekjes{ display: flex; gap: 5px; flex: none; }
-.plek{ width: 9px; height: 9px; border-radius: 50%; background: rgba(20,28,44,.12); }
+.plek{ width: 10px; height: 10px; border-radius: 50%; background: rgba(20,28,44,.13); }
 .plek.bezet{ background: var(--hoekkleur, var(--accent)); }
 .hoek-kinderen{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
                 margin-top: auto; }
@@ -63,9 +79,13 @@
 }
 .wacht-label{ background: var(--let-op-zacht); color: var(--let-op); }
 
+/* De strook met kinderen die nog moeten kiezen krijgt een eigen vlak,
+   zodat het bord onderaan niet uitloopt in de achtergrond. */
 .strook{
-  flex: none; padding: 20px 40px 26px; display: flex; align-items: center; gap: 26px;
-  min-height: 0;
+  flex: none; margin: 18px 40px 22px; padding: 16px 24px;
+  display: flex; align-items: center; gap: 26px; min-height: 0;
+  background: rgba(255,255,255,.72); border-radius: var(--rond-l);
+  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
 }
 .strook-kop{ font-size: 1rem; font-weight: 600; color: var(--inkt-3); white-space: nowrap; flex: none; }
 .strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
@@ -75,7 +95,9 @@
 
 /* ── klas kiezen ──────────────────────────────────────── */
 #scherm-klassen{ align-items: center; justify-content: center; padding: 30px; }
-.klas-titel{ font-size: 2.4rem; font-weight: 600; letter-spacing: -.03em; margin: 0 0 8px; }
+.klas-titel{ font-size: 2.6rem; font-weight: 650; letter-spacing: -.03em; margin: 0 0 8px;
+              background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
+              -webkit-background-clip: text; background-clip: text; color: transparent; }
 .klas-sub{ font-size: 1.05rem; color: var(--inkt-3); margin: 0 0 36px; }
 .klas-rooster{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 220px)); gap: 18px; justify-content: center; }
 .klas-kaart{ padding: 22px; text-align: left; transition: transform .2s var(--veer); }

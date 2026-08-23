@@ -20,9 +20,12 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 /* ── opslag ──────────────────────────────────────────────── */
 var G = null;
 
+/* Een nieuwe groep begint kaal: alleen kiezen. Alles wat het bord drukker
+   maakt zet de leerkracht zelf aan bij Functies. */
 function standaardInstellingen(){
-  return { timerAan:true, timerMinuten:20, wachtrijAan:true, tellingAan:false,
-           pinAan:true, pincode:'1234', kolommen:3 };
+  return { timerAan:false, timerMinuten:20, wachtrijAan:false, tellingAan:false,
+           werkplaatsAan:false, signaleringAan:false,
+           pinAan:false, pincode:'1234', kolommen:3 };
 }
 
 function leegKlas(naam){
@@ -68,6 +71,22 @@ function bewaar(){
   } catch (e) {
     return false;   // vol: de aanroeper mag beslissen wat te melden
   }
+}
+
+/* Welke groep dit apparaat beheert. Een leerkracht ziet alleen die groep;
+   het schoolbeheer kan hem omzetten. */
+var BEHEER_KLAS = 'kb_beheer_klas';
+function beheerKlasId(){
+  try {
+    var id = localStorage.getItem(BEHEER_KLAS);
+    if (id && G.klassen.some(function (k) { return k.id === id; })) return id;
+  } catch (e) {}
+  return null;
+}
+function zetBeheerKlas(id){
+  try { if (id) localStorage.setItem(BEHEER_KLAS, id); else localStorage.removeItem(BEHEER_KLAS); }
+  catch (e) {}
+  if (id) G.activeKlasId = id;
 }
 
 /* ── opzoeken ────────────────────────────────────────────── */
@@ -628,6 +647,7 @@ global.KB = {
   doelenBewaar: doelenBewaar, klasNiveaus: klasNiveaus, doelenVanKlas: doelenVanKlas,
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
   verklein: verklein,
+  beheerKlasId: beheerKlasId, zetBeheerKlas: zetBeheerKlas,
 
   DAGEN_KORT: DAGEN_KORT, DAGEN_LANG: DAGEN_LANG, WERKPLAATS_PLEKKEN: WERKPLAATS_PLEKKEN,
   STANDEN: STANDEN,

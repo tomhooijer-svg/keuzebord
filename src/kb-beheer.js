@@ -315,59 +315,9 @@ panelen.vandaag = function (v){
 /* ══════════════════════════════════════════════════════════
    GROEP
    ══════════════════════════════════════════════════════════ */
-var GROEPCODES = ['1A','1B','1C','2A','2B','2C'];
-var TESTKINDEREN = ['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne','Joep','Nora',
-                    'Timo','Wies','Levi','Roos','Cas','Maud','Bas','Lotte'];
-var STANDAARDHOEKEN = [['Bouwhoek',4],['Huishoek',3],['Zandtafel',4],
-                       ['Knutselhoek',4],['Leeshoek',3]];
-
-function maakSchoolgroepen(metTestkinderen){
-  KB.G.klassen = [];
-  GROEPCODES.forEach(function (code) {
-    var k = KB.leegKlas('Groep ' + code);
-    k.doelNiveaus = KB.NIVEAUS_PER_GROEP[code.charAt(0)] || KB.NIVEAUS_PER_GROEP[2];
-    k.hoekLib = STANDAARDHOEKEN.map(function (h, i) {
-      return { id:'hl-' + code.toLowerCase() + '-' + i, naam:h[0], maxKinderen:h[1],
-               timerMinuten:0, fotoId:null };
-    });
-    var b = k.borden[0];
-    b.hoekLibIds = k.hoekLib.map(function (h) { return h.id; });
-    k.hoekLib.forEach(function (h) { b.plaatsingen[h.id] = []; });
-    KB.G.klassen.push(k);
-    KB.G.activeKlasId = KB.G.klassen[0].id;
-    KB.zorgVoorWerkplaats(k);
-
-    if (metTestkinderen && code === '1A') {
-      TESTKINDEREN.forEach(function (naam, i) {
-        k.leerlingen.push({ id:'ll-1a-' + i, naam:naam,
-          kleur: KB.KIND_KLEUREN[i % KB.KIND_KLEUREN.length], image:null, lid:true });
-      });
-    }
-  });
-  KB.G.activeKlasId = KB.G.klassen[0].id;
-  bewaarOfKlaag();
-}
-
 panelen.groep = function (v){
   var k = KB.klas();
-  v.appendChild(kopregel('Groep', 'Welke groep je beheert en op welk niveau die werkt'));
-
-  var kiezen = paneel('Groepen op school');
-  KB.G.klassen.forEach(function (g) {
-    var rij = el('div', 'rij');
-    var naam = el('div');
-    naam.appendChild(el('div', 'rij-naam', g.naam + (g.id === k.id ? ' · actief' : '')));
-    naam.appendChild(el('div', 'rij-sub',
-      (g.leerlingen || []).length + ' kinderen · ' + (g.hoekLib || []).length + ' hoeken'));
-    rij.appendChild(naam);
-    var acties = el('div', 'rij-acties');
-    if (g.id !== k.id) acties.appendChild(knop('Kies', 'stil', function () {
-      KB.G.activeKlasId = g.id; bewaarOfKlaag(); tekenMenu(); teken();
-    }));
-    rij.appendChild(acties);
-    kiezen.appendChild(rij);
-  });
-  v.appendChild(kiezen);
+  v.appendChild(kopregel('Groep', 'De instellingen van ' + k.naam));
 
   var instellen = paneel('Deze groep');
   var naamVeld = el('div', 'veld');
@@ -400,29 +350,14 @@ panelen.groep = function (v){
   instellen.appendChild(niveauVeld);
   v.appendChild(instellen);
 
-  var opnieuw = paneel('Opnieuw beginnen');
-  opnieuw.appendChild(el('p', 'hint',
-    'Zet de zes kleutergroepen van school klaar: 1A, 1B, 1C, 2A, 2B en 2C, elk met de ' +
-    'standaardhoeken en een werkplaats. Alle bestaande groepen en hun gegevens verdwijnen.'));
-  var rij2 = el('div', 'knoprij');
-  rij2.style.marginTop = '12px';
-  rij2.appendChild(knop('Zes lege groepen aanmaken', 'gevaar', function () {
-    vraagBevestiging('Alles vervangen door zes lege groepen?',
-      'Elke bestaande groep, met kinderen, hoeken en planning, wordt verwijderd. Dit kan niet terug.',
-      'Vervangen', function () {
-        maakSchoolgroepen(false); tekenMenu(); teken(); meld('Zes lege groepen klaargezet');
-      });
-  }));
-  rij2.appendChild(knop('Zes groepen, 1A met testkinderen', 'gevaar', function () {
-    vraagBevestiging('Alles vervangen?',
-      'Zes lege groepen, waarbij 1A ' + TESTKINDEREN.length + ' verzonnen kinderen krijgt om mee te proeven. ' +
-      'Alle bestaande groepen verdwijnen.',
-      'Vervangen', function () {
-        maakSchoolgroepen(true); tekenMenu(); teken(); meld('Zes groepen klaargezet, 1A gevuld');
-      });
-  }));
-  opnieuw.appendChild(rij2);
-  v.appendChild(opnieuw);
+  var beheer = paneel('Schoolbeheer');
+  beheer.appendChild(el('p', 'hint',
+    'Deze omgeving hoort bij \u00e9\u00e9n groep. Groepen aanmaken, wisselen of over de hele ' +
+    'school kijken gaat via het schoolbeheer.'));
+  var link = el('a', 'knop knop-stil knop-klein', 'Schoolbeheer openen');
+  link.href = 'school.html'; link.style.marginTop = '12px';
+  beheer.appendChild(link);
+  v.appendChild(beheer);
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -1026,6 +961,10 @@ global.BH = {
     if (ONDERDELEN.some(function (o) { return o.id === start; })) huidig = start;
     $('overlay').addEventListener('click', function (e) { if (e.target.id === 'overlay') sluitBlad(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluitBlad(); });
+      // Deze omgeving hoort bij \u00e9\u00e9n groep: die van dit apparaat.
+    var gebonden = KB.beheerKlasId();
+    if (gebonden) KB.G.activeKlasId = gebonden;
+
     KB.fkLees().then(function (m) { if (m) KB.fkPasToe(m); })
       .catch(function () {})
       .then(function () { tekenMenu(); teken(); });
