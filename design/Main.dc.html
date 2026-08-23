@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+    a { color: #3b6ff0; } a:hover { color: #2b55c0; }
+    .kaart { background: #fff; border-radius: 26px; box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06); overflow: hidden; display: flex; flex-direction: column; }
+    .beeld { height: 116px; display: flex; align-items: center; justify-content: center; }
+    .kid { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 17px; font-weight: 600; letter-spacing: -.01em; box-shadow: 0 1px 3px rgba(20,28,44,.18); }
+    .pip { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 810px; background: #f7f6f4; display: flex; flex-direction: column; box-sizing: border-box;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 26px 44px 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <div style="font-size: 22px; font-weight: 600; color: #1a2233; letter-spacing: -.02em;">Groep 2C</div>
+      <div style="font-size: 17px; color: #8a94a6;">Vrijdag 21 augustus</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <div style="font-size: 19px; color: #6b7a94; font-variant-numeric: tabular-nums;">10:14</div>
+      <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7a94" stroke-width="2" stroke-linecap="round">
+          <circle cx="5" cy="12" r="1.4" fill="#6b7a94" stroke="none"></circle>
+          <circle cx="12" cy="12" r="1.4" fill="#6b7a94" stroke="none"></circle>
+          <circle cx="19" cy="12" r="1.4" fill="#6b7a94" stroke="none"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 22px; padding: 0 44px;">
+
+    <div class="kaart">
+      <div class="beeld" style="background: #eaf0fe;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#3b6ff0" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+          <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+          <rect x="8" y="4" width="8" height="8" rx="1.5"></rect>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Bouwhoek</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: #3b6ff0;"></div>
+            <div class="pip" style="background: #3b6ff0;"></div>
+            <div class="pip" style="background: #3b6ff0;"></div>
+            <div class="pip" style="background: #3b6ff0;"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="kid" style="background: #3b6ff0;">M</div>
+          <div class="kid" style="background: #c8820a;">S</div>
+          <div class="kid" style="background: #7c5cbf;">A</div>
+          <div class="kid" style="background: #1a9aad;">L</div>
+          <div style="margin-left: auto; font-size: 14px; font-weight: 600; color: #6b7a94; background: rgba(20,28,44,.06); padding: 5px 13px; border-radius: 999px;">Vol</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kaart">
+      <div class="beeld" style="background: #fceef2;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#b8436d" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M4 11 L12 4 L20 11 V20 H4 Z"></path>
+          <path d="M10 20 v-6 h4 v6"></path>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Huishoek</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: #b8436d;"></div>
+            <div class="pip" style="background: #b8436d;"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="kid" style="background: #b8436d;">N</div>
+          <div class="kid" style="background: #2e9e6b;">E</div>
+          <div style="width: 46px; height: 46px; border-radius: 50%; border: 2px dashed rgba(20,28,44,.16); box-sizing: border-box;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kaart">
+      <div class="beeld" style="background: #fdf3e2;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#c8820a" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M3 15 c3 -2 5 2 9 0 c3 -1.5 6 1 9 -0.5"></path>
+          <path d="M8 15 V9 h8 v6"></path>
+          <path d="M6 20 h12"></path>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Zandtafel</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: #c8820a;"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="kid" style="background: #c06428;">J</div>
+          <div style="width: 46px; height: 46px; border-radius: 50%; border: 2px dashed rgba(20,28,44,.16); box-sizing: border-box;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kaart">
+      <div class="beeld" style="background: #f2eefb;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#7c5cbf" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <circle cx="6.5" cy="17.5" r="2.5"></circle>
+          <circle cx="17.5" cy="17.5" r="2.5"></circle>
+          <path d="M8.3 15.7 L18 4"></path>
+          <path d="M15.7 15.7 L6 4"></path>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Knutselhoek</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: #7c5cbf;"></div>
+            <div class="pip" style="background: #7c5cbf;"></div>
+            <div class="pip" style="background: #7c5cbf;"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="kid" style="background: #7c5cbf;">V</div>
+          <div class="kid" style="background: #d94f4f;">T</div>
+          <div class="kid" style="background: #2e9e6b;">R</div>
+          <div style="width: 46px; height: 46px; border-radius: 50%; border: 2px dashed rgba(20,28,44,.16); box-sizing: border-box;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kaart">
+      <div class="beeld" style="background: #e8f6f8;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#1a9aad" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M3 9 h18"></path>
+          <path d="M5 9 v11"></path>
+          <path d="M19 9 v11"></path>
+          <path d="M14.5 4 l4 3 -8 2.5"></path>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Werktafel</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: #1a9aad;"></div>
+            <div class="pip" style="background: #1a9aad;"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="kid" style="background: #1a9aad;">D</div>
+          <div class="kid" style="background: #c8820a;">F</div>
+          <div style="width: 46px; height: 46px; border-radius: 50%; border: 2px dashed rgba(20,28,44,.16); box-sizing: border-box;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kaart">
+      <div class="beeld" style="background: #e9f6f0;">
+        <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="#2e9e6b" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M12 7 C10 5 7 4.5 4 5 v12 c3 -.5 6 0 8 2"></path>
+          <path d="M12 7 C14 5 17 4.5 20 5 v12 c-3 -.5 -6 0 -8 2"></path>
+        </svg>
+      </div>
+      <div style="padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 21px; font-weight: 600; color: #1a2233; letter-spacing: -.015em;">Leeshoek</div>
+          <div style="display: flex; gap: 5px;">
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+            <div class="pip" style="background: rgba(20,28,44,.12);"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="width: 46px; height: 46px; border-radius: 50%; border: 2px dashed rgba(20,28,44,.16); box-sizing: border-box;"></div>
+          <div style="font-size: 16px; color: #8a94a6;">Nog niemand</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="padding: 24px 44px 28px; display: flex; align-items: center; gap: 26px;">
+    <div style="font-size: 17px; font-weight: 600; color: #6b7a94; white-space: nowrap;">Nog kiezen &middot; 7</div>
+    <div style="display: flex; gap: 20px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #3b6ff0; width: 60px; height: 60px; font-size: 22px;">B</div><div style="font-size: 14px; color: #4a5568;">Bram</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #d94f4f; width: 60px; height: 60px; font-size: 22px;">I</div><div style="font-size: 14px; color: #4a5568;">Isa</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #2e9e6b; width: 60px; height: 60px; font-size: 22px;">K</div><div style="font-size: 14px; color: #4a5568;">Kees</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #7c5cbf; width: 60px; height: 60px; font-size: 22px;">Y</div><div style="font-size: 14px; color: #4a5568;">Yara</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #c8820a; width: 60px; height: 60px; font-size: 22px;">O</div><div style="font-size: 14px; color: #4a5568;">Otis</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #b8436d; width: 60px; height: 60px; font-size: 22px;">L</div><div style="font-size: 14px; color: #4a5568;">Loua</div></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="kid" style="background: #1a9aad; width: 60px; height: 60px; font-size: 22px;">S</div><div style="font-size: 14px; color: #4a5568;">Sam</div></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

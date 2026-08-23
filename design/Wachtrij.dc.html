@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+    a { color: #3b6ff0; } a:hover { color: #2b55c0; }
+    .kid { border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; }
+  </style>
+</helmet>
+
+<div style="width: 900px; height: 700px; background: #f7f6f4; box-sizing: border-box; padding: 34px; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="background: #fff; border-radius: 30px; box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 10px 30px rgba(20,28,44,.07); padding: 40px 40px 44px; display: flex; flex-direction: column; align-items: center; gap: 26px; flex-grow: 1;">
+
+    <div style="width: 96px; height: 96px; border-radius: 32px; background: #eaf0fe; display: flex; align-items: center; justify-content: center;">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3b6ff0" stroke-width="1.5" stroke-linejoin="round">
+        <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+        <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+        <rect x="8" y="4" width="8" height="8" rx="1.5"></rect>
+      </svg>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <div style="font-size: 30px; font-weight: 600; color: #1a2233; letter-spacing: -.02em;">De bouwhoek is even vol</div>
+      <div style="font-size: 19px; color: #6b7a94; text-align: center; max-width: 30ch; line-height: 1.45;">Je staat in de rij. Komt er een plekje vrij, dan kom jij aan de beurt.</div>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; gap: 26px; margin-top: 4px;">
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 9px;">
+        <div style="font-size: 15px; font-weight: 600; color: #8a94a6;">1</div>
+        <div class="kid" style="width: 68px; height: 68px; background: #2e9e6b; font-size: 26px;">K</div>
+        <div style="font-size: 15px; color: #4a5568;">Kees</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 9px;">
+        <div style="font-size: 15px; font-weight: 700; color: #3b6ff0;">2</div>
+        <div style="padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14);">
+          <div class="kid" style="width: 88px; height: 88px; background: #3b6ff0; font-size: 34px;">B</div>
+        </div>
+        <div style="font-size: 17px; font-weight: 600; color: #1a2233;">Bram</div>
+        <div style="font-size: 14px; color: #3b6ff0; font-weight: 600;">Dat ben jij</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 9px;">
+        <div style="font-size: 15px; font-weight: 600; color: #8a94a6;">3</div>
+        <div class="kid" style="width: 68px; height: 68px; background: #b8436d; font-size: 26px;">L</div>
+        <div style="font-size: 15px; color: #4a5568;">Loua</div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: auto;">
+      <div style="background: #3b6ff0; color: #fff; font-size: 18px; font-weight: 600; padding: 15px 30px; border-radius: 999px;">Wachten</div>
+      <div style="background: rgba(20,28,44,.06); color: #4a5568; font-size: 18px; font-weight: 600; padding: 15px 30px; border-radius: 999px;">Andere hoek kiezen</div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 14px; padding: 0 8px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a94a6" stroke-width="1.6" stroke-linecap="round">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 16 v-5"></path>
+      <circle cx="12" cy="8" r=".8" fill="#8a94a6" stroke="none"></circle>
+    </svg>
+    <div style="font-size: 15px; color: #6b7a94;">Aiden mag over 2 minuten wisselen. Dan is Kees aan de beurt.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

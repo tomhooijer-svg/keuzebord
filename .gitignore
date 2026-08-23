@@ -10,3 +10,6 @@ assets/fotos/
 back-up*.json
 backup*.json
 *.observaties.csv
+
+# Samengevoegd ontwerpcanvas (2,3 MB build-uitvoer, opnieuw te maken uit design/*.dc.html)
+design/keuzebord-v2-ontwerp.html

@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+    a { color: #3b6ff0; } a:hover { color: #2b55c0; }
+    .plek { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 34px; font-weight: 600; }
+  </style>
+</helmet>
+
+<div style="width: 900px; height: 700px; background: #f7f6f4; box-sizing: border-box; padding: 34px; display: flex; flex-direction: column; gap: 26px;">
+
+  <div style="background: #fff; border-radius: 30px; box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 10px 30px rgba(20,28,44,.07); padding: 30px 34px 36px; display: flex; flex-direction: column; gap: 28px;">
+
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="width: 62px; height: 62px; border-radius: 20px; background: #eaf0fe; display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#3b6ff0" stroke-width="1.6" stroke-linejoin="round">
+          <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+          <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+          <rect x="8" y="4" width="8" height="8" rx="1.5"></rect>
+        </svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 27px; font-weight: 600; color: #1a2233; letter-spacing: -.02em;">Bouwhoek</div>
+        <div style="font-size: 16px; color: #8a94a6;">3 van de 4 plekken bezet</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+
+      <div class="plek">
+        <div style="position: relative; width: 104px; height: 104px;">
+          <svg width="104" height="104" viewBox="0 0 104 104" style="position: absolute; inset: 0; transform: rotate(-90deg);">
+            <circle cx="52" cy="52" r="48" fill="none" stroke="rgba(20,28,44,.08)" stroke-width="5"></circle>
+            <circle cx="52" cy="52" r="48" fill="none" stroke="#3b6ff0" stroke-width="5" stroke-linecap="round" stroke-dasharray="45 302"></circle>
+          </svg>
+          <div style="position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center;">
+            <div class="avatar" style="background: #3b6ff0;">M</div>
+          </div>
+        </div>
+        <div style="font-size: 17px; font-weight: 600; color: #1a2233;">Mees</div>
+        <div style="font-size: 14px; color: #8a94a6;">Net begonnen</div>
+      </div>
+
+      <div class="plek">
+        <div style="position: relative; width: 104px; height: 104px;">
+          <svg width="104" height="104" viewBox="0 0 104 104" style="position: absolute; inset: 0; transform: rotate(-90deg);">
+            <circle cx="52" cy="52" r="48" fill="none" stroke="rgba(20,28,44,.08)" stroke-width="5"></circle>
+            <circle cx="52" cy="52" r="48" fill="none" stroke="#3b6ff0" stroke-width="5" stroke-linecap="round" stroke-dasharray="166 302"></circle>
+          </svg>
+          <div style="position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center;">
+            <div class="avatar" style="background: #c8820a;">S</div>
+          </div>
+        </div>
+        <div style="font-size: 17px; font-weight: 600; color: #1a2233;">Sanne</div>
+        <div style="font-size: 14px; color: #8a94a6;">Halverwege</div>
+      </div>
+
+      <div class="plek">
+        <div style="position: relative; width: 104px; height: 104px;">
+          <svg width="104" height="104" viewBox="0 0 104 104" style="position: absolute; inset: 0; transform: rotate(-90deg);">
+            <circle cx="52" cy="52" r="48" fill="none" stroke="rgba(20,28,44,.08)" stroke-width="5"></circle>
+            <circle cx="52" cy="52" r="48" fill="none" stroke="#2e9e6b" stroke-width="5" stroke-linecap="round" stroke-dasharray="278 302"></circle>
+          </svg>
+          <div style="position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center;">
+            <div class="avatar" style="background: #7c5cbf;">A</div>
+          </div>
+        </div>
+        <div style="font-size: 17px; font-weight: 600; color: #1a2233;">Aiden</div>
+        <div style="font-size: 14px; font-weight: 600; color: #2e9e6b;">Zo mag je wisselen</div>
+      </div>
+
+      <div class="plek">
+        <div style="width: 104px; height: 104px; border-radius: 50%; border: 3px dashed rgba(20,28,44,.15); box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(20,28,44,.22)" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5 v14"></path>
+            <path d="M5 12 h14"></path>
+          </svg>
+        </div>
+        <div style="font-size: 17px; font-weight: 600; color: #8a94a6;">Vrij</div>
+        <div style="font-size: 14px; color: #a8b0bf;">1 plek</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="background: #fff; border-radius: 24px; box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06); padding: 22px 28px; display: flex; align-items: center; gap: 18px;">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8a94a6" stroke-width="1.6" stroke-linecap="round">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7 v5 l3.5 2"></path>
+    </svg>
+    <div style="font-size: 16px; color: #4a5568; line-height: 1.5;">De ring loopt vol in <strong style="color: #1a2233; font-weight: 600;">20 minuten</strong>. Is hij rond, dan mag je naar een andere hoek.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

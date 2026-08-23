@@ -1,0 +1,22 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",              "x": 0,    "y": 0,    "w": 1440, "h": 810, "title": "Bord — hoofdscherm" },
+    { "file": "HoekDetail.dc.html",        "x": 1520, "y": 0,    "w": 900,  "h": 700, "title": "Bord — timers in een hoek" },
+    { "file": "Wachtrij.dc.html",          "x": 2500, "y": 0,    "w": 900,  "h": 700, "title": "Bord — wachtrij" },
+    { "file": "BeheerDashboard.dc.html",   "x": 0,    "y": 1140, "w": 1280, "h": 860, "title": "Beheer — vandaag" },
+    { "file": "BeheerDoelen.dc.html",      "x": 1360, "y": 1140, "w": 1280, "h": 860, "title": "Beheer — doelen & observaties" },
+    { "file": "BeheerBibliotheek.dc.html", "x": 2720, "y": 1140, "w": 1280, "h": 860, "title": "Beheer — bibliotheek" },
+    { "file": "BeheerFuncties.dc.html",    "x": 4080, "y": 1140, "w": 1280, "h": 860, "title": "Beheer — functies aan/uit" }
+  ],
+  "annotations": [
+    { "id": "over-bord", "x": 0, "y": -150, "w": 620,
+      "text": "HET BORD\nDraait de hele dag op het digibord. Alleen kiezen, timers en de wachtrij — verder niets.\nWarme lichte ondergrond, grote picto's, en kleur die zegt wélke hoek het is. Geen versiering." },
+    { "id": "over-beheer", "x": 0, "y": 930, "w": 620,
+      "text": "DE BEHEEROMGEVING\nOpen je op je laptop als je iets wilt regelen. Koelere grijstint, compacter, meer als Instellingen op een iPad.\nZelfde database, andere voordeur — een kind kan hier niet per ongeluk belanden." },
+    { "id": "over-doelen", "x": 1360, "y": 930, "w": 560,
+      "text": "De doelenlijst begint leeg, zoals je koos. Sociaal-emotioneel laat zien hoe een leeg domein eruitziet: een uitnodiging, geen leeg scherm." },
+    { "id": "over-fotos", "x": 2720, "y": 930, "w": 560,
+      "text": "Kinderpicto's zijn hier gekleurde cirkels met een beginletter — precies wat de app toont als er geen foto is. Geen verzonnen kindergezichten in een ontwerp." }
+  ],
+  "launch": { "view": "canvas" }
+}
