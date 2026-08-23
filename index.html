@@ -1418,21 +1418,83 @@ function selHoekFoto(fid){
   if(prev){const f=getFoto(fid,k);prev.innerHTML=f?`<img src="${f}" style="width:100%;max-height:80px;object-fit:contain;border-radius:7px;background:var(--faint)">`:'';}
 }
 
+
+// ══════════════════════════════════════════════════════════
+// AFBEELDINGEN VERKLEINEN
+// Elke foto die binnenkomt wordt teruggebracht tot het formaat waarop hij
+// echt getoond wordt, en opgeslagen als WebP. Een pasfoto van 4 MB uit een
+// telefoon wordt zo ongeveer 12 KB, zonder dat je op het digibord verschil
+// ziet. Dat scheelt opslag, laadtijd en straks serverruimte.
+// ══════════════════════════════════════════════════════════
+var FOTO_MAAT={leerling:256, hoek:640, archief:640};
+var FOTO_KWALITEIT=0.82;
+
+function dataUrlKB(s){return Math.round((s||'').length*0.75/1024);}
+
+function verklein(file,maxPx,kwaliteit){
+  kwaliteit=kwaliteit||FOTO_KWALITEIT;
+  return new Promise(function(res,rej){
+    if(!file){rej(new Error('geen bestand'));return;}
+    if(file.type&&file.type.indexOf('image/')!==0){rej(new Error('geen afbeelding'));return;}
+
+    function tekenEnKlaar(bron,breedte,hoogte){
+      try{
+        var schaal=Math.min(1,maxPx/Math.max(breedte,hoogte));
+        var w=Math.max(1,Math.round(breedte*schaal));
+        var h=Math.max(1,Math.round(hoogte*schaal));
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        var ctx=c.getContext('2d');
+        ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(bron,0,0,w,h);
+        var uit=c.toDataURL('image/webp',kwaliteit);
+        // Oudere Safari kent geen WebP en geeft stilletjes een PNG terug.
+        if(uit.indexOf('data:image/webp')!==0) uit=c.toDataURL('image/jpeg',kwaliteit);
+        if(bron.close) bron.close();
+        res(uit);
+      }catch(e){rej(e);}
+    }
+
+    function viaImg(){
+      var r=new FileReader();
+      r.onload=function(e){
+        var im=new Image();
+        im.onload=function(){tekenEnKlaar(im,im.naturalWidth,im.naturalHeight);};
+        im.onerror=function(){rej(new Error('kon de afbeelding niet lezen'));};
+        im.src=e.target.result;
+      };
+      r.onerror=function(){rej(new Error('kon het bestand niet lezen'));};
+      r.readAsDataURL(file);
+    }
+
+    // createImageBitmap zet een gedraaide telefoonfoto meteen goed.
+    if(window.createImageBitmap){
+      try{
+        createImageBitmap(file,{imageOrientation:'from-image'})
+          .then(function(bm){tekenEnKlaar(bm,bm.width,bm.height);})
+          .catch(viaImg);
+        return;
+      }catch(e){}
+    }
+    viaImg();
+  });
+}
+
 function uploadHoekFoto(input){
-  if(!input.files[0]) return;const k=getKlas();
-  const r=new FileReader();
-  r.onload=e=>{
-    const naam=input.files[0].name.replace(/\.[^.]+$/,'').substring(0,30);
-    const id='f'+uid();k.fotoLib.push({id,naam,data:e.target.result});
+  var file=input.files&&input.files[0];
+  if(!file) return;
+  var k=getKlas();
+  verklein(file,FOTO_MAAT.hoek).then(function(data){
+    var naam=file.name.replace(/\.[^.]+$/,'').substring(0,30);
+    var id='f'+uid();k.fotoLib.push({id:id,naam:naam,data:data,categorie:'hoekfoto'});
     window._sf=id;save();
-    const prev=document.getElementById('hfprev');
-    if(prev) prev.innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:80px;object-fit:contain;border-radius:7px;background:var(--faint)">`;
-    const libEl=document.getElementById('hflib');
-    if(libEl){const item=document.createElement('div');item.className='photo-item selected';item.dataset.fid=id;
-      item.innerHTML=`<img src="${e.target.result}"><div class="pil">${naam}</div>`;item.onclick=()=>selHoekFoto(id);
-      document.querySelectorAll('#hflib .photo-item').forEach(x=>x.classList.remove('selected'));libEl.appendChild(item);}
-    toast('Foto geüpload');
-  };r.readAsDataURL(input.files[0]);
+    var prev=document.getElementById('hfprev');
+    if(prev) prev.innerHTML='<img src="'+data+'" style="width:100%;max-height:80px;object-fit:contain;border-radius:7px;background:var(--faint)">';
+    var libEl=document.getElementById('hflib');
+    if(libEl){var item=document.createElement('div');item.className='photo-item selected';item.dataset.fid=id;
+      item.innerHTML='<img src="'+data+'"><div class="pil">'+escHtml(naam)+'</div>';item.onclick=function(){selHoekFoto(id);};
+      document.querySelectorAll('#hflib .photo-item').forEach(function(x){x.classList.remove('selected');});libEl.appendChild(item);}
+    toast('Foto toegevoegd · '+dataUrlKB(data)+' KB');
+  }).catch(function(e){toast('Foto mislukt: '+(e.message||'onbekend'));});
 }
 
 function saveHoek(editId){
@@ -1509,24 +1571,36 @@ function openBulkImportModal(){
   openModalEl();
 }
 function doBulkImport(input){
-  const k=getKlas();const files=Array.from(input.files);let matched=0,unmatched=[];
-  let done=0;
+  var k=getKlas();var files=Array.from(input.files);
+  var matched=0,unmatched=[],mislukt=[],totaalKB=0,done=0;
+  var el=document.getElementById('bulk-result');
+  if(el) el.innerHTML='<span style="color:var(--sub)">Bezig met '+files.length+' bestand(en)…</span>';
+
+  function afronden(){
+    if(done!==files.length) return;
+    save();renderLeerlingenPanel();
+    var msg='<span style="color:var(--success)">✓ '+matched+' picto(s) gekoppeld</span>';
+    if(matched) msg+=' <span style="color:var(--sub)">· samen '+totaalKB+' KB</span>';
+    if(unmatched.length) msg+='<br><span style="color:var(--danger)">Geen leerling met deze naam: '+unmatched.map(escHtml).join(', ')+'</span>';
+    if(mislukt.length) msg+='<br><span style="color:var(--danger)">Kon niet gelezen worden: '+mislukt.map(escHtml).join(', ')+'</span>';
+    if(el) el.innerHTML=msg;
+    if(matched) toast(matched+' picto(s) gekoppeld');
+  }
+
   files.forEach(function(file){
-    const baseName=file.name.replace(/\.[^.]+$/,'').trim().toLowerCase();
-    const r=new FileReader();
-    r.onload=function(e){
-      done++;
-      const ll=k.leerlingen.find(function(l){return l.naam.trim().toLowerCase()===baseName;});
-      if(ll){ll.image=e.target.result;ll._c=false;matched++;}
-      else{unmatched.push(file.name);}
-      if(done===files.length){
-        save();renderLeerlingenPanel();
-        var msg='<span style="color:var(--success)">✓ '+matched+' picto(s) gekoppeld</span>';
-        if(unmatched.length) msg+='<br><span style="color:var(--danger)">Niet gevonden: '+unmatched.join(', ')+'</span>';
-        var el=document.getElementById('bulk-result');if(el) el.innerHTML=msg;
-        if(matched) toast(matched+' picto(s) gekoppeld');
-      }
-    };r.readAsDataURL(file);
+    // "Benjamin.jpg" en "Benjamin_2C.png" horen allebei bij Benjamin.
+    var basis=file.name.replace(/\.[^.]+$/,'').trim().toLowerCase();
+    var kort=basis.split(/[_\-]/)[0].trim();
+    verklein(file,FOTO_MAAT.leerling).then(function(data){
+      var ll=k.leerlingen.find(function(l){return l.naam.trim().toLowerCase()===basis;})
+           ||k.leerlingen.find(function(l){return l.naam.trim().toLowerCase()===kort;});
+      if(ll){ll.image=data;ll._c=false;matched++;totaalKB+=dataUrlKB(data);}
+      else unmatched.push(file.name);
+    }).catch(function(){
+      mislukt.push(file.name);
+    }).then(function(){
+      done++;afronden();
+    });
   });
 }
 
@@ -1556,9 +1630,13 @@ function openLLModal(ll){
 }
 
 function prevLL(input){
-  if(!input.files[0]) return;const r=new FileReader();
-  r.onload=e=>{window._llImg=e.target.result;document.getElementById('ll-prev').innerHTML=`<img src="${e.target.result}" style="width:56px;height:56px;border-radius:50%;object-fit:cover">`;};
-  r.readAsDataURL(input.files[0]);
+  var file=input.files&&input.files[0];
+  if(!file) return;
+  verklein(file,FOTO_MAAT.leerling).then(function(data){
+    window._llImg=data;
+    var p=document.getElementById('ll-prev');
+    if(p) p.innerHTML='<img src="'+data+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover">';
+  }).catch(function(e){toast('Foto mislukt: '+(e.message||'onbekend'));});
 }
 
 function saveLL(editId){
@@ -1642,15 +1720,22 @@ function filterFotoGrid(cat,btn){
 }
 
 function uploadArchief(input){
-  const k=getKlas();const files=Array.from(input.files);let done=0;
-  files.forEach(file=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      const naam=file.name.replace(/\.[^.]+$/,'').substring(0,30);
-      const cat=document.getElementById('foto-cat-sel')?document.getElementById('foto-cat-sel').value:'overig';
-      k.fotoLib.push({id:'f'+uid(),naam,data:e.target.result,categorie:cat});
-      done++;if(done===files.length){save();renderFotoGrid();toast(`${files.length} foto(s) toegevoegd`);}
-    };r.readAsDataURL(file);
+  var k=getKlas();var files=Array.from(input.files);
+  var done=0,gelukt=0,totaalKB=0;
+  var cat=document.getElementById('foto-cat-sel')?document.getElementById('foto-cat-sel').value:'overig';
+  var maxPx=cat==='leerling'?FOTO_MAAT.leerling:FOTO_MAAT.archief;
+  files.forEach(function(file){
+    verklein(file,maxPx).then(function(data){
+      var naam=file.name.replace(/\.[^.]+$/,'').substring(0,30);
+      k.fotoLib.push({id:'f'+uid(),naam:naam,data:data,categorie:cat});
+      gelukt++;totaalKB+=dataUrlKB(data);
+    }).catch(function(){}).then(function(){
+      done++;
+      if(done===files.length){
+        save();renderFotoGrid();
+        toast(gelukt+' van '+files.length+' toegevoegd · '+totaalKB+' KB');
+      }
+    });
   });
 }
 
