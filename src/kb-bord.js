@@ -33,7 +33,10 @@ var HOEKTINTEN = [
   { kleur:'#c9772f', tint:'#fbe8d5', zacht:'#fff6ee' }    // oranje
 ];
 
-var GEKOZEN_KLAS = 'kb_bord_klas';   // welke groep dit apparaat draait
+/* Welke groep bij dit apparaat hoort is één afspraak, gedeeld met het
+   beheer en het schoolbeheer. Stel je hem daar in, dan opent het bord
+   meteen die groep. */
+var OUDE_SLEUTEL = 'kb_bord_klas';   // uit een eerdere versie
 var scherm = 'klassen';
 var meldingTimer = null;
 
@@ -114,8 +117,7 @@ function toonKlassen(){
     kaart.appendChild(el('div', 's', (k.leerlingen || []).length + ' kinderen · ' +
                                      (k.hoekLib || []).length + ' hoeken'));
     kaart.addEventListener('click', function () {
-      KB.G.activeKlasId = k.id; KB.bewaar();
-      try { localStorage.setItem(GEKOZEN_KLAS, k.id); } catch (e) {}
+      KB.zetBeheerKlas(k.id); KB.bewaar();
       toonBord();
     });
     rooster.appendChild(kaart);
@@ -653,7 +655,7 @@ $('knop-menu').addEventListener('click', function () {
     lijst.style.cssText = 'display:flex;flex-direction:column;gap:10px';
 
     [['Andere groep', function () {
-        try { localStorage.removeItem(GEKOZEN_KLAS); } catch (e) {}
+        KB.zetBeheerKlas(null);
         sluitBlad(); toonKlassen();
       }],
      ['Bord leegmaken', function () {
@@ -734,12 +736,29 @@ KB.fkLees()
     // Dit apparaat draait meestal altijd dezelfde groep. Is er ooit een
     // groep gekozen, dan gaan we daar direct heen — een digibord hoort na
     // een herstart gewoon weer het bord te tonen.
-    var onthouden = null;
-    try { onthouden = localStorage.getItem(GEKOZEN_KLAS); } catch (e) {}
-    var bestaat = onthouden && KB.G.klassen.some(function (k) { return k.id === onthouden; });
+    var onthouden = KB.beheerKlasId();
+    if (!onthouden) {
+      // een apparaat dat nog op de oude manier was ingesteld
+      try {
+        var oud = localStorage.getItem(OUDE_SLEUTEL);
+        if (oud && KB.G.klassen.some(function (k) { return k.id === oud; })) {
+          KB.zetBeheerKlas(oud);
+          localStorage.removeItem(OUDE_SLEUTEL);
+          onthouden = oud;
+        }
+      } catch (e) {}
+    }
+    var bestaat = !!onthouden;
     if (bestaat) { KB.G.activeKlasId = onthouden; KB.bewaar(); }
 
     var k = KB.klas();
+    // Nieuwe dag of nieuw dagdeel? Dan begint het bord blanco.
+    if (KB.moetLegen(k)) {
+      var opgeruimd = KB.leegBord(k);
+      if (opgeruimd) setTimeout(function () {
+        meld('Nieuwe start — iedereen mag opnieuw kiezen');
+      }, 900);
+    }
     if ((bestaat || KB.G.klassen.length === 1) && (k.hoekLib || []).length) toonBord();
     else toonKlassen();
     setInterval(tik, 1000);

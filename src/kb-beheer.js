@@ -1132,6 +1132,36 @@ panelen.functies = function (v){
 
   var bord = paneel('Op het bord');
   FUNCTIES_BORD.forEach(function (f) { bord.appendChild(functieRij(k, f[0], f[1], f[2])); });
+  var legen = el('div');
+  legen.style.cssText = 'padding:14px 2px 4px;border-top:1px solid var(--vlak-2);margin-top:6px';
+  legen.appendChild(el('div', 'rij-naam', 'Wanneer loopt het bord leeg?'));
+  legen.appendChild(el('div', 'rij-sub',
+    'Wat gekozen is wordt bewaard voor de statistieken; alleen het bord zelf begint blanco.'));
+  var legenChips = el('div', 'chips');
+  legenChips.style.marginTop = '10px';
+  [['dag', 'Elke ochtend'], ['dagdeel', 'Per dagdeel'], ['nooit', 'Ik doe het zelf']]
+    .forEach(function (paar) {
+      var aan = KB.instelling('bordLegen', k) === paar[0];
+      var c = el('button', 'chip' + (aan ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        k.settings.bordLegen = paar[0]; bewaarOfKlaag(); teken();
+      });
+      legenChips.appendChild(c);
+    });
+  legen.appendChild(legenChips);
+  if (KB.instelling('bordLegen', k) === 'dagdeel') {
+    var uurVak = el('div');
+    uurVak.style.marginTop = '12px';
+    uurVak.appendChild(el('div', 'rij-sub', 'Het middagdeel begint om:'));
+    var uurTeller = teller(KB.instelling('dagdeelUur', k) || 12, 8, 17, function (n) {
+      k.settings.dagdeelUur = n; bewaarOfKlaag();
+    });
+    uurTeller.style.marginTop = '8px';
+    uurVak.appendChild(uurTeller);
+    legen.appendChild(uurVak);
+  }
+  bord.appendChild(legen);
+
   var duur = el('div');
   duur.style.cssText = 'padding:14px 2px 4px;border-top:1px solid var(--vlak-2);margin-top:6px';
   duur.appendChild(el('div', 'rij-naam', 'Speelduur in minuten'));

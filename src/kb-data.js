@@ -25,6 +25,7 @@ var G = null;
 function standaardInstellingen(){
   return { timerAan:false, timerMinuten:20, wachtrijAan:false, tellingAan:false,
            werkplaatsAan:false, signaleringAan:false,
+           bordLegen:'dag', dagdeelUur:12,
            pinAan:false, pincode:'1234', kolommen:3 };
 }
 
@@ -866,6 +867,62 @@ function achtergrondUitBestand(file){
   });
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   HET BORD LEEGMAKEN
+   Elke groep doet dit anders: sommige beginnen elke ochtend blanco,
+   andere na elk speel-werkmoment, en weer andere ruimen zelf op.
+   Wat er gekozen was gaat eerst het logboek in, zodat de statistiek
+   later kan laten zien wie waar speelde.
+   ══════════════════════════════════════════════════════════════ */
+function legenGrens(k){
+  k = k || klas();
+  var soort = instelling('bordLegen', k);
+  if (soort === 'nooit') return null;
+  var nu = new Date();
+  var grens = new Date(nu); grens.setHours(0, 0, 0, 0);
+  if (soort === 'dagdeel') {
+    var uur = instelling('dagdeelUur', k) || 12;
+    if (nu.getHours() >= uur) grens.setHours(uur, 0, 0, 0);
+  }
+  return grens.getTime();
+}
+
+function moetLegen(k){
+  k = k || klas();
+  var grens = legenGrens(k);
+  if (grens === null) return false;
+  var b = bord(k);
+  var laatst = b.laatstGeleegd || 0;
+  if (laatst >= grens) return false;
+  // Niets op het bord? Dan valt er ook niets op te ruimen; wel bijwerken.
+  var iemand = Object.keys(b.plaatsingen || {}).some(function (h) {
+    return (b.plaatsingen[h] || []).length;
+  });
+  if (!iemand) { b.laatstGeleegd = Date.now(); return false; }
+  return true;
+}
+
+function leegBord(k){
+  k = k || klas();
+  var b = bord(k);
+  var aantal = 0;
+  Object.keys(b.plaatsingen || {}).forEach(function (hoekId) {
+    (b.plaatsingen[hoekId] || []).forEach(function (p) {
+      logGebeurtenis('opgeruimd', {
+        leerlingId: p.leerlingId, hoekId: hoekId,
+        minuten: Math.round((Date.now() - (p.startTijd || Date.now())) / 60000)
+      }, k);
+      aantal++;
+    });
+    b.plaatsingen[hoekId] = [];
+  });
+  k.wachtrij = [];
+  b.laatstGeleegd = Date.now();
+  bewaar();
+  return aantal;
+}
+
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
@@ -891,6 +948,7 @@ global.KB = {
   maakBackup: maakBackup, zetBackupTerug: zetBackupTerug,
   downloadBackup: downloadBackup, leesBackupBestand: leesBackupBestand,
   cryptoKan: cryptoKan,
+  legenGrens: legenGrens, moetLegen: moetLegen, leegBord: leegBord,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,
 
