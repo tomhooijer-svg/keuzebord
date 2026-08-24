@@ -190,7 +190,7 @@ function groepKaart(k, beheerd){
   kaart.style.setProperty('--groepkleur', GROEPKLEUREN[code] || '#8a94a6');
 
   var kop = el('div', 'groepkop');
-  kop.appendChild(el('div', 'groepnaam', k.naam));
+  kop.appendChild(el('div', 'groepkaart-naam', k.naam));
   if (k.id === beheerd) kop.appendChild(el('span', 'ditlabel', 'dit apparaat'));
   kaart.appendChild(kop);
 
@@ -217,7 +217,7 @@ function groepKaart(k, beheerd){
 
   if (kinderen.length && (w.taken || []).length) {
     var deel = Math.round((metBeurt / kinderen.length) * 100);
-    var balk = el('div', 'balk');
+    var balk = el('div', 'groepbalkje');
     var vulling = el('span');
     vulling.style.width = deel + '%';
     if (deel < 100) vulling.style.background = 'var(--let-op)';

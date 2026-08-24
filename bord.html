@@ -26,50 +26,57 @@ body.bord{
 .scherm{ display: none; height: 100vh; flex-direction: column; }
 .scherm.aan{ display: flex; }
 
-/* ── bovenbalk ────────────────────────────────────────── */
-/* Een vaste balk over de hele breedte, met een haarlijn eronder — zoals
-   de titelbalk van een programma. Vaste hoogte en vaste breedtes, zodat
-   er nooit iets verschuift als de klok verspringt of een naam langer is. */
+/* ── bovenbalk ────────────────────────────────── */
+/* Een zwevende balk die losstaat van de schermrand. Op een digibord van
+   70 inch is de uiterste hoek de slechtste plek die er is: je ziet er
+   niets en je raakt er niets. Alles staat daarom een stuk naar binnen,
+   groot genoeg om van achter in de klas te lezen. De hoogte ligt vast en
+   de klok gebruikt cijfers van gelijke breedte, zodat er nooit iets
+   verschuift als de tijd verspringt of een groepsnaam langer is. */
 .balk{
-  height: 58px; flex: none;
-  display: flex; align-items: center; justify-content: space-between; gap: 18px;
-  padding: 0 26px;
+  flex: none; height: 64px;
+  margin: 16px 22px 2px;
+  padding: 0 12px 0 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
   background: rgba(255,255,255,.72);
-  border-bottom: 1px solid rgba(20,28,44,.07);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.balk-links{ display: flex; align-items: center; gap: 11px; min-width: 0; }
+.balk-links{ display: flex; align-items: center; gap: 13px; min-width: 0; }
 .groepnaam{
-  font-size: 1.16rem; font-weight: 600; letter-spacing: -.028em; color: var(--inkt);
+  font-size: 1.34rem; font-weight: 640; letter-spacing: -.028em; color: var(--inkt);
   line-height: 1; white-space: nowrap;
 }
 .scheiding{
-  width: 3.5px; height: 3.5px; border-radius: 50%;
-  background: var(--inkt-4); flex: none; opacity: .7;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--inkt-4); flex: none;
 }
 .datum{
-  font-size: .92rem; font-weight: 450; color: var(--inkt-3);
-  letter-spacing: -.008em; line-height: 1; white-space: nowrap;
+  font-size: 1.02rem; font-weight: 450; color: var(--inkt-2);
+  letter-spacing: -.01em; line-height: 1; white-space: nowrap;
 }
-.balk-rechts{ display: flex; align-items: center; gap: 12px; flex: none; }
+.balk-rechts{ display: flex; align-items: center; gap: 14px; flex: none; }
 .klok{
-  font-size: .98rem; font-weight: 500; color: var(--inkt-2);
-  letter-spacing: -.005em; line-height: 1;
-  min-width: 5.1ch; text-align: right;   /* "09:05" en "19:05" even breed */
+  font-size: 1.14rem; font-weight: 550; color: var(--inkt-2);
+  letter-spacing: -.012em; line-height: 1;
+  /* cijfers van gelijke breedte: "11:11" is even breed als "19:25" */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 .rondje{
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;   /* ruim genoeg voor een vinger */
   background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
   transition: background .16s ease, transform .16s var(--veer);
 }
 .rondje:hover{ background: rgba(20,28,44,.1); }
-.rondje:active{ transform: scale(.9); }
+.rondje:active{ transform: scale(.92); }
 
 /* ── rooster ──────────────────────────────────────────── */
 .rooster{
   flex-grow: 1; display: grid; min-height: 0;
-  gap: var(--tussen, 18px); padding: 18px 26px 0;
+  gap: var(--tussen, 18px); padding: 14px 22px 0;
   grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
   grid-template-rows: repeat(var(--rijen, 2), minmax(0, 1fr));
 }
@@ -236,11 +243,12 @@ body.bord{
 .beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
 
 @media (max-width: 760px){
-  .balk{ height: 50px; padding: 0 14px; }
+  .balk{ height: 52px; margin: 10px 12px 0; padding: 0 6px 0 16px; }
   .scheiding{ display: none; }
-  .rooster{ padding: 8px 12px 0; }
+  .rooster{ padding: 10px 12px 0; }
   .strook{ margin: 10px 12px 12px; padding: 10px 14px; gap: 14px; }
-  .groepnaam{ font-size: 1.02rem; } .datum{ display: none; }
+  .groepnaam{ font-size: 1.06rem; } .datum{ display: none; }
+  .rondje{ width: 40px; height: 40px; }
 }
 </style>
 </head>
@@ -267,10 +275,10 @@ body.bord{
     <div class="balk-rechts">
       <div class="klok" id="bord-klok"></div>
       <button class="rondje" id="knop-menu" aria-label="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="5"  cy="12" r="1.5" fill="#6b7a94"></circle>
-          <circle cx="12" cy="12" r="1.5" fill="#6b7a94"></circle>
-          <circle cx="19" cy="12" r="1.5" fill="#6b7a94"></circle>
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="4.5"  cy="12" r="2" fill="#5b6678"></circle>
+          <circle cx="12"   cy="12" r="2" fill="#5b6678"></circle>
+          <circle cx="19.5" cy="12" r="2" fill="#5b6678"></circle>
         </svg>
       </button>
     </div>

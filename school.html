@@ -26,14 +26,18 @@ body.school{ background:#eef0f4; }
              border-top:4px solid var(--groepkleur,#3b6ff0); }
 .groepkaart.dit{ box-shadow:0 0 0 2px var(--accent), var(--schaduw-2); }
 .groepkop{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-.groepnaam{ font-size:1.15rem; font-weight:600; letter-spacing:-.015em; }
+.groepkaart-naam{ font-size:1.15rem; font-weight:600; letter-spacing:-.015em; }
 .ditlabel{ font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
            color:var(--accent); background:var(--accent-zacht); padding:2px 8px; border-radius:var(--rond-vol); }
 .cijfers{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .cijfer .n{ font-size:1.3rem; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1; }
 .cijfer .l{ font-size:.72rem; color:var(--inkt-3); }
-.balk{ height:7px; border-radius:99px; background:var(--vlak-2); overflow:hidden; }
-.balk span{ display:block; height:100%; background:var(--goed); border-radius:99px; }
+/* Voortgangsbalkje op een groepskaart. Bewust NIET '.balk': zo heet de
+   bovenbalk van het bord al, en niet '.voortgang': zo heet de ring om een
+   picto al. In de voorvertoning staan alle stijlen samen op één pagina,
+   dus een dubbele naam sloopt daar het andere scherm. */
+.groepbalkje{ height:7px; border-radius:99px; background:var(--vlak-2); overflow:hidden; }
+.groepbalkje span{ display:block; height:100%; background:var(--goed); border-radius:99px; }
 .beurtregel{ font-size:.8rem; color:var(--inkt-3); }
 .groepacties{ display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; padding-top:4px; }
 
