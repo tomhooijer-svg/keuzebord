@@ -6,7 +6,10 @@
 <title>Keuzebord</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<!-- optical sizing laat Inter zich aanpassen aan de tekstgrootte: grote koppen
+     krijgen strakkere letters. display=optional voorkomt dat de bladzijde
+     verspringt als het lettertype later binnenkomt. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
@@ -24,38 +27,49 @@ body.bord{
 .scherm.aan{ display: flex; }
 
 /* ── bovenbalk ────────────────────────────────────────── */
+/* Een vaste balk over de hele breedte, met een haarlijn eronder — zoals
+   de titelbalk van een programma. Vaste hoogte en vaste breedtes, zodat
+   er nooit iets verschuift als de klok verspringt of een naam langer is. */
 .balk{
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; margin: 16px 26px 4px; padding: 10px 12px 10px 20px; flex: none;
-  background: rgba(255,255,255,.62);
-  border-radius: 999px;
-  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 22px rgba(20,28,44,.05);
-  backdrop-filter: saturate(1.6) blur(14px);
-  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  height: 58px; flex: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 0 26px;
+  background: rgba(255,255,255,.72);
+  border-bottom: 1px solid rgba(20,28,44,.07);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.balk-links{ display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.balk-links{ display: flex; align-items: center; gap: 11px; min-width: 0; }
 .groepnaam{
-  font-size: 1.18rem; font-weight: 600; letter-spacing: -.024em; color: var(--inkt);
+  font-size: 1.16rem; font-weight: 600; letter-spacing: -.028em; color: var(--inkt);
+  line-height: 1; white-space: nowrap;
 }
-.datum{ font-size: .95rem; font-weight: 450; color: var(--inkt-3); letter-spacing: -.008em; }
-.balk-rechts{ display: flex; align-items: center; gap: 14px; }
+.scheiding{
+  width: 3.5px; height: 3.5px; border-radius: 50%;
+  background: var(--inkt-4); flex: none; opacity: .7;
+}
+.datum{
+  font-size: .92rem; font-weight: 450; color: var(--inkt-3);
+  letter-spacing: -.008em; line-height: 1; white-space: nowrap;
+}
+.balk-rechts{ display: flex; align-items: center; gap: 12px; flex: none; }
 .klok{
-  font-size: 1.02rem; font-weight: 500; color: var(--inkt-2);
-  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
-  font-feature-settings: 'tnum' 1, 'cv11' 1;
+  font-size: .98rem; font-weight: 500; color: var(--inkt-2);
+  letter-spacing: -.005em; line-height: 1;
+  min-width: 5.1ch; text-align: right;   /* "09:05" en "19:05" even breed */
 }
 .rondje{
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(20,28,44,.055); display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
   transition: background .16s ease, transform .16s var(--veer);
 }
 .rondje:hover{ background: rgba(20,28,44,.1); }
-.rondje:active{ transform: scale(.92); }
+.rondje:active{ transform: scale(.9); }
 
 /* ── rooster ──────────────────────────────────────────── */
 .rooster{
   flex-grow: 1; display: grid; min-height: 0;
-  gap: var(--tussen, 18px); padding: 12px 26px 0;
+  gap: var(--tussen, 18px); padding: 18px 26px 0;
   grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
   grid-template-rows: repeat(var(--rijen, 2), minmax(0, 1fr));
 }
@@ -222,7 +236,8 @@ body.bord{
 .beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
 
 @media (max-width: 760px){
-  .balk{ margin: 10px 12px 2px; padding: 8px 8px 8px 16px; }
+  .balk{ height: 50px; padding: 0 14px; }
+  .scheiding{ display: none; }
   .rooster{ padding: 8px 12px 0; }
   .strook{ margin: 10px 12px 12px; padding: 10px 14px; gap: 14px; }
   .groepnaam{ font-size: 1.02rem; } .datum{ display: none; }
@@ -246,6 +261,7 @@ body.bord{
   <div class="balk">
     <div class="balk-links">
       <div class="groepnaam" id="bord-groep"></div>
+      <div class="scheiding" aria-hidden="true"></div>
       <div class="datum" id="bord-datum"></div>
     </div>
     <div class="balk-rechts">

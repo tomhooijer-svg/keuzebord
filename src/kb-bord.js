@@ -135,8 +135,12 @@ function tekenBord(){
   var hoeken = KB.bordHoeken(b, k);
   var rooster = $('rooster');
   rooster.innerHTML = '';
-  hoeken.forEach(function (hoek, i) { rooster.appendChild(maakHoekKaart(hoek, i, k, b)); });
-  verdeelRooster(rooster, hoeken.length);
+  // Eerst rekenen, dan tekenen: zo staan de kaarten meteen op hun eindmaat
+  // in plaats van dat ze na het verschijnen nog een keer verspringen.
+  var indeling = berekenIndeling(rooster, hoeken.length);
+  hoeken.forEach(function (hoek, i) {
+    rooster.appendChild(maakHoekKaart(hoek, i, k, b, indeling));
+  });
   tekenStrook(k, b);
   tik();
 }
@@ -154,11 +158,13 @@ function gereserveerdVoor(hoek, k, b){
    hebt. We zoeken de indeling waarbij de kaarten zo groot mogelijk zijn
    en niet te smal of te plat worden, en schalen daarna alles wat op de
    kaart staat mee. */
-function verdeelRooster(rooster, aantal){
-  if (!aantal) return;
+function berekenIndeling(rooster, aantal){
+  if (!aantal) return null;
+  var stijl = getComputedStyle(rooster);
   var doos = rooster.getBoundingClientRect();
-  var breedte = doos.width, hoogte = doos.height;
-  if (breedte < 40 || hoogte < 40) return;
+  var breedte = doos.width - parseFloat(stijl.paddingLeft) - parseFloat(stijl.paddingRight);
+  var hoogte = doos.height - parseFloat(stijl.paddingTop) - parseFloat(stijl.paddingBottom);
+  if (breedte < 40 || hoogte < 40) return null;
   var tussen = 18;
 
   var besteKolommen = 1, besteScore = -Infinity;
@@ -193,21 +199,26 @@ function verdeelRooster(rooster, aantal){
   rooster.style.setProperty('--onderpad', begrens(maat * 0.055, 8, 18) + 'px');
 
   /* De plekken horen op één rij te passen, ook bij een hoek met acht
-     plekken naast een hoek met twee. Elke kaart krijgt daarom zijn eigen
-     maat, nooit groter dan de algemene. */
+     plekken naast een hoek met twee. Elke kaart rekent zijn eigen maat
+     uit zodra hij gemaakt wordt. */
   var pad = begrens(maat * 0.055, 8, 18) + 4;
-  var ruim = kaartB - pad * 2;
-  var algemeen = begrens(maat * 0.20, 24, 52);
-  Array.prototype.forEach.call(rooster.children, function (kaart) {
-    var aantal = kaart.querySelectorAll('.plek').length || 1;
-    // n plekken met n-1 tussenruimtes van 0,16 keer de plekmaat
-    var passend = Math.floor(ruim / (aantal + 0.16 * (aantal - 1)));
-    kaart.style.setProperty('--slot', Math.max(16, Math.min(algemeen, passend)) + 'px');
-  });
+  return {
+    ruimte: kaartB - pad * 2,
+    algemeneSlot: begrens(maat * 0.20, 24, 52)
+  };
+}
+
+/* De plekmaat voor één kaart: n plekken met n-1 tussenruimtes van
+   0,16 keer die maat moeten samen binnen de kaart passen. */
+function slotVoor(indeling, aantal){
+  if (!indeling) return null;
+  aantal = Math.max(1, aantal);
+  var passend = Math.floor(indeling.ruimte / (aantal + 0.16 * (aantal - 1)));
+  return Math.max(16, Math.min(indeling.algemeneSlot, passend));
 }
 function begrens(waarde, laag, hoog){ return Math.round(Math.max(laag, Math.min(hoog, waarde))); }
 
-function maakHoekKaart(hoek, index, k, b){
+function maakHoekKaart(hoek, index, k, b, indeling){
   var tint = KB.hoekTinten(hoek, index);
   var kinderen = KB.bezetting(hoek.id, b);
   var gereserveerd = gereserveerdVoor(hoek, k, b);
@@ -221,6 +232,8 @@ function maakHoekKaart(hoek, index, k, b){
   kaart.style.setProperty('--hoektint', tint.tint);
   kaart.style.setProperty('--hoekzacht', tint.zacht);
   kaart.style.setProperty('--hoekschaduw', tint.schaduw);
+  var slot = slotVoor(indeling, hoek.maxKinderen);
+  if (slot) kaart.style.setProperty('--slot', slot + 'px');
 
   var beeld = el('div', 'hoek-beeld');
   var f = KB.foto(hoek.fotoId, k);
@@ -741,13 +754,22 @@ $('knop-menu').addEventListener('click', function () {
 });
 
 /* ── klok en timers ──────────────────────────────────────── */
+/* Elke seconde dezelfde tekst opnieuw zetten laat de browser telkens
+   opnieuw rekenen. We schrijven alleen als er echt iets verandert. */
+var vorigeDatum = null, vorigeTijd = null;
+function zetTekst(id, tekst){
+  var n = $(id);
+  if (n && n.textContent !== tekst) n.textContent = tekst;
+}
 function tik(){
   var nu = new Date();
   var datum = DAGEN[nu.getDay()] + ' ' + nu.getDate() + ' ' + MAANDEN[nu.getMonth()];
   var tijd  = String(nu.getHours()).padStart(2, '0') + ':' + String(nu.getMinutes()).padStart(2, '0');
-  if ($('bord-datum')) $('bord-datum').textContent = datum;
-  if ($('bord-klok'))  $('bord-klok').textContent  = tijd;
-  if ($('klas-datum')) $('klas-datum').textContent = datum + ' · ' + tijd;
+  if (datum === vorigeDatum && tijd === vorigeTijd) return;
+  vorigeDatum = datum; vorigeTijd = tijd;
+  zetTekst('bord-datum', datum);
+  zetTekst('bord-klok', tijd);
+  zetTekst('klas-datum', datum + ' · ' + tijd);
 }
 
 /* Elke seconde de ringen bijwerken zonder het hele bord opnieuw te tekenen:

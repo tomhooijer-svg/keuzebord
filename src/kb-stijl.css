@@ -51,6 +51,7 @@ body{
   margin: 0;
   font-family: var(--letter);
   font-feature-settings: 'cv11', 'ss01';   /* rechte a en g, zoals SF Pro */
+  font-optical-sizing: auto;
   color: var(--inkt);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -64,6 +65,12 @@ body{
 h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
   letter-spacing: -.021em;
   text-wrap: balance;
+}
+
+/* Cijfers die per seconde veranderen mogen de bladzijde niet duwen. */
+.klok, .hoek-telling, .cijfer .n, .weekdag-telling{
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
 }
 body.beheer{ background: var(--vlak-2); }
 
