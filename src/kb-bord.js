@@ -19,19 +19,6 @@ var DAGEN   = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Za
 var MAANDEN = ['januari','februari','maart','april','mei','juni','juli','augustus',
                'september','oktober','november','december'];
 
-/* Elke hoek heeft een eigen kleur — dat maakt het bord vrolijk en helpt
-   kleuters de hoek herkennen voordat ze de naam kunnen lezen. De kleur
-   loopt door de hele kaart: sterk in het beeldvlak, zacht eronder. */
-var HOEKTINTEN = [
-  { kleur:'#3b6ff0', tint:'#dfe9fd', zacht:'#f2f6ff' },   // blauw
-  { kleur:'#e2607f', tint:'#fde0e8', zacht:'#fff3f6' },   // roze
-  { kleur:'#e79a1f', tint:'#fdeecd', zacht:'#fff9ed' },   // oker
-  { kleur:'#8b6ad0', tint:'#ebe3fb', zacht:'#f8f5ff' },   // paars
-  { kleur:'#17a9bd', tint:'#d6f1f5', zacht:'#effbfc' },   // turkoois
-  { kleur:'#37ab74', tint:'#d9f2e5', zacht:'#f1fbf6' },   // groen
-  { kleur:'#e8674f', tint:'#fde2dc', zacht:'#fff4f2' },   // koraal
-  { kleur:'#c9772f', tint:'#fbe8d5', zacht:'#fff6ee' }    // oranje
-];
 
 /* Welke groep bij dit apparaat hoort is één afspraak, gedeeld met het
    beheer en het schoolbeheer. Stel je hem daar in, dan opent het bord
@@ -133,7 +120,7 @@ function toonBord(){
   tekenBord();
 }
 
-function tintVan(index){ return HOEKTINTEN[index % HOEKTINTEN.length]; }
+
 
 function pasUiterlijkToe(k){
   try { document.body.style.background = KB.achtergrondCss(k); }
@@ -148,10 +135,8 @@ function tekenBord(){
   var hoeken = KB.bordHoeken(b, k);
   var rooster = $('rooster');
   rooster.innerHTML = '';
-  var kolommen = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(hoeken.length || 1))));
-  rooster.style.setProperty('--kolommen', kolommen);
-
   hoeken.forEach(function (hoek, i) { rooster.appendChild(maakHoekKaart(hoek, i, k, b)); });
+  verdeelRooster(rooster, hoeken.length);
   tekenStrook(k, b);
   tik();
 }
@@ -164,8 +149,66 @@ function gereserveerdVoor(hoek, k, b){
     .map(function (g) { return g.leerlingId; });
 }
 
+
+/* Het bord vult altijd het hele scherm, of je nu zes of twintig hoeken
+   hebt. We zoeken de indeling waarbij de kaarten zo groot mogelijk zijn
+   en niet te smal of te plat worden, en schalen daarna alles wat op de
+   kaart staat mee. */
+function verdeelRooster(rooster, aantal){
+  if (!aantal) return;
+  var doos = rooster.getBoundingClientRect();
+  var breedte = doos.width, hoogte = doos.height;
+  if (breedte < 40 || hoogte < 40) return;
+  var tussen = 18;
+
+  var besteKolommen = 1, besteScore = -Infinity;
+  for (var kol = 1; kol <= aantal; kol++) {
+    var rijen = Math.ceil(aantal / kol);
+    var kb = (breedte - tussen * (kol - 1)) / kol;
+    var kh = (hoogte - tussen * (rijen - 1)) / rijen;
+    if (kb < 130 || kh < 110) continue;
+    var verhouding = kb / kh;
+    // een kaart die te smal of te breed wordt telt minder mee
+    var straf = verhouding < 0.95 ? Math.pow(verhouding / 0.95, 2)
+              : verhouding > 2.1  ? Math.pow(2.1 / verhouding, 2) : 1;
+    var score = Math.sqrt(kb * kh) * straf;
+    if (score > besteScore) { besteScore = score; besteKolommen = kol; }
+  }
+  var rijenNu = Math.ceil(aantal / besteKolommen);
+  rooster.style.setProperty('--kolommen', besteKolommen);
+  rooster.style.setProperty('--rijen', rijenNu);
+
+  var kaartH = (hoogte - tussen * (rijenNu - 1)) / rijenNu;
+  var kaartB = (breedte - tussen * (besteKolommen - 1)) / besteKolommen;
+
+  // alles op de kaart schaalt mee met de kaartgrootte
+  var maat = Math.min(kaartH, kaartB * 0.72);
+  rooster.style.setProperty('--tussen', tussen + 'px');
+  rooster.style.setProperty('--slot', begrens(maat * 0.20, 24, 52) + 'px');
+  rooster.style.setProperty('--naamgrootte', begrens(maat * 0.115, 13, 24) + 'px');
+  rooster.style.setProperty('--tellinggrootte', begrens(maat * 0.105, 12, 21) + 'px');
+  rooster.style.setProperty('--icoongrootte', begrens(maat * 0.30, 26, 66) + 'px');
+  rooster.style.setProperty('--beeldhoogte', begrens(kaartH * 0.46, 46, 190) + 'px');
+  rooster.style.setProperty('--kaartrond', begrens(maat * 0.10, 12, 26) + 'px');
+  rooster.style.setProperty('--onderpad', begrens(maat * 0.055, 8, 18) + 'px');
+
+  /* De plekken horen op één rij te passen, ook bij een hoek met acht
+     plekken naast een hoek met twee. Elke kaart krijgt daarom zijn eigen
+     maat, nooit groter dan de algemene. */
+  var pad = begrens(maat * 0.055, 8, 18) + 4;
+  var ruim = kaartB - pad * 2;
+  var algemeen = begrens(maat * 0.20, 24, 52);
+  Array.prototype.forEach.call(rooster.children, function (kaart) {
+    var aantal = kaart.querySelectorAll('.plek').length || 1;
+    // n plekken met n-1 tussenruimtes van 0,16 keer de plekmaat
+    var passend = Math.floor(ruim / (aantal + 0.16 * (aantal - 1)));
+    kaart.style.setProperty('--slot', Math.max(16, Math.min(algemeen, passend)) + 'px');
+  });
+}
+function begrens(waarde, laag, hoog){ return Math.round(Math.max(laag, Math.min(hoog, waarde))); }
+
 function maakHoekKaart(hoek, index, k, b){
-  var tint = tintVan(index);
+  var tint = KB.hoekTinten(hoek, index);
   var kinderen = KB.bezetting(hoek.id, b);
   var gereserveerd = gereserveerdVoor(hoek, k, b);
   var vol = kinderen.length >= hoek.maxKinderen;
@@ -174,61 +217,70 @@ function maakHoekKaart(hoek, index, k, b){
   var kaart = el('div', 'kaart hoek' + (vol ? ' vol' : ''));
   kaart.dataset.hoekId = hoek.id;
   kaart.style.setProperty('--hoekkleur', tint.kleur);
+  kaart.style.setProperty('--hoektekst', tint.tekst);
   kaart.style.setProperty('--hoektint', tint.tint);
   kaart.style.setProperty('--hoekzacht', tint.zacht);
-  kaart.style.setProperty('--hoekschaduw', tint.kleur + '33');
+  kaart.style.setProperty('--hoekschaduw', tint.schaduw);
 
   var beeld = el('div', 'hoek-beeld');
   var f = KB.foto(hoek.fotoId, k);
-  if (f) { beeld.style.backgroundImage = 'url(' + f + ')'; }
-  else   { beeld.appendChild(hoekIcoon(tint.kleur, hoek.naam)); }
+  if (f) {
+    beeld.style.backgroundImage = 'url(' + f + ')';
+    beeld.classList.add('met-foto');
+  } else {
+    beeld.appendChild(hoekIcoon(tint.kleur, hoek.naam));
+  }
   kaart.appendChild(beeld);
 
   var onder = el('div', 'hoek-onder');
+
   var kop = el('div', 'hoek-kop');
   kop.appendChild(el('div', 'hoek-naam', hoek.naam));
-
-  var plekjes = el('div', 'plekjes');
-  for (var i = 0; i < hoek.maxKinderen; i++) {
-    plekjes.appendChild(el('div', 'plek' + (i < kinderen.length ? ' bezet' : '')));
-  }
-  kop.appendChild(plekjes);
+  var telling = el('div', 'hoek-telling');
+  telling.appendChild(el('span', 'bezet', String(kinderen.length)));
+  telling.appendChild(el('span', 'van', '/' + hoek.maxKinderen));
+  kop.appendChild(telling);
   onder.appendChild(kop);
 
-  var rijKinderen = el('div', 'hoek-kinderen');
+  /* Zoveel plekken als de hoek heeft — je ziet in één oogopslag
+     hoeveel er zijn en hoeveel er nog vrij zijn. */
+  var plekken = el('div', 'hoek-plekken');
   kinderen.forEach(function (p) {
     var l = KB.leerling(p.leerlingId, k);
     if (!l) return;
+    var plek = el('div', 'plek bezet');
     var picto = maakPicto(l, { plaatsing: p, hoek: hoek, zonderNaam: true });
     picto.title = l.naam;
     maakSleepbaar(picto, l, hoek.id);
-    rijKinderen.appendChild(picto);
+    plek.appendChild(picto);
+    plekken.appendChild(plek);
   });
-  // De kinderen die vandaag aan de beurt zijn krijgen alvast hun plek te zien.
-  gereserveerd.slice(0, Math.max(0, hoek.maxKinderen - kinderen.length)).forEach(function (id) {
+  var vrijeplekken = Math.max(0, hoek.maxKinderen - kinderen.length);
+  gereserveerd.slice(0, vrijeplekken).forEach(function (id) {
     var l = KB.leerling(id, k);
     if (!l) return;
-    var plek = el('div', 'gereserveerd');
+    var plek = el('div', 'plek gereserveerd');
     var bol = el('div', 'picto-rond');
-    bol.style.width = bol.style.height = '46px';
     bol.style.background = l.kleur || '#3b6ff0';
     if (l.image) bol.style.backgroundImage = 'url(' + l.image + ')';
     else bol.textContent = (l.naam || '?').charAt(0).toUpperCase();
     plek.appendChild(bol);
     plek.title = l.naam + ' is vandaag aan de beurt';
-    rijKinderen.appendChild(plek);
+    plekken.appendChild(plek);
   });
-  if (!vol && !gereserveerd.length) rijKinderen.appendChild(el('div', 'leeg-plekje'));
-
-  if (vol) {
-    var label = el('div', 'vol-label' + (rij.length ? ' wacht-label' : ''),
-                   rij.length ? rij.length + ' wacht' + (rij.length === 1 ? 't' : 'en') : 'Vol');
-    rijKinderen.appendChild(label);
-  } else if (gereserveerd.length) {
-    rijKinderen.appendChild(el('div', 'vol-label beurt-label', 'aan de beurt'));
+  for (var i = kinderen.length + Math.min(gereserveerd.length, vrijeplekken);
+       i < hoek.maxKinderen; i++) {
+    plekken.appendChild(el('div', 'plek vrij'));
   }
-  onder.appendChild(rijKinderen);
+  onder.appendChild(plekken);
   kaart.appendChild(onder);
+
+  if (rij.length) {
+    var wacht = el('div', 'wacht-merk', rij.length + ' wacht' + (rij.length === 1 ? 't' : 'en'));
+    kaart.appendChild(wacht);
+  } else if (gereserveerd.length) {
+    kaart.appendChild(el('div', 'wacht-merk beurt', 'aan de beurt'));
+  }
 
   kaart.addEventListener('click', function (e) {
     if (e.target.closest('.picto')) return;
@@ -249,10 +301,10 @@ var ICONEN = [
   { woorden:['zand','water','tafel met zand'],
     pad:'<path d="M3 15 c3 -2 5 2 9 0 c3 -1.5 6 1 9 -0.5"></path>' +
         '<path d="M8 15 V9 h8 v6"></path><path d="M6 20 h12"></path>' },
-  { woorden:['knutsel','verf','schilder','teken','creatief','plak'],
+  { woorden:['knutsel','verf','schilder','teken','creatief','plak','klei'],
     pad:'<circle cx="6.5" cy="17.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle>' +
         '<path d="M8.3 15.7 L18 4"></path><path d="M15.7 15.7 L6 4"></path>' },
-  { woorden:['werk','taak','opdracht'],
+  { woorden:['werk','taak','opdracht','tafel'],
     pad:'<path d="M3 9 h18"></path><path d="M5 9 v11"></path><path d="M19 9 v11"></path>' +
         '<path d="M14.5 4 l4 3 -8 2.5"></path>' },
   { woorden:['lees','boek','verhaal','luister'],
@@ -264,6 +316,11 @@ var ICONEN = [
   { woorden:['muziek','dans','zing'],
     pad:'<path d="M9 18 V6 l10 -2 v12"></path><circle cx="6.5" cy="18" r="2.5"></circle>' +
         '<circle cx="16.5" cy="16" r="2.5"></circle>' },
+  { woorden:['auto','voertuig','garage'],
+    pad:'<path d="M3 15 l2-5 h14 l2 5 v4 H3 Z"></path><circle cx="7.5" cy="19" r="1.8"></circle>' +
+        '<circle cx="16.5" cy="19" r="1.8"></circle>' },
+  { woorden:['winkel','markt','kassa'],
+    pad:'<path d="M4 8 h16 l-1.5 12 H5.5 Z"></path><path d="M9 8 V6 a3 3 0 0 1 6 0 v2"></path>' },
 ];
 
 function icoonPad(naam){
@@ -580,7 +637,7 @@ function toonPlekInRij(leerling, hoek, plek){
 /* ── hoekdetail ──────────────────────────────────────────── */
 function toonHoekDetail(hoek, index){
   toonBlad(function (blad) {
-    var k = KB.klas(), b = KB.bord(k), tint = tintVan(index);
+    var k = KB.klas(), b = KB.bord(k), tint = KB.hoekTinten(hoek, index);
     var kinderen = KB.bezetting(hoek.id, b);
 
     var kop = el('div', 'detail-kop');
@@ -763,6 +820,11 @@ KB.fkLees()
     else toonKlassen();
     setInterval(tik, 1000);
     setInterval(ververTimers, 1000);
+    var traag = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(traag);
+      traag = setTimeout(function () { if (scherm === 'bord') tekenBord(); }, 180);
+    });
   });
 
 })();

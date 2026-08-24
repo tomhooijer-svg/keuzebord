@@ -923,6 +923,53 @@ function leegBord(k){
   return aantal;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   KLEUREN VAN EEN HOEK
+   Een hoek heeft één kleur. Daar leiden we de tinten van af, zodat
+   de leerkracht alleen die ene kleur hoeft te kiezen en de kaart
+   toch klopt: sterk in het beeldvlak, zacht eronder.
+   ══════════════════════════════════════════════════════════════ */
+var HOEKKLEUREN = ['#3b6ff0','#e2607f','#e79a1f','#8b6ad0','#17a9bd',
+                   '#37ab74','#e8674f','#c9772f','#6b7fd7','#d4589b'];
+
+function hexNaarRgb(hex){
+  hex = (hex || '').replace('#', '');
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var n = parseInt(hex, 16);
+  if (isNaN(n)) return [59, 111, 240];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mengMetWit(hex, deel){
+  var c = hexNaarRgb(hex);
+  return 'rgb(' + c.map(function (x) {
+    return Math.round(x + (255 - x) * deel);
+  }).join(',') + ')';
+}
+function metDoorzicht(hex, alfa){
+  return 'rgba(' + hexNaarRgb(hex).join(',') + ',' + alfa + ')';
+}
+/* Donkerder maken voor tekst, zodat de naam op een zachte kaart leesbaar blijft. */
+function donkerder(hex, deel){
+  var c = hexNaarRgb(hex);
+  return 'rgb(' + c.map(function (x) { return Math.round(x * (1 - deel)); }).join(',') + ')';
+}
+
+function hoekKleur(hoek, index){
+  if (hoek && hoek.kleur) return hoek.kleur;
+  return HOEKKLEUREN[(index || 0) % HOEKKLEUREN.length];
+}
+function hoekTinten(hoek, index){
+  var kleur = hoekKleur(hoek, index);
+  return {
+    kleur: kleur,
+    tekst: donkerder(kleur, 0.28),
+    tint:  mengMetWit(kleur, 0.82),
+    zacht: mengMetWit(kleur, 0.94),
+    schaduw: metDoorzicht(kleur, 0.2)
+  };
+}
+
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
@@ -949,6 +996,8 @@ global.KB = {
   downloadBackup: downloadBackup, leesBackupBestand: leesBackupBestand,
   cryptoKan: cryptoKan,
   legenGrens: legenGrens, moetLegen: moetLegen, leegBord: leegBord,
+  HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
+  mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,
 

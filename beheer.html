@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Keuzebord — beheer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 .app{ display: flex; min-height: 100vh; }
@@ -254,6 +257,13 @@
 .kleurrij{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
 .kleurkiezer{ width:36px; height:36px; border:none; border-radius:50%; padding:0;
               background:none; cursor:pointer; }
+.hoekvoorbeeld{ border-radius:14px; overflow:hidden; margin-top:10px; }
+.hoekvoorbeeld-beeld{ height:56px; display:flex; align-items:center; justify-content:center;
+                      background-size:cover; background-position:center; }
+.hoekvoorbeeld-onder{ padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.hoekvoorbeeld-naam{ font-size:.95rem; font-weight:600; letter-spacing:-.02em; }
+.hoekvoorbeeld-plekken{ display:flex; gap:4px; }
+.hoekvoorbeeld-plek{ width:14px; height:14px; border-radius:50%; border:2px dashed; opacity:.4; box-sizing:border-box; }
 .schuif{ width:100%; accent-color:var(--accent); margin:4px 0 6px; }
 
 </style>

@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Keuzebord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
@@ -20,74 +23,130 @@ body.bord{
 .scherm{ display: none; height: 100vh; flex-direction: column; }
 .scherm.aan{ display: flex; }
 
+/* ── bovenbalk ────────────────────────────────────────── */
 .balk{
   display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 40px 14px; flex: none;
+  gap: 16px; margin: 16px 26px 4px; padding: 10px 12px 10px 20px; flex: none;
+  background: rgba(255,255,255,.62);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 22px rgba(20,28,44,.05);
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
 }
-.balk-links{ display: flex; align-items: baseline; gap: 14px; min-width: 0; }
-.groepnaam{ font-size: 1.42rem; font-weight: 650; letter-spacing: -.02em; }
-.datum{ font-size: 1.05rem; color: var(--inkt-3); }
-.balk-rechts{ display: flex; align-items: center; gap: 20px; }
-.klok{ font-size: 1.15rem; color: var(--inkt-2); font-variant-numeric: tabular-nums; }
+.balk-links{ display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.groepnaam{
+  font-size: 1.18rem; font-weight: 600; letter-spacing: -.024em; color: var(--inkt);
+}
+.datum{ font-size: .95rem; font-weight: 450; color: var(--inkt-3); letter-spacing: -.008em; }
+.balk-rechts{ display: flex; align-items: center; gap: 14px; }
+.klok{
+  font-size: 1.02rem; font-weight: 500; color: var(--inkt-2);
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
 .rondje{
-  width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
-  transition: background .18s ease;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(20,28,44,.055); display: flex; align-items: center; justify-content: center;
+  transition: background .16s ease, transform .16s var(--veer);
 }
 .rondje:hover{ background: rgba(20,28,44,.1); }
+.rondje:active{ transform: scale(.92); }
 
+/* ── rooster ──────────────────────────────────────────── */
 .rooster{
-  flex-grow: 1; display: grid; gap: 22px; padding: 0 40px; min-height: 0;
+  flex-grow: 1; display: grid; min-height: 0;
+  gap: var(--tussen, 18px); padding: 12px 26px 0;
   grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
-  align-content: stretch;
+  grid-template-rows: repeat(var(--rijen, 2), minmax(0, 1fr));
 }
 
+/* ── hoekkaart ────────────────────────────────────────── */
 .hoek{
   display: flex; flex-direction: column; min-height: 0; cursor: pointer;
-  position: relative; background: var(--hoekzacht, #fff);
-  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 10px 26px var(--hoekschaduw, rgba(20,28,44,.06));
+  position: relative; overflow: hidden;
+  background: var(--hoekzacht, #fff);
+  border-radius: var(--kaartrond, 22px);
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 22px var(--hoekschaduw, rgba(20,28,44,.06));
   transition: transform .2s var(--veer), box-shadow .2s ease;
 }
-.hoek:active{ transform: scale(.985); }
+.hoek:active{ transform: scale(.988); }
 .hoek.doelwit{
   box-shadow: 0 0 0 4px var(--hoekkleur), 0 16px 34px var(--hoekschaduw);
-  transform: translateY(-4px) scale(1.012);
+  transform: translateY(-4px) scale(1.014);
 }
+.hoek.vol{ opacity: .96; }
 .hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), 0 16px 34px rgba(200,130,10,.3); }
 
 .hoek-beeld{
-  height: 52%; min-height: 92px; background: var(--hoektint, #f2f4f7);
-  display: flex; align-items: center; justify-content: center; flex: none;
+  height: var(--beeldhoogte, 100px); flex: none;
+  background: var(--hoektint, #f2f4f7);
+  display: flex; align-items: center; justify-content: center;
   background-size: cover; background-position: center;
 }
-.hoek-onder{ padding: 13px 20px 16px; display: flex; flex-direction: column; gap: 10px;
-             flex-grow: 1; min-height: 0; }
-.hoek-kop{ display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.hoek-naam{ font-size: 1.28rem; font-weight: 650; letter-spacing: -.015em;
-            color: var(--hoekkleur); filter: brightness(.82);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.plekjes{ display: flex; gap: 5px; flex: none; }
-.plek{ width: 10px; height: 10px; border-radius: 50%; background: rgba(20,28,44,.13); }
-.plek.bezet{ background: var(--hoekkleur, var(--accent)); }
-.hoek-kinderen{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-                margin-top: auto; }
-.leeg-plekje{ width: 46px; height: 46px; border-radius: 50%;
-              border: 2px dashed rgba(20,28,44,.16); flex: none; }
-.vol-label{
-  margin-left: auto; font-size: .82rem; font-weight: 600; color: var(--inkt-2);
-  background: rgba(20,28,44,.06); padding: 5px 13px; border-radius: var(--rond-vol);
-}
-.wacht-label{ background: var(--let-op-zacht); color: var(--let-op); }
+.hoek-beeld svg{ width: var(--icoongrootte, 56px); height: var(--icoongrootte, 56px); }
 
-/* De strook met kinderen die nog moeten kiezen krijgt een eigen vlak,
-   zodat het bord onderaan niet uitloopt in de achtergrond. */
+.hoek-onder{
+  padding: var(--onderpad, 12px) calc(var(--onderpad, 12px) + 4px);
+  display: flex; flex-direction: column; gap: calc(var(--onderpad, 12px) * .7);
+  flex-grow: 1; min-height: 0; justify-content: space-between;
+}
+.hoek-kop{ display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hoek-naam{
+  font-size: var(--naamgrootte, 20px); font-weight: 600; letter-spacing: -.02em;
+  color: var(--hoektekst, var(--inkt));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hoek-telling{
+  font-size: var(--tellinggrootte, 17px); font-weight: 600; flex: none;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.hoek-telling .bezet{ color: var(--hoektekst, var(--inkt)); }
+.hoek-telling .van{ color: var(--inkt-4); font-weight: 500; }
+
+/* zoveel plekken als de hoek heeft, altijd zichtbaar */
+.hoek-plekken{
+  display: flex; flex-wrap: nowrap; align-items: center;
+  gap: calc(var(--slot, 40px) * .16);
+}
+.plek{
+  width: var(--slot, 40px); height: var(--slot, 40px); border-radius: 50%;
+  flex: none; display: flex; align-items: center; justify-content: center;
+}
+.plek.vrij{
+  border: 2px dashed var(--hoekkleur, rgba(20,28,44,.2));
+  opacity: .35; box-sizing: border-box;
+}
+.plek.gereserveerd{
+  border: 2px dashed var(--hoekkleur); box-sizing: border-box; padding: 2px;
+}
+.plek.gereserveerd .picto-rond{
+  width: 100%; height: 100%; opacity: .45; box-shadow: none;
+  font-size: calc(var(--slot, 40px) * .38);
+}
+.plek.bezet .picto-rond{
+  width: var(--slot, 40px); height: var(--slot, 40px);
+  font-size: calc(var(--slot, 40px) * .42);
+}
+.plek.bezet .picto-naam{ display: none; }
+
+.wacht-merk{
+  position: absolute; top: 10px; right: 10px;
+  font-size: .74rem; font-weight: 600; letter-spacing: -.01em;
+  padding: 4px 11px; border-radius: 999px;
+  background: rgba(255,255,255,.86); color: var(--let-op);
+  box-shadow: 0 1px 3px rgba(20,28,44,.12);
+  backdrop-filter: blur(6px);
+}
+.wacht-merk.beurt{ color: var(--hoekkleur); }
+
 .strook{
-  flex: none; margin: 18px 40px 22px; padding: 16px 24px;
+  flex: none; margin: 16px 26px 20px; padding: 14px 22px;
   display: flex; align-items: center; gap: 26px; min-height: 0;
   background: rgba(255,255,255,.72); border-radius: var(--rond-l);
   box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
 }
-.strook-kop{ font-size: 1rem; font-weight: 600; color: var(--inkt-3); white-space: nowrap; flex: none; }
+.strook-kop{ font-size: .96rem; font-weight: 550; color: var(--inkt-3); white-space: nowrap;
+             flex: none; letter-spacing: -.012em; }
 .strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
 .strook .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
 .hoek-kinderen .picto-rond{ width: 46px; height: 46px; font-size: 1.05rem; }
@@ -163,10 +222,10 @@ body.bord{
 .beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
 
 @media (max-width: 760px){
-  .balk{ padding: 16px 20px 10px; }
-  .rooster{ padding: 0 20px; gap: 14px; }
-  .strook{ padding: 14px 20px 20px; gap: 14px; }
-  .groepnaam{ font-size: 1.1rem; } .datum{ display: none; }
+  .balk{ margin: 10px 12px 2px; padding: 8px 8px 8px 16px; }
+  .rooster{ padding: 8px 12px 0; }
+  .strook{ margin: 10px 12px 12px; padding: 10px 14px; gap: 14px; }
+  .groepnaam{ font-size: 1.02rem; } .datum{ display: none; }
 }
 </style>
 </head>

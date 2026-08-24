@@ -817,6 +817,9 @@ panelen.hoeken = function (v){
     k.hoekLib.forEach(function (h) {
       var opBord = (b.hoekLibIds || []).indexOf(h.id) >= 0;
       var rij = el('div', 'rij');
+      var kleurstip = el('span', 'stip');
+      kleurstip.style.background = KB.hoekKleur(h, k.hoekLib.indexOf(h));
+      rij.appendChild(kleurstip);
       var naam = el('div');
       var titel = el('div', 'rij-naam', h.naam);
       if (h.werkplaats) {
@@ -849,9 +852,12 @@ panelen.hoeken = function (v){
 
 function bewerkHoek(h){
   var k = KB.klas(), b = KB.bord(k), nieuw = !h;
+  var plaats = k.hoekLib.indexOf(h);
   var concept = { naam: h ? h.naam : '', max: h ? h.maxKinderen : 4,
                   timer: h ? (h.timerMinuten || 0) : 0, fotoId: h ? h.fotoId : null,
-                  werkplaats: h ? !!h.werkplaats : false, nieuweFoto: null };
+                  werkplaats: h ? !!h.werkplaats : false, nieuweFoto: null,
+                  kleur: (h && h.kleur) ||
+                         KB.HOEKKLEUREN[(plaats >= 0 ? plaats : k.hoekLib.length) % KB.HOEKKLEUREN.length] };
 
   toonBlad(function (blad) {
     blad.appendChild(bladTitel(nieuw ? 'Hoek toevoegen' : h.naam));
@@ -859,13 +865,13 @@ function bewerkHoek(h){
     var naamVeld = el('div', 'veld');
     naamVeld.appendChild(el('label', null, 'Naam'));
     var invoer = el('input'); invoer.type = 'text'; invoer.value = concept.naam;
-    invoer.addEventListener('input', function () { concept.naam = invoer.value; });
+    invoer.addEventListener('input', function () { concept.naam = invoer.value; ververfKaartje(); });
     naamVeld.appendChild(invoer);
     blad.appendChild(naamVeld);
 
     var maxVeld = el('div', 'veld');
     maxVeld.appendChild(el('label', null, 'Aantal plekken'));
-    maxVeld.appendChild(teller(concept.max, 1, 12, function (n) { concept.max = n; }));
+    maxVeld.appendChild(teller(concept.max, 1, 12, function (n) { concept.max = n; ververfKaartje(); }));
     blad.appendChild(maxVeld);
 
     var timerVeld = el('div', 'veld');
@@ -886,6 +892,68 @@ function bewerkHoek(h){
     wpVeld.appendChild(schakelaar(concept.werkplaats, function (aan) { concept.werkplaats = aan; }));
     blad.appendChild(wpVeld);
 
+    var kleurVeld = el('div', 'veld');
+    kleurVeld.style.marginTop = '14px';
+    kleurVeld.appendChild(el('label', null, 'Kleur van deze hoek'));
+    var kaartje = el('div', 'hoekvoorbeeld');
+    var kaartBeeld = el('div', 'hoekvoorbeeld-beeld');
+    var kaartOnder = el('div', 'hoekvoorbeeld-onder');
+    var kaartNaam = el('div', 'hoekvoorbeeld-naam');
+    var kaartPlekken = el('div', 'hoekvoorbeeld-plekken');
+    kaartOnder.appendChild(kaartNaam); kaartOnder.appendChild(kaartPlekken);
+    kaartje.appendChild(kaartBeeld); kaartje.appendChild(kaartOnder);
+    kleurVeld.appendChild(kaartje);
+
+    function ververfKaartje(){
+      var t = KB.hoekTinten({ kleur: concept.kleur }, 0);
+      kaartje.style.background = t.zacht;
+      kaartje.style.boxShadow = '0 1px 2px rgba(20,28,44,.05), 0 6px 18px ' + t.schaduw;
+      kaartBeeld.style.background = t.tint;
+      var beeldData = concept.nieuweFoto || KB.foto(concept.fotoId, k);
+      kaartBeeld.style.backgroundImage = beeldData ? 'url(' + beeldData + ')' : '';
+      kaartBeeld.innerHTML = beeldData ? '' :
+        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="' + t.kleur +
+        '" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1.5">' +
+        '</rect><rect x="13" y="13" width="8" height="8" rx="1.5"></rect>' +
+        '<rect x="8" y="4" width="8" height="8" rx="1.5"></rect></svg>';
+      kaartNaam.textContent = concept.naam || 'Naam van de hoek';
+      kaartNaam.style.color = t.tekst;
+      leeg(kaartPlekken);
+      for (var i = 0; i < concept.max; i++) {
+        var stip2 = el('div', 'hoekvoorbeeld-plek');
+        stip2.style.borderColor = t.kleur;
+        kaartPlekken.appendChild(stip2);
+      }
+    }
+
+    var kleuren = el('div', 'chips');
+    kleuren.style.marginTop = '12px';
+    KB.HOEKKLEUREN.forEach(function (c) {
+      var stipje = el('button', 'kleurstip');
+      stipje.style.background = c; stipje.style.color = c;
+      stipje.classList.toggle('aan', c === concept.kleur);
+      stipje.addEventListener('click', function () {
+        concept.kleur = c;
+        Array.prototype.forEach.call(kleuren.children, function (x, i) {
+          if (KB.HOEKKLEUREN[i]) x.classList.toggle('aan', KB.HOEKKLEUREN[i] === concept.kleur);
+        });
+        eigenKleur.value = c;
+        ververfKaartje();
+      });
+      kleuren.appendChild(stipje);
+    });
+    var eigenKleur = el('input');
+    eigenKleur.type = 'color'; eigenKleur.className = 'kleurkiezer';
+    eigenKleur.value = concept.kleur; eigenKleur.title = 'Zelf een kleur kiezen';
+    eigenKleur.addEventListener('input', function () {
+      concept.kleur = eigenKleur.value;
+      Array.prototype.forEach.call(kleuren.children, function (x) { x.classList.remove('aan'); });
+      ververfKaartje();
+    });
+    kleuren.appendChild(eigenKleur);
+    kleurVeld.appendChild(kleuren);
+    blad.appendChild(kleurVeld);
+
     var fotoVeld = el('div', 'veld');
     fotoVeld.style.marginTop = '14px';
     fotoVeld.appendChild(el('label', null, 'Foto'));
@@ -897,6 +965,7 @@ function bewerkHoek(h){
       KB.verklein(f, KB.FOTO_MAAT.hoek).then(function (d) {
         concept.nieuweFoto = d;
         voorbeeld.style.backgroundImage = 'url(' + d + ')';
+        ververfKaartje();
         meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
       }).catch(function () { meld('Die foto lukte niet'); });
     }));
@@ -918,11 +987,11 @@ function bewerkHoek(h){
         var id = 'hl' + KB.uid();
         k.hoekLib.push({ id:id, naam:naam, maxKinderen:concept.max,
                          timerMinuten:concept.timer || 0, fotoId:fotoId,
-                         werkplaats:concept.werkplaats });
+                         kleur:concept.kleur, werkplaats:concept.werkplaats });
         b.hoekLibIds.push(id); b.plaatsingen[id] = [];
       } else {
         h.naam = naam; h.maxKinderen = concept.max; h.timerMinuten = concept.timer || 0;
-        h.fotoId = fotoId; h.werkplaats = concept.werkplaats;
+        h.fotoId = fotoId; h.kleur = concept.kleur; h.werkplaats = concept.werkplaats;
       }
       bewaarOfKlaag(); sluitBlad(); teken(); meld('Opgeslagen');
     }));
@@ -937,6 +1006,7 @@ function bewerkHoek(h){
       });
     }));
     blad.appendChild(rij);
+    ververfKaartje();
   });
 }
 

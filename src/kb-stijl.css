@@ -10,8 +10,6 @@
    precies de vibe die we willen. Elders halen we Inter op, dat er sterk op
    lijkt. Valt het internet weg, dan zakt hij terug op Segoe UI of wat er
    staat, en blijft alles leesbaar. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root{
   --letter: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
             "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui,
