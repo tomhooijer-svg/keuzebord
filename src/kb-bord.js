@@ -105,6 +105,7 @@ function toonKlassen(){
   document.querySelectorAll('.scherm').forEach(function (s) { s.classList.remove('aan'); });
   $('scherm-klassen').classList.add('aan');
 
+  pasUiterlijkToe(KB.klas());
   var rooster = $('klas-rooster');
   rooster.innerHTML = '';
   KB.G.klassen.forEach(function (k) {
@@ -132,9 +133,15 @@ function toonBord(){
 
 function tintVan(index){ return HOEKTINTEN[index % HOEKTINTEN.length]; }
 
+function pasUiterlijkToe(k){
+  try { document.body.style.background = KB.achtergrondCss(k); }
+  catch (e) { /* dan blijft de standaardachtergrond staan */ }
+}
+
 function tekenBord(){
   var k = KB.klas(), b = KB.bord(k);
   $('bord-groep').textContent = k.naam;
+  pasUiterlijkToe(k);
 
   var hoeken = KB.bordHoeken(b, k);
   var rooster = $('rooster');
@@ -290,10 +297,23 @@ function tekenStrook(k, b){
   });
 }
 
-/* ── slepen ──────────────────────────────────────────────── */
+/* ── slepen ──────────────────────────────────────────────────
+   Op een digibord staan vaak meerdere kinderen tegelijk te slepen.
+   Elke aanraking krijgt daarom zijn eigen sleep, herkenbaar aan het
+   pointerId. De luisteraars staan op het document en filteren op dat
+   id, zodat een sleep blijft werken ook als het bord ondertussen
+   opnieuw wordt getekend doordat een ander kind zijn keuze maakt. */
+var lopendeSlepen = 0;
+var slependeKinderen = {};      // leerlingId -> true, om dubbel pakken te weren
+window.KB_SLEEP_STATUS = function () {
+  return { lopend: lopendeSlepen, kinderen: Object.keys(slependeKinderen) };
+};
+
 function maakSleepbaar(picto, leerling, vanHoekId){
   picto.addEventListener('pointerdown', function (start) {
     if (start.button != null && start.button !== 0) return;
+    // Twee vingers op hetzelfde kind is één sleep, geen twee.
+    if (slependeKinderen[leerling.id]) return;
 
     // Zit dit kind nog vast, dan mag het niet weg.
     if (vanHoekId) {
@@ -308,6 +328,9 @@ function maakSleepbaar(picto, leerling, vanHoekId){
     }
 
     start.preventDefault();
+    var pid = start.pointerId;
+    lopendeSlepen++;
+    slependeKinderen[leerling.id] = true;
 
     // Alleen de bol meenemen, niet de naam eronder: dat leest als een
     // kaartje dat je optilt in plaats van als een stukje tekst.
@@ -330,6 +353,7 @@ function maakSleepbaar(picto, leerling, vanHoekId){
 
     var laatsteDoel = null;
     function beweeg(e){
+      if (e.pointerId !== pid) return;
       geest.style.left = e.clientX + 'px';
       geest.style.top  = e.clientY + 'px';
       geest.style.display = 'none';
@@ -343,9 +367,12 @@ function maakSleepbaar(picto, leerling, vanHoekId){
       }
     }
     function los(e){
+      if (e.pointerId !== pid) return;
       document.removeEventListener('pointermove', beweeg);
       document.removeEventListener('pointerup', los);
       document.removeEventListener('pointercancel', los);
+      lopendeSlepen = Math.max(0, lopendeSlepen - 1);
+      delete slependeKinderen[leerling.id];
       picto.classList.remove('sleept');
       if (laatsteDoel) laatsteDoel.classList.remove('doelwit');
 

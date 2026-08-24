@@ -171,6 +171,7 @@ var ONDERDELEN = [
   { id:'leerlingen', naam:'Leerlingen', icoon:'<circle cx="12" cy="8" r="3.4"></circle><path d="M5 19.5 c0-3.6 3.1-5.6 7-5.6 s7 2 7 5.6"></path>' },
   { id:'pictos',     naam:"Picto's",    icoon:'<rect x="3" y="6" width="18" height="14" rx="2.4"></rect><circle cx="12" cy="13" r="3.4"></circle><path d="M8 6 l1.5-2.5 h5 L16 6"></path>' },
   { id:'hoeken',     naam:'Hoeken',     icoon:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"></rect>' },
+  { id:'uiterlijk',  naam:'Uiterlijk',  icoon:'<circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5 a8.5 8.5 0 0 1 0 17"></path><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"></circle>' },
   { id:'scheiding2', scheiding:true },
   { id:'groep',      naam:'Groep',      icoon:'<circle cx="9" cy="9" r="3.2"></circle><path d="M3.5 19 c0-3 2.5-4.6 5.5-4.6 s5.5 1.6 5.5 4.6"></path><path d="M16 7.2 a3 3 0 0 1 0 5.6"></path>' },
   { id:'functies',   naam:'Functies',   icoon:'<path d="M4 7.5 h9"></path><path d="M17 7.5 h3"></path><circle cx="15" cy="7.5" r="2.2"></circle><path d="M4 16.5 h3"></path><path d="M11 16.5 h9"></path><circle cx="9" cy="16.5" r="2.2"></circle>' }
@@ -443,59 +444,154 @@ function leesWordBestand(file){
   });
 }
 
+function netteNaam(t){
+  // "hugo l." wordt "Hugo L." — jullie bestanden staan in kleine letters.
+  return (t || '').toLowerCase().replace(/(^|[\s\-\'])([a-zà-ÿ])/g, function (heel, voor, letter) {
+    return voor + letter.toUpperCase();
+  }).trim();
+}
+
 function toonWordBevestiging(lijst){
   var k = KB.klas();
+  lijst.forEach(function (item) { item.naam = netteNaam(item.naam); item.mee = !!item.naam; });
+  var doelGroep = 'huidig';   // 'huidig' of 'nieuw'
+  var nieuweNaam = 'Groep 1D';
+
   toonBlad(function (blad) {
+    var metNaam = lijst.filter(function (x) { return x.naam; }).length;
+    var zonder  = lijst.length - metNaam;
+
     blad.appendChild(bladTitel(lijst.length + " picto's gevonden",
-      'Word legt niet vast welke naam bij welk plaatje hoort, dus dat leid ik af uit de opmaak. ' +
-      'Controleer het even en pas aan waar het misging.'));
+      metNaam + ' hebben een naam' + (zonder ? ', ' + zonder + ' niet — die staan uitgevinkt. ' +
+      'Typ er een naam bij als je ze toch wilt gebruiken.' : '.') +
+      ' Word legt niet vast welke naam bij welk plaatje hoort, dus controleer het even.'));
+
+    /* waar gaan ze heen */
+    var keuze = el('div', 'veld');
+    keuze.appendChild(el('label', null, 'Waar komen deze kinderen?'));
+    var opties = el('div', 'chips');
+    var chipHuidig = el('button', 'chip aan', 'In ' + k.naam);
+    var chipNieuw  = el('button', 'chip', 'In een nieuwe groep');
+    opties.appendChild(chipHuidig); opties.appendChild(chipNieuw);
+    keuze.appendChild(opties);
+    var naamVak = el('div');
+    naamVak.style.display = 'none';
+    naamVak.style.marginTop = '10px';
+    var naamInvoer = el('input');
+    naamInvoer.type = 'text'; naamInvoer.value = nieuweNaam; naamInvoer.placeholder = 'Naam van de groep';
+    naamInvoer.addEventListener('input', function () { nieuweNaam = naamInvoer.value; });
+    naamVak.appendChild(naamInvoer);
+    keuze.appendChild(naamVak);
+    chipHuidig.addEventListener('click', function () {
+      doelGroep = 'huidig';
+      chipHuidig.classList.add('aan'); chipNieuw.classList.remove('aan');
+      naamVak.style.display = 'none';
+    });
+    chipNieuw.addEventListener('click', function () {
+      doelGroep = 'nieuw';
+      chipNieuw.classList.add('aan'); chipHuidig.classList.remove('aan');
+      naamVak.style.display = '';
+    });
+    blad.appendChild(keuze);
+
+    /* selectieknoppen */
+    var selectie = el('div', 'knoprij');
+    selectie.style.marginTop = '4px';
+    var telling = el('span', 'hint');
+    telling.style.alignSelf = 'center';
+    function werkTellingBij(){
+      var n = lijst.filter(function (x) { return x.mee && x.naam; }).length;
+      telling.textContent = n + ' van de ' + lijst.length + ' geselecteerd';
+    }
+    selectie.appendChild(knop('Alles aan', 'stil', function () {
+      lijst.forEach(function (x) { if (x.naam) x.mee = true; });
+      tekenRooster(); werkTellingBij();
+    }));
+    selectie.appendChild(knop('Alles uit', 'stil', function () {
+      lijst.forEach(function (x) { x.mee = false; });
+      tekenRooster(); werkTellingBij();
+    }));
+    selectie.appendChild(telling);
+    blad.appendChild(selectie);
 
     var rooster = el('div', 'wordrooster');
-    lijst.forEach(function (item, i) {
-      var vak = el('div', 'wordvak');
-      var bol = el('div', 'picto-rond');
-      bol.style.cssText = 'width:64px;height:64px;background-image:url(' + item.data + ')';
-      vak.appendChild(bol);
-      var invoer = el('input');
-      invoer.type = 'text'; invoer.value = item.naam || '';
-      invoer.placeholder = 'naam';
-      invoer.addEventListener('input', function () { lijst[i].naam = invoer.value; });
-      vak.appendChild(invoer);
-      rooster.appendChild(vak);
-    });
     blad.appendChild(rooster);
 
-    var keuze = el('div', 'veld');
-    keuze.style.marginTop = '18px';
-    var bestaand = el('label', 'aanvink');
-    var vink = el('input'); vink.type = 'checkbox'; vink.checked = true;
-    bestaand.appendChild(vink);
-    bestaand.appendChild(el('span', null,
-      'Koppel aan kinderen die al in de groep staan; voeg de rest nieuw toe'));
-    keuze.appendChild(bestaand);
-    blad.appendChild(keuze);
+    function tekenRooster(){
+      leeg(rooster);
+      lijst.forEach(function (item, i) {
+        var vak = el('label', 'wordvak' + (item.mee ? ' mee' : ''));
+        var vink = el('input');
+        vink.type = 'checkbox'; vink.checked = item.mee; vink.className = 'wordvink';
+        vink.addEventListener('change', function () {
+          lijst[i].mee = vink.checked;
+          vak.classList.toggle('mee', vink.checked);
+          werkTellingBij();
+        });
+        vak.appendChild(vink);
+        var bol = el('div', 'picto-rond');
+        bol.style.cssText = 'width:64px;height:64px;background-image:url(' + item.data + ')';
+        vak.appendChild(bol);
+        var invoer = el('input');
+        invoer.type = 'text'; invoer.value = item.naam || '';
+        invoer.placeholder = 'geen naam';
+        invoer.addEventListener('click', function (e) { e.preventDefault(); });
+        invoer.addEventListener('input', function () {
+          lijst[i].naam = invoer.value;
+          if (invoer.value && !lijst[i].mee) { lijst[i].mee = true; vink.checked = true; vak.classList.add('mee'); }
+          werkTellingBij();
+        });
+        vak.appendChild(invoer);
+        rooster.appendChild(vak);
+      });
+    }
+    tekenRooster(); werkTellingBij();
 
     var rij = el('div', 'knoprij');
     rij.appendChild(knop('Overnemen', 'primair', function () {
-      var gekoppeld = 0, nieuw = 0, overgeslagen = 0;
-      lijst.forEach(function (item) {
-        var naam = (item.naam || '').trim();
-        if (!naam) { overgeslagen++; return; }
-        var bestaandKind = vink.checked && k.leerlingen.filter(function (l) {
+      var mee = lijst.filter(function (x) { return x.mee && (x.naam || '').trim(); });
+      if (!mee.length) { meld('Niets geselecteerd'); return; }
+
+      var groep = k;
+      if (doelGroep === 'nieuw') {
+        groep = KB.leegKlas((nieuweNaam || 'Nieuwe groep').trim());
+        var code = (groep.naam.match(/\b([123])\b/) || [])[1];
+        groep.doelNiveaus = KB.NIVEAUS_PER_GROEP[code || 1] || KB.NIVEAUS_PER_GROEP[1];
+        groep.hoekLib = [['Bouwhoek',4],['Huishoek',3],['Zandtafel',4],['Knutselhoek',4],['Leeshoek',3]]
+          .map(function (h, i) {
+            return { id:'hl' + KB.uid() + i, naam:h[0], maxKinderen:h[1], timerMinuten:0, fotoId:null };
+          });
+        var bord = groep.borden[0];
+        bord.hoekLibIds = groep.hoekLib.map(function (h) { return h.id; });
+        groep.hoekLib.forEach(function (h) { bord.plaatsingen[h.id] = []; });
+        KB.G.klassen.push(groep);
+        KB.zorgVoorWerkplaats(groep);
+      }
+
+      var gekoppeld = 0, nieuwAantal = 0;
+      mee.forEach(function (item) {
+        var naam = item.naam.trim();
+        var bestaand = groep.leerlingen.filter(function (l) {
           return l.naam.trim().toLowerCase() === naam.toLowerCase();
         })[0];
-        if (bestaandKind) { bestaandKind.image = item.data; bestaandKind._c = false; gekoppeld++; }
+        if (bestaand) { bestaand.image = item.data; bestaand._c = false; gekoppeld++; }
         else {
-          k.leerlingen.push({ id:'ll' + KB.uid(), naam:naam,
-            kleur: KB.KIND_KLEUREN[k.leerlingen.length % KB.KIND_KLEUREN.length],
+          groep.leerlingen.push({ id:'ll' + KB.uid(), naam:naam,
+            kleur: KB.KIND_KLEUREN[groep.leerlingen.length % KB.KIND_KLEUREN.length],
             image:item.data, lid:true });
-          nieuw++;
+          nieuwAantal++;
         }
-        KB.voegPictoToe(naam, item.data, k);
+        KB.voegPictoToe(naam, item.data, groep);
       });
-      bewaarOfKlaag(); sluitBlad(); teken();
-      meld(nieuw + ' toegevoegd, ' + gekoppeld + ' gekoppeld' +
-           (overgeslagen ? ', ' + overgeslagen + ' zonder naam overgeslagen' : ''));
+
+      if (doelGroep === 'nieuw') {
+        KB.zetBeheerKlas(groep.id);
+        bewaarOfKlaag(); sluitBlad(); tekenMenu(); teken();
+        meld(groep.naam + ' aangemaakt met ' + nieuwAantal + ' kinderen');
+      } else {
+        bewaarOfKlaag(); sluitBlad(); teken();
+        meld(nieuwAantal + ' toegevoegd, ' + gekoppeld + ' gekoppeld');
+      }
     }));
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
     blad.appendChild(rij);
@@ -843,6 +939,154 @@ function bewerkHoek(h){
     blad.appendChild(rij);
   });
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   UITERLIJK VAN HET BORD
+   ══════════════════════════════════════════════════════════ */
+panelen.uiterlijk = function (v){
+  var k = KB.klas();
+  var u = KB.uiterlijk(k);
+
+  var naarBord = el('a', 'knop knop-stil knop-klein', 'Bekijk op het bord');
+  naarBord.href = 'bord.html';
+  v.appendChild(kopregel('Uiterlijk', 'Hoe het bord van ' + k.naam + ' eruitziet', naarBord));
+
+  /* levende voorvertoning */
+  var voorbeeld = el('div', 'bordvoorbeeld');
+  function ververs(){
+    voorbeeld.style.background = KB.achtergrondCss(k);
+  }
+  ['Bouwhoek', 'Huishoek', 'Zandtafel'].forEach(function (naam, i) {
+    var tinten = [['#dfe9fd','#3b6ff0','#f2f6ff'], ['#fde0e8','#e2607f','#fff3f6'],
+                  ['#fdeecd','#e79a1f','#fff9ed']][i];
+    var kaartje = el('div', 'voorbeeldkaart');
+    kaartje.style.background = tinten[2];
+    var beeld = el('div', 'voorbeeldbeeld');
+    beeld.style.background = tinten[0];
+    kaartje.appendChild(beeld);
+    var naamvak = el('div', 'voorbeeldnaam', naam);
+    naamvak.style.color = tinten[1];
+    kaartje.appendChild(naamvak);
+    voorbeeld.appendChild(kaartje);
+  });
+  ververs();
+  v.appendChild(voorbeeld);
+
+  /* sfeer kiezen */
+  var sfeerP = paneel('Sfeer');
+  var rooster = el('div', 'sfeerrooster');
+  KB.SFEREN.forEach(function (sf) {
+    var knopje = el('button', 'sfeerknop' + (u.soort === 'sfeer' && u.sfeer === sf.id ? ' aan' : ''));
+    var vlak = el('div', 'sfeervlak');
+    var lagen = sf.vlekken.map(function (vl) {
+      return 'radial-gradient(60px 40px at ' + vl[1] + ', ' + vl[0] + ' 0%, transparent 62%)';
+    });
+    lagen.push(sf.grond);
+    vlak.style.background = lagen.join(', ');
+    knopje.appendChild(vlak);
+    knopje.appendChild(el('span', null, sf.naam));
+    knopje.addEventListener('click', function () {
+      u.soort = 'sfeer'; u.sfeer = sf.id;
+      bewaarOfKlaag(); teken();
+    });
+    rooster.appendChild(knopje);
+  });
+  sfeerP.appendChild(rooster);
+  v.appendChild(sfeerP);
+
+  /* eigen kleur */
+  var kleurP = paneel('Eigen kleur');
+  kleurP.appendChild(el('p', 'hint', 'Liever één rustige kleur? Kies er hier een.'));
+  var kleurRij = el('div', 'kleurrij');
+  ['#fbf8f4','#f5f8fb','#f7f7f8','#eef4ec','#fdf4ee','#f1f0f7','#eaf1f5','#fdf2f4']
+    .forEach(function (c) {
+      var stip = el('button', 'kleurstip' + (u.soort === 'kleur' && u.kleur === c ? ' aan' : ''));
+      stip.style.background = c;
+      stip.style.boxShadow = 'inset 0 0 0 1px rgba(20,28,44,.08)' +
+        (u.soort === 'kleur' && u.kleur === c ? ', 0 0 0 3px var(--vlak), 0 0 0 5px var(--accent)' : '');
+      stip.addEventListener('click', function () {
+        u.soort = 'kleur'; u.kleur = c; bewaarOfKlaag(); teken();
+      });
+      kleurRij.appendChild(stip);
+    });
+  var eigen = el('input');
+  eigen.type = 'color';
+  eigen.value = u.kleur || '#fbf8f4';
+  eigen.className = 'kleurkiezer';
+  eigen.title = 'Zelf een kleur kiezen';
+  eigen.addEventListener('input', function () {
+    u.soort = 'kleur'; u.kleur = eigen.value;
+    voorbeeld.style.background = KB.achtergrondCss(k);
+  });
+  eigen.addEventListener('change', function () { bewaarOfKlaag(); teken(); });
+  kleurRij.appendChild(eigen);
+  kleurP.appendChild(kleurRij);
+  v.appendChild(kleurP);
+
+  /* achtergrondfoto */
+  var fotoP = paneel('Eigen achtergrond');
+  fotoP.appendChild(el('p', 'hint',
+    'Kies een foto — bijvoorbeeld van het thema waar je mee bezig bent. Hij wordt ' +
+    'automatisch op maat gemaakt voor het digibord, dus hij hoeft niet precies te passen. ' +
+    'Met de schuif eroverheen maak je de foto zachter, zodat de picto\'s leesbaar blijven.'));
+
+  if (u.foto) {
+    var huidig = el('div', 'fotovoorbeeld');
+    huidig.style.backgroundImage = 'url(' + u.foto + ')';
+    huidig.style.height = '120px';
+    huidig.style.marginTop = '12px';
+    fotoP.appendChild(huidig);
+
+    var schuifVeld = el('div', 'veld');
+    schuifVeld.style.marginTop = '14px';
+    schuifVeld.appendChild(el('label', null, 'Hoe zacht mag de foto worden?'));
+    var schuif = el('input');
+    schuif.type = 'range'; schuif.min = '0'; schuif.max = '85'; schuif.step = '5';
+    schuif.value = String(Math.round((u.sluier == null ? 0.4 : u.sluier) * 100));
+    schuif.className = 'schuif';
+    var uitleg = el('div', 'hint');
+    function toonSchuif(){
+      var w = parseInt(schuif.value, 10);
+      uitleg.textContent = w < 20 ? 'Foto goed zichtbaar — let op of de namen leesbaar blijven.'
+        : w < 55 ? 'Mooie balans tussen foto en leesbaarheid.'
+        : 'Heel zacht — rustig, de foto is nog net te zien.';
+    }
+    schuif.addEventListener('input', function () {
+      u.sluier = parseInt(schuif.value, 10) / 100;
+      voorbeeld.style.background = KB.achtergrondCss(k);
+      toonSchuif();
+    });
+    schuif.addEventListener('change', function () { bewaarOfKlaag(); });
+    schuifVeld.appendChild(schuif);
+    schuifVeld.appendChild(uitleg);
+    toonSchuif();
+    fotoP.appendChild(schuifVeld);
+  }
+
+  var fotoRij = el('div', 'knoprij');
+  fotoRij.appendChild(bestandKnop(u.foto ? 'Andere foto kiezen' : 'Foto kiezen', 'image/*', false,
+    function (f) {
+      meld('Bezig met de foto…');
+      KB.achtergrondUitBestand(f).then(function (data) {
+        u.soort = 'foto'; u.foto = data;
+        if (u.sluier == null) u.sluier = 0.4;
+        bewaarOfKlaag(); teken();
+        meld('Achtergrond ingesteld · ' + Math.round(data.length * 0.75 / 1024) + ' KB');
+      }).catch(function (e) { meld('Lukte niet: ' + (e.message || 'onbekend')); });
+    }, u.foto ? 'stil' : 'primair'));
+  if (u.foto) {
+    fotoRij.appendChild(knop(u.soort === 'foto' ? 'Foto uitzetten' : 'Foto gebruiken', 'stil', function () {
+      u.soort = u.soort === 'foto' ? 'sfeer' : 'foto';
+      bewaarOfKlaag(); teken();
+    }));
+    fotoRij.appendChild(knop('Foto verwijderen', 'gevaar', function () {
+      u.foto = null; u.soort = 'sfeer'; bewaarOfKlaag(); teken(); meld('Achtergrond verwijderd');
+    }));
+  }
+  fotoP.appendChild(fotoRij);
+  v.appendChild(fotoP);
+};
 
 /* ══════════════════════════════════════════════════════════
    FUNCTIES

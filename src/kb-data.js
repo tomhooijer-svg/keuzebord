@@ -769,6 +769,103 @@ function leesBackupBestand(file, vraagWachtwoord){
   });
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   UITERLIJK VAN HET BORD
+   Een groep kiest zelf hoe het bord eruitziet: een kant-en-klare
+   sfeer, een eigen kleur, of een foto als achtergrond. Die foto
+   wordt bij het inladen op maat gemaakt voor een breed scherm, en
+   krijgt een sluier zodat de picto's leesbaar blijven.
+   ══════════════════════════════════════════════════════════════ */
+var SFEREN = [
+  { id:'warm',   naam:'Warm',      grond:'#fbf8f4',
+    vlekken:[['#ffeede','8% -12%'],['#e2f0fb','96% 4%'],['#eaf6ec','42% 110%']] },
+  { id:'koel',   naam:'Koel',      grond:'#f5f8fb',
+    vlekken:[['#e3edfa','10% -10%'],['#e6f4f6','92% 6%'],['#eef0fa','50% 108%']] },
+  { id:'lente',  naam:'Lente',     grond:'#f7fbf6',
+    vlekken:[['#e6f6e2','12% -12%'],['#fdf6dd','88% 2%'],['#e3f3f7','46% 108%']] },
+  { id:'herfst', naam:'Herfst',    grond:'#fdf7f1',
+    vlekken:[['#fbe6cd','10% -12%'],['#f9dfd4','90% 4%'],['#f3ecd9','44% 110%']] },
+  { id:'winter', naam:'Winter',    grond:'#f6f9fc',
+    vlekken:[['#e4eef8','8% -10%'],['#eef1f7','94% 6%'],['#e9f3f6','48% 108%']] },
+  { id:'rustig', naam:'Heel rustig', grond:'#f7f7f8', vlekken:[] }
+];
+
+function sfeerVan(id){
+  return SFEREN.filter(function (s) { return s.id === id; })[0] || SFEREN[0];
+}
+
+function uiterlijk(k){
+  k = k || klas();
+  if (!k.uiterlijk) k.uiterlijk = { soort:'sfeer', sfeer:'warm', kleur:'#fbf8f4',
+                                    foto:null, sluier:0.4 };
+  return k.uiterlijk;
+}
+
+/* De css-achtergrond die bij de instelling hoort. */
+function achtergrondCss(k){
+  var u = uiterlijk(k);
+  if (u.soort === 'foto' && u.foto) {
+    var sluier = Math.max(0, Math.min(0.85, u.sluier == null ? 0.4 : u.sluier));
+    return 'linear-gradient(rgba(255,255,255,' + sluier + '), rgba(255,255,255,' + sluier + ')), ' +
+           'url(' + u.foto + ') center / cover no-repeat fixed';
+  }
+  if (u.soort === 'kleur') return u.kleur || '#f7f7f8';
+  var s = sfeerVan(u.sfeer);
+  var delen = s.vlekken.map(function (v) {
+    return 'radial-gradient(1000px 600px at ' + v[1] + ', ' + v[0] + ' 0%, transparent 60%)';
+  });
+  delen.push(s.grond);
+  return delen.join(', ');
+}
+
+/* Maakt een geüploade foto passend voor een breed schoolbord: bijsnijden
+   naar 16:9 en verkleinen, zodat hij scherp blijft maar klein van omvang. */
+function achtergrondUitBestand(file){
+  return new Promise(function (res, rej) {
+    if (!file || (file.type && file.type.indexOf('image/') !== 0)) {
+      rej(new Error('geen afbeelding')); return;
+    }
+    var doelB = 1920, doelH = 1080;
+    function teken(bron, breedte, hoogte){
+      try {
+        var c = document.createElement('canvas');
+        c.width = doelB; c.height = doelH;
+        var ctx = c.getContext('2d');
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        // vullen en bijsnijden: de foto raakt beide randen, niets wordt uitgerekt
+        var schaal = Math.max(doelB / breedte, doelH / hoogte);
+        var b = breedte * schaal, h = hoogte * schaal;
+        ctx.drawImage(bron, (doelB - b) / 2, (doelH - h) / 2, b, h);
+        var uit = c.toDataURL('image/webp', 0.78);
+        if (uit.indexOf('data:image/webp') !== 0) uit = c.toDataURL('image/jpeg', 0.78);
+        if (bron.close) bron.close();
+        res(uit);
+      } catch (e) { rej(e); }
+    }
+    function viaImg(){
+      var r = new FileReader();
+      r.onload = function (e) {
+        var im = new Image();
+        im.onload = function () { teken(im, im.naturalWidth, im.naturalHeight); };
+        im.onerror = function () { rej(new Error('kon de afbeelding niet lezen')); };
+        im.src = e.target.result;
+      };
+      r.onerror = function () { rej(new Error('kon het bestand niet lezen')); };
+      r.readAsDataURL(file);
+    }
+    if (global.createImageBitmap) {
+      try {
+        createImageBitmap(file, { imageOrientation:'from-image' })
+          .then(function (bm) { teken(bm, bm.width, bm.height); })
+          .catch(viaImg);
+        return;
+      } catch (e) {}
+    }
+    viaImg();
+  });
+}
+
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
@@ -794,6 +891,8 @@ global.KB = {
   maakBackup: maakBackup, zetBackupTerug: zetBackupTerug,
   downloadBackup: downloadBackup, leesBackupBestand: leesBackupBestand,
   cryptoKan: cryptoKan,
+  SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
+  achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,
 
   DAGEN_KORT: DAGEN_KORT, DAGEN_LANG: DAGEN_LANG, WERKPLAATS_PLEKKEN: WERKPLAATS_PLEKKEN,
   STANDEN: STANDEN,
