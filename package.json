@@ -4,7 +4,8 @@
   "description": "De app zelf draait zonder bouwstap en zonder pakketten. Deze twee zijn alleen voor het testen: een postgres-verbinding voor de nabootsing van Supabase, en een browser om de app in te bedienen.",
   "scripts": {
     "opzetten": "sh test/opzetten.sh",
-    "test": "node test/inloggen.test.js && node test/sync.test.js"
+    "test": "node test/inloggen.test.js && node test/sync.test.js",
+    "test:rollen": "node test/rollen.test.js"
   },
   "devDependencies": {
     "pg": "^8.13.1",

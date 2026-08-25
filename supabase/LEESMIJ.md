@@ -68,3 +68,19 @@ psql -d kb -f supabase/test-03-rechten.sql
 ```
 
 Achter elke regel staat wat eruit hoort te komen.
+
+## Twee logins klaarzetten
+
+`inrichten.sql` maakt de school, de zes groepen, en zet één account als
+schoolbeheerder en één als leerkracht van Groep 1A. Vul bovenin de twee
+e-mailadressen in en druk op Run.
+
+De volgorde maakt niet uit. Bestaan de accounts al, dan krijgen ze meteen
+hun rol. Bestaan ze nog niet, dan blijft er een uitnodiging klaarliggen die
+vanzelf wordt verzilverd zodra iemand met dat adres een account maakt.
+Allebei die volgordes zijn nagetest, en het bestand mag zo vaak draaien als
+je wilt.
+
+De accounts zelf maak je in Supabase onder **Authentication → Users →
+Add user**. Dat regelt de wachtwoordversleuteling; met de hand rijen in
+`auth.users` zetten is vragen om problemen.
