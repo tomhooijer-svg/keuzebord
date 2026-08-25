@@ -139,6 +139,9 @@ create table if not exists public.borden (
   groep_id   uuid not null references public.groepen(id) on delete cascade,
   naam       text not null default 'Keuzebord',
   actief     boolean not null default true,
+  volgorde   int  not null default 0,
+  -- of de dag open is, wanneer hij begon, welk thema erop staat
+  stand      jsonb not null default '{}'::jsonb,
   aangemaakt timestamptz not null default now()
 );
 
@@ -188,12 +191,21 @@ create table if not exists public.doelen (
 );
 create index if not exists doelen_op_niveau on public.doelen (niveau);
 
+-- De doelen die deze groep voor zichzelf heeft aangevinkt uit de lijst.
+create table if not exists public.groep_doelen (
+  groep_id uuid not null references public.groepen(id) on delete cascade,
+  doel_id  uuid not null references public.doelen(id)  on delete cascade,
+  primary key (groep_id, doel_id)
+);
+
 create table if not exists public.taken (
   id           uuid primary key default gen_random_uuid(),
   groep_id     uuid not null references public.groepen(id) on delete cascade,
   naam         text not null,
   omschrijving text not null default '',
   hoek_id      uuid references public.hoeken(id) on delete set null,
+  plekken      int  not null default 6 check (plekken between 1 and 30),
+  kleur        text,
   actief       boolean not null default true,
   aangemaakt   timestamptz not null default now()
 );
@@ -207,11 +219,11 @@ create table if not exists public.taak_doelen (
 create table if not exists public.weekplannen (
   id         uuid primary key default gen_random_uuid(),
   groep_id   uuid not null references public.groepen(id) on delete cascade,
-  jaar       int not null,
-  week       int not null check (week between 1 and 53),
+  -- de maandag van die week; zo heet de sleutel in de app ook
+  maandag    date not null,
   notitie    text not null default '',
   aangemaakt timestamptz not null default now(),
-  unique (groep_id, jaar, week)
+  unique (groep_id, maandag)
 );
 
 -- De doelen die deze week centraal staan; die bepalen welke taken er zijn.
@@ -258,6 +270,9 @@ create table if not exists public.observaties (
   aangemaakt  timestamptz not null default now()
 );
 create index if not exists observaties_per_kind on public.observaties (leerling_id, datum);
+-- Eén stand per kind per doel; een nieuwe beoordeling vervangt de oude.
+create unique index if not exists een_stand_per_doel
+  on public.observaties (leerling_id, doel_id) where doel_id is not null;
 
 -- Alles wat er op het bord gebeurt, in volgorde. Hier komt de statistiek
 -- straks uit: wie kiest wat, wie kiest nooit iets, wie mist een doel.
@@ -269,6 +284,39 @@ create table if not exists public.gebeurtenissen (
   gegevens   jsonb not null default '{}'::jsonb
 );
 create index if not exists gebeurtenissen_per_groep on public.gebeurtenissen (groep_id, tijd desc);
+
+-- ── bijwerken van een oudere versie ────────────────────────────────────
+-- 'create table if not exists' laat een bestaande tabel met rust, dus een
+-- school die dit bestand al eens gedraaid heeft mist de kolommen die er
+-- later bij kwamen. Deze regels vullen dat aan en doen niets als het al
+-- klopt. Je kunt dit bestand dus zo vaak draaien als je wilt.
+
+alter table public.taken  add column if not exists plekken int not null default 6;
+alter table public.taken  add column if not exists kleur   text;
+alter table public.borden add column if not exists volgorde int not null default 0;
+alter table public.borden add column if not exists stand   jsonb not null default '{}'::jsonb;
+
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='weekplannen' and column_name='week') then
+    alter table public.weekplannen add column if not exists maandag date;
+    -- de maandag terugrekenen uit jaar en weeknummer
+    -- 4 januari valt altijd in week 1; date_trunc geeft de maandag daarvan
+    update public.weekplannen
+       set maandag = date_trunc('week', make_date(jaar, 1, 4))::date + (week - 1) * 7
+     where maandag is null;
+    delete from public.weekplannen a using public.weekplannen b
+      where a.ctid > b.ctid and a.groep_id = b.groep_id and a.maandag = b.maandag;
+    alter table public.weekplannen alter column maandag set not null;
+    alter table public.weekplannen drop constraint if exists weekplannen_groep_id_jaar_week_key;
+    alter table public.weekplannen drop column if exists jaar;
+    alter table public.weekplannen drop column if exists week;
+  end if;
+end $$;
+
+create unique index if not exists weekplan_per_maandag
+  on public.weekplannen (groep_id, maandag);
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat
@@ -316,7 +364,7 @@ declare t text;
 begin
   foreach t in array array[
     'scholen','profielen','uitnodigingen','groepen','groep_leden','leerlingen',
-    'media','hoeken','themas','thema_hoeken','borden','bord_hoeken',
+    'media','hoeken','themas','thema_hoeken','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
     'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen']
   loop
@@ -427,6 +475,7 @@ do $$
 declare
   regels text[][] := array[
     ['leerlingen',      'public.mag_bij_groep(groep_id)'],
+    ['groep_doelen',    'public.mag_bij_groep(groep_id)'],
     ['borden',          'public.mag_bij_groep(groep_id)'],
     ['taken',           'public.mag_bij_groep(groep_id)'],
     ['weekplannen',     'public.mag_bij_groep(groep_id)'],

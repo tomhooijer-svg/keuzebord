@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const CHROME = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const APP = 'http://localhost:8899';
 
 async function nieuwePagina(b){

@@ -56,7 +56,14 @@ function bouwWaar(zoek, waarden){
   for (const [kolom, ruw] of zoek.entries()) {
     if (['select','order','limit','on_conflict','offset'].includes(kolom)) continue;
     const m = /^([a-z]+)\.(.*)$/s.exec(ruw);
-    if (!m || !VERGELIJK[m[1]]) continue;
+    if (!m) continue;
+    if (m[1] === 'in') {
+      const lijst = m[2].replace(/^\(|\)$/g, '').split(',').filter(Boolean);
+      if (!lijst.length) { stukken.push('false'); continue; }
+      stukken.push(`"${kolom}" in (${lijst.map(v => { waarden.push(v.replace(/^"|"$/g,'')); return '$' + waarden.length; }).join(',')})`);
+      continue;
+    }
+    if (!VERGELIJK[m[1]]) continue;
     if (m[1] === 'is') { stukken.push(`"${kolom}" is ${m[2] === 'null' ? 'null' : 'not null'}`); continue; }
     waarden.push(m[2]);
     stukken.push(`"${kolom}" ${VERGELIJK[m[1]]} $${waarden.length}`);

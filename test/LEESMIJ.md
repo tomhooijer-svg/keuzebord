@@ -24,3 +24,14 @@ groepen maken, een juf uitnodigen, haar laten registreren en zien dat ze
 automatisch bij de goede school en groep zit, dat ze niet bij de groep
 hiernaast kan, verkeerd wachtwoord, opnieuw inloggen, een sessie die blijft
 staan, een server die plat ligt, en een e-mailadres dat al bestaat.
+
+## De synchronisatie
+
+`test/sync.test.js` zet een groep in elkaar zoals de app dat doet --
+kinderen, hoeken, een kind dat in de bouwhoek staat, instellingen, een taak
+en een weekplan met een verdeling over de dagen -- stuurt die naar de
+server, en haalt hem op een tweede apparaat weer op. Daarna wijzigen,
+toevoegen, verwijderen, twee keer opsturen zonder wijziging, een server die
+wegvalt en weer terugkomt, en een wijziging die de andere kant op reist.
+
+Vierentwintig dingen, en die moeten alle vierentwintig uitkomen.
