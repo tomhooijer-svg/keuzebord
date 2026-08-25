@@ -359,7 +359,12 @@ function fkPasToe(kluis){
 }
 
 /* ── afbeeldingen verkleinen ─────────────────────────────── */
-var FOTO_MAAT = { leerling:256, hoek:640, archief:640 };
+/* Hoe groot een foto hoogstens wordt bewaard, in pixels op de langste
+   zijde. De verhouding blijft altijd staan. Een foto van 4200x3200 uit een
+   telefoon wordt zo zo'n 800x610 -- ongeveer honderd keer kleiner, en op
+   een digibord nog altijd scherp. */
+var FOTO_MAAT = { leerling:256, hoek:800, archief:640 };
+var FOTO_KWALITEIT = { leerling:0.82, hoek:0.7 };
 
 function verklein(file, maxPx, kwaliteit){
   kwaliteit = kwaliteit || 0.82;
@@ -1006,7 +1011,7 @@ function hoekTinten(hoek, index){
 /* ── naar buiten ─────────────────────────────────────────── */
 global.KB = {
   KIND_KLEUREN: KIND_KLEUREN,
-  FOTO_MAAT: FOTO_MAAT,
+  FOTO_MAAT: FOTO_MAAT, FOTO_KWALITEIT: FOTO_KWALITEIT,
   NIVEAUS_PER_GROEP: NIVEAUS_PER_GROEP,
   uid: uid,
   get G(){ return G; },

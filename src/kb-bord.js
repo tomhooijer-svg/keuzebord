@@ -125,6 +125,7 @@ function toonBord(){
   document.querySelectorAll('.scherm').forEach(function (s) { s.classList.remove('aan'); });
   $('scherm-bord').classList.add('aan');
   tekenBord();
+  toonAanUit();
 }
 
 
@@ -178,6 +179,7 @@ function tekenBord(){
     rooster.appendChild(maakHoekKaart(hoek, i, k, b, indeling));
   });
   tekenStrook(k, b);
+  toonAanUit();
   tik();
 }
 
@@ -274,8 +276,10 @@ function maakHoekKaart(hoek, index, k, b, indeling){
   var beeld = el('div', 'hoek-beeld');
   var f = KB.foto(hoek.fotoId, k);
   if (f) {
+    // De foto ís de kaart: hij vult hem helemaal, en de naam komt erover.
     beeld.style.backgroundImage = 'url(' + f + ')';
     beeld.classList.add('met-foto');
+    kaart.classList.add('fotohoek');
   } else {
     beeld.appendChild(hoekIcoon(tint.kleur, hoek.naam));
   }
@@ -750,8 +754,104 @@ function toonHoekDetail(hoek, index){
   });
 }
 
+/* ── het codeslot ─────────────────────────────────────────
+   De instellingen zitten achter een code van vier cijfers, zodat een kind
+   niet per ongeluk het bord leegmaakt. De juf typt hem op het digibord,
+   dus grote toetsen en geen toetsenbord. */
+
+function vraagPin(klaar){
+  if (!KB.instelling('pinAan')) { klaar(); return; }
+  var goed = String(KB.instelling('pincode') || '1234');
+  var ingetikt = '';
+
+  toonBlad(function (blad) {
+    var vak = el('div', 'pinvak');
+    var titel = el('div', null, 'Even je code');
+    titel.style.cssText = 'font-size:1.3rem;font-weight:600;letter-spacing:-.022em';
+    vak.appendChild(titel);
+    vak.appendChild(el('p', 'hint', 'Vier cijfers.'));
+
+    var bollen = el('div', 'pincijfers');
+    for (var i = 0; i < 4; i++) bollen.appendChild(el('div', 'pincijfer'));
+    vak.appendChild(bollen);
+
+    var mis = el('div', 'pinmis');
+    vak.appendChild(mis);
+
+    function tekenBollen(){
+      for (var i = 0; i < bollen.children.length; i++) {
+        bollen.children[i].classList.toggle('vol', i < ingetikt.length);
+      }
+    }
+
+    var toetsen = el('div', 'pintoetsen');
+    ['1','2','3','4','5','6','7','8','9','','0','\u232b'].forEach(function (teken) {
+      if (teken === '') { toetsen.appendChild(el('div', 'pintoets leeg')); return; }
+      var t = el('button', 'pintoets', teken);
+      t.addEventListener('click', function () {
+        if (teken === '\u232b') ingetikt = ingetikt.slice(0, -1);
+        else if (ingetikt.length < 4) ingetikt += teken;
+        tekenBollen();
+        if (ingetikt.length < 4) { mis.textContent = ''; return; }
+        if (ingetikt === goed) { sluitBlad(); klaar(); return; }
+        mis.textContent = 'Dat is niet de goede code.';
+        ingetikt = '';
+        setTimeout(tekenBollen, 240);
+      });
+      toetsen.appendChild(t);
+    });
+    vak.appendChild(toetsen);
+    tekenBollen();
+
+    var annuleer = el('button', 'knop knop-stil', 'Terug naar het bord');
+    annuleer.style.marginTop = '22px';
+    annuleer.addEventListener('click', sluitBlad);
+    vak.appendChild(annuleer);
+    blad.appendChild(vak);
+  });
+}
+
+/* ── het bord aan- en uitzetten ───────────────────────────
+   Tussen twee speelmomenten door hoeft er niets te gebeuren. Uit betekent:
+   alles blijft staan zoals het staat, maar er valt niets te slepen. */
+
+function bordStaatAan(){
+  var b = KB.bord();
+  return !b || b.aan !== false;      // standaard aan
+}
+
+function zetBordAan(aan){
+  var b = KB.bord();
+  if (b) { b.aan = !!aan; KB.bewaar(); }
+  toonAanUit();
+  meld(aan ? 'Het bord staat aan' : 'Het bord staat uit');
+}
+
+function toonAanUit(){
+  var aan = bordStaatAan();
+  var knop = $('knop-aanuit');
+  if (knop) {
+    knop.classList.toggle('uit', !aan);
+    var tekst = $('knop-aanuit-tekst');
+    if (tekst) tekst.textContent = aan ? 'Bord aan' : 'Bord uit';
+  }
+  var scherm = $('scherm-bord');
+  if (scherm) scherm.classList.toggle('gepauzeerd', !aan);
+  var vlak = $('pauzevlak');
+  if (vlak) vlak.classList.toggle('aan', !aan && scherm && scherm.classList.contains('aan'));
+}
+
 /* ── menu ────────────────────────────────────────────────── */
-$('knop-menu').addEventListener('click', function () {
+/* Het testbord gebruikt hetzelfde bestand maar heeft niet alle knoppen,
+   dus we kijken eerst of ze er zijn. */
+(function () {
+  var aanuit = $('knop-aanuit');
+  if (aanuit) aanuit.addEventListener('click', function () { zetBordAan(!bordStaatAan()); });
+  var menu = $('knop-menu');
+  if (menu) menu.addEventListener('click', function () { vraagPin(toonMenu); });
+})();
+
+function toonMenu(){
   toonBlad(function (blad) {
     var titel = el('div', null, 'Bord');
     titel.style.cssText = 'font-size:1.4rem;font-weight:600;letter-spacing:-.02em;margin-bottom:20px';
@@ -760,14 +860,14 @@ $('knop-menu').addEventListener('click', function () {
     var lijst = el('div');
     lijst.style.cssText = 'display:flex;flex-direction:column;gap:10px';
 
-    [['Andere groep', function () {
-        KB.zetBeheerKlas(null);
-        sluitBlad(); toonKlassen();
+    [[bordStaatAan() ? 'Bord uitzetten' : 'Bord aanzetten', function () {
+        zetBordAan(!bordStaatAan()); sluitBlad();
       }],
      ['Bord leegmaken', function () {
         var b = KB.bord(), k = KB.klas();
         Object.keys(b.plaatsingen).forEach(function (h) { b.plaatsingen[h] = []; });
         k.wachtrij = [];
+        b.laatstGeleegd = Date.now();
         KB.bewaar(); sluitBlad(); tekenBord(); meld('Bord leeggemaakt');
       }],
      ['Volledig scherm', function () {
@@ -787,23 +887,18 @@ $('knop-menu').addEventListener('click', function () {
     lijst.appendChild(beheer);
     blad.appendChild(lijst);
 
-    // Wie er op dit apparaat is ingelogd, en de weg naar buiten. Op een
-    // digibord log je zelden uit, dus het staat onderaan en niet in beeld.
-    var wie = window.KBV && KBV.wie();
-    if (wie && wie.profiel) {
+    // Uitloggen kan, maar zonder naambordje erboven: op een digibord in de
+    // klas hoeft niemand te zien wie er is ingelogd.
+    if (window.KBV && KBV.wie() && KBV.wie().profiel) {
       var voet = el('div');
       voet.style.cssText = 'margin-top:22px;padding-top:16px;border-top:1px solid var(--vlak-2)';
-      voet.appendChild(el('div', 'hint',
-        'Ingelogd als ' + (wie.profiel.naam || wie.profiel.email) +
-        (wie.school ? ' · ' + wie.school.naam : '')));
       var uit = el('button', 'knop knop-stil', 'Uitloggen');
-      uit.style.marginTop = '10px';
       uit.addEventListener('click', function () { sluitBlad(); KBV.afmelden(); });
       voet.appendChild(uit);
       blad.appendChild(voet);
     }
   });
-});
+}
 
 /* ── klok en timers ──────────────────────────────────────── */
 /* Elke seconde dezelfde tekst opnieuw zetten laat de browser telkens

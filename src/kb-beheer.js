@@ -965,7 +965,7 @@ function bewerkHoek(h){
     if (bestaande) voorbeeld.style.backgroundImage = 'url(' + bestaande + ')';
     fotoVeld.appendChild(voorbeeld);
     fotoVeld.appendChild(bestandKnop('Foto kiezen', 'image/*', false, function (f) {
-      KB.verklein(f, KB.FOTO_MAAT.hoek).then(function (d) {
+      KB.verklein(f, KB.FOTO_MAAT.hoek, KB.FOTO_KWALITEIT.hoek).then(function (d) {
         concept.nieuweFoto = d;
         voorbeeld.style.backgroundImage = 'url(' + d + ')';
         ververfKaartje();
@@ -1171,9 +1171,39 @@ var FUNCTIES_BORD = [
   ['werkplaatsAan','Werkplaats klaarzetten', 'Zet de kinderen die aan de beurt zijn alvast in de werkplaats.']
 ];
 var FUNCTIES_BEHEER = [
-  ['pinAan',        'PIN op het beheer', 'Vraagt een code voordat je bij de instellingen komt.'],
+  ['pinAan',        'Code op het bord', 'Vraagt vier cijfers voor je bij de instellingen van het bord komt. Zo maakt een kind niet per ongeluk het bord leeg.'],
   ['signaleringAan','Signalering', 'Waarschuwt als een kind aan het eind van de week nog niet aan de beurt is geweest.']
 ];
+
+/* De code die het bord vraagt. Vier cijfers, meer niet -- het is geen
+   kluis maar een drempel voor kleine handen. */
+function pincodePaneel(k){
+  var p = paneel('Code van het bord');
+  if (!KB.instelling('pinAan', k)) {
+    p.appendChild(el('p', 'hint',
+      'Zet hierboven "Code op het bord" aan om een code te gebruiken.'));
+    return p;
+  }
+  p.appendChild(el('p', 'hint',
+    'Deze vier cijfers vraagt het bord voordat het de instellingen laat zien. ' +
+    'Het bord aan- en uitzetten kan wel gewoon, daar is geen code voor nodig.'));
+  var rij = el('div', 'knoprij');
+  var invoer = el('input', 'invoer');
+  invoer.type = 'text'; invoer.inputMode = 'numeric'; invoer.maxLength = 4;
+  invoer.value = String(KB.instelling('pincode', k) || '1234');
+  invoer.style.cssText = 'max-width:120px;font-size:1.3rem;letter-spacing:.32em;text-align:center';
+  invoer.addEventListener('input', function () {
+    invoer.value = invoer.value.replace(/[^0-9]/g, '').slice(0, 4);
+  });
+  rij.appendChild(invoer);
+  rij.appendChild(knop('Opslaan', 'primair', function () {
+    if (!/^[0-9]{4}$/.test(invoer.value)) { meld('Vier cijfers graag'); return; }
+    k.settings.pincode = invoer.value;
+    bewaarOfKlaag(); meld('Code opgeslagen');
+  }));
+  p.appendChild(rij);
+  return p;
+}
 
 panelen.functies = function (v){
   var k = KB.klas();
@@ -1253,6 +1283,7 @@ panelen.functies = function (v){
 
   v.appendChild(rooster);
 
+  v.appendChild(pincodePaneel(k));
   v.appendChild(backupPaneel());
 
   var kluis = paneel('Foto\'s op dit apparaat');
