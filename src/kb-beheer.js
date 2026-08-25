@@ -167,6 +167,7 @@ var ONDERDELEN = [
   { id:'taken',      naam:'Taken',      icoon:'<rect x="5" y="4" width="14" height="17" rx="2.2"></rect><path d="M9 3 h6 v3 H9 Z"></path><path d="M9 13 l2 2 4-4.5"></path>' },
   { id:'doelen',     naam:'Doelen',     icoon:'<circle cx="12" cy="12" r="8.2"></circle><circle cx="12" cy="12" r="4.4"></circle>' },
   { id:'observaties',naam:'Observaties',icoon:'<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3"></rect><path d="M8 12.4 l2.6 2.6 5.4-6"></path>' },
+  { id:'statistiek', naam:'Statistieken',icoon:'<path d="M4 20 V10"></path><path d="M10 20 V4"></path><path d="M16 20 V13"></path><path d="M21 20 H3"></path>' },
   { id:'scheiding1', scheiding:true },
   { id:'leerlingen', naam:'Leerlingen', icoon:'<circle cx="12" cy="8" r="3.4"></circle><path d="M5 19.5 c0-3.6 3.1-5.6 7-5.6 s7 2 7 5.6"></path>' },
   { id:'pictos',     naam:"Picto's",    icoon:'<rect x="3" y="6" width="18" height="14" rx="2.4"></rect><circle cx="12" cy="13" r="3.4"></circle><path d="M8 6 l1.5-2.5 h5 L16 6"></path>' },

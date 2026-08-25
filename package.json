@@ -14,7 +14,8 @@
     "test:losgeraakt": "node test/losgeraakt.test.js",
     "test:doelen": "node test/doelen.test.js",
     "test:doorloop": "node test/doorloop.test.js",
-    "test:werkmomenten": "node test/werkmomenten.test.js"
+    "test:werkmomenten": "node test/werkmomenten.test.js",
+    "test:statistiek": "node test/statistiek.test.js"
   },
   "devDependencies": {
     "pg": "^8.13.1",

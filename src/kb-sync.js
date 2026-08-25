@@ -271,6 +271,27 @@ function naarKlas(rijen, bestaande){
     };
   });
 
+  // Het logboek van de server erbij. Wat hier lokaal al stond en nog niet
+  // verstuurd is blijft staan; dubbele regels vallen op tijd en soort weg.
+  if (rijen.gebeurtenissen) {
+    var vanServer = (rijen.gebeurtenissen || []).map(function (r) {
+      var g = { soort:r.soort, tijd:new Date(r.tijd).getTime() };
+      Object.keys(r.gegevens || {}).forEach(function (veld) {
+        g[veld] = (veld === 'leerlingId' || veld === 'hoekId')
+          ? lok(r.gegevens[veld]) : r.gegevens[veld];
+      });
+      return g;
+    });
+    var gezien = {};
+    var alles = vanServer.concat(k.gebeurtenissen || []);
+    k.gebeurtenissen = alles.filter(function (g) {
+      var s2 = g.tijd + '|' + g.soort + '|' + (g.leerlingId || '') + '|' + (g.hoekId || '');
+      if (gezien[s2]) return false;
+      gezien[s2] = true;
+      return true;
+    }).sort(function (a, b) { return a.tijd - b.tijd; }).slice(-4000);
+  }
+
   k.beoordelingen = {};
   (rijen.observaties || []).forEach(function (r) {
     if (!r.doel_id) return;
@@ -372,6 +393,57 @@ function zorgVoorDoelen(schoolId){
   });
 }
 
+/* ── het logboek ──────────────────────────────────────────────────────
+   Wie wanneer welke hoek koos. Dat groeit alleen maar aan en wordt nooit
+   gewijzigd, dus we vergelijken het niet met een afdruk -- we sturen wat
+   er sinds de vorige keer bij is gekomen. Anders zouden duizenden regels
+   elke keer opnieuw langs de vergelijking moeten. */
+
+var LOGGRENS = 'kb_loggrens';
+
+function loggrens(klasId){
+  try { return JSON.parse(localStorage.getItem(LOGGRENS) || '{}')[klasId] || 0; }
+  catch (e) { return 0; }
+}
+function zetLoggrens(klasId, tijd){
+  try {
+    var g = JSON.parse(localStorage.getItem(LOGGRENS) || '{}');
+    g[klasId] = tijd;
+    localStorage.setItem(LOGGRENS, JSON.stringify(g));
+  } catch (e) {}
+}
+
+function stuurLogOp(k, klasId, groepId){
+  var grens = loggrens(klasId);
+  var nieuwe = (k.gebeurtenissen || []).filter(function (g) { return g.tijd > grens; });
+  if (!nieuwe.length) return Promise.resolve(0);
+
+  var hoogste = grens;
+  var rijen = nieuwe.map(function (g) {
+    if (g.tijd > hoogste) hoogste = g.tijd;
+    var gegevens = {};
+    Object.keys(g).forEach(function (veld) {
+      if (veld === 'soort' || veld === 'tijd') return;
+      // verwijzingen vertalen naar wat de server kent
+      if (veld === 'leerlingId' || veld === 'hoekId') {
+        gegevens[veld] = opServer(g[veld]) || g[veld];
+      } else gegevens[veld] = g[veld];
+    });
+    return { groep_id:groepId, tijd:new Date(g.tijd).toISOString(),
+             soort:g.soort, gegevens:gegevens };
+  });
+
+  // in stukken, anders wordt het één heel groot verzoek
+  var stukken = [];
+  for (var i = 0; i < rijen.length; i += 200) stukken.push(rijen.slice(i, i + 200));
+  return stukken.reduce(function (rij, stuk) {
+    return rij.then(function () { return SB.schrijf('gebeurtenissen', stuk); });
+  }, Promise.resolve()).then(function () {
+    zetLoggrens(klasId, hoogste);
+    return rijen.length;
+  });
+}
+
 /* ── opsturen ────────────────────────────────────────────────────────── */
 
 function serverRij(rij, tabel, groepId, schoolId){
@@ -457,6 +529,8 @@ function duw(klasId, groepId, schoolId){
     });
 
     return rij.then(function () {
+      return stuurLogOp(k, klasId, groepId).catch(function () { return 0; });
+    }).then(function () {
       nu._groep = groepGegevens(k);
       zetAfdruk(klasId, nu);
       return wat;
@@ -491,6 +565,10 @@ function haal(groepId){
         var waar = {}; waar[kolom] = 'in.' + lijstje(ids);
         werk.push(SB.lees(tabel, { kies:'*', waar:waar }).then(function (r) { rijen[tabel] = r || []; }));
       };
+      werk.push(SB.lees('gebeurtenissen', { kies:'tijd,soort,gegevens',
+        waar:{ groep_id:'eq.' + groepId }, volgorde:'tijd', hoeveel:4000 })
+        .then(function (r) { rijen.gebeurtenissen = r || []; })
+        .catch(function () { rijen.gebeurtenissen = []; }));
       haalVoor('bord_hoeken',    'bord_id',     borden);
       haalVoor('plaatsingen',    'bord_id',     borden);
       haalVoor('wachtrij',       'bord_id',     borden);
