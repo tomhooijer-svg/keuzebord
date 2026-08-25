@@ -19,10 +19,13 @@ cp -r src  "$UIT/"
 cp -r data "$UIT/"
 cp -r supabase "$UIT/"
 cp -r test "$UIT/"
-cp -r docs "$UIT/" 2>/dev/null || true
 
-# wat er bewust NIET in gaat
+# Wat er bewust NIET in gaat. docs/ beschrijft hoe deze repo is ontstaan,
+# inclusief wat er in de geschiedenis zit; dat hoort niet publiek. De
+# publieke repo krijgt zijn eigen leesmij.
 rm -f "$UIT/oud.html"
+rm -rf "$UIT/docs"
+cp "$R/docs/PUBLIEK-LEESMIJ.md" "$UIT/README.md" 2>/dev/null || true
 
 echo "── klaar in $UIT ──"
 echo

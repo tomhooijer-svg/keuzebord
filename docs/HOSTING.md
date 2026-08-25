@@ -37,16 +37,19 @@ e-mailadressen in?
 sh test/publieke-kopie.sh          # komt in /tmp/keuzebord-publiek
 ```
 
-### Wat jij doet
+### Gedaan
 
-1. Op github.com → **New repository** → naam `keuzebord-app`,
-   **Public**, en zet *Add a README* uit.
-2. Zeg hier hoe hij heet, dan zet ik de schone kopie erin.
+De repo `tomhooijer-svg/keuzebord-app` staat er, publiek en gevuld met de
+schone kopie. Eén commit, geen geschiedenis.
 
-### Daarna Pages aanzetten
+Let op de volgorde: **Pages kan pas aan als er inhoud in de repo staat.**
+Zolang de repo leeg is staat er bij Branch alleen "None", met de melding
+dat je eerst iets moet toevoegen. Dat is nu gebeurd.
 
-In die nieuwe repo → **Settings** → **Pages** → bij *Source* kies
-**Deploy from a branch**, branch `main`, map `/ (root)` → **Save**.
+### Pages aanzetten
+
+In `keuzebord-app` → **Settings** → **Pages** → bij *Source* kies
+**Deploy from a branch** → branch `main`, map `/ (root)` → **Save**.
 
 Na een minuut of twee staat de app op:
 
@@ -63,6 +66,21 @@ inloggen. In Supabase → **Authentication** → **URL Configuration**:
 
 - **Site URL**: `https://tomhooijer-svg.github.io/keuzebord-app/`
 - bij **Redirect URLs** hetzelfde adres erbij
+
+## Wijzigingen erheen brengen
+
+De twee repo's staan los van elkaar. `keuzebord` blijft de werkplaats;
+`keuzebord-app` is wat er online staat. Nieuwe versie erheen:
+
+```sh
+sh test/publieke-kopie.sh /tmp/kb-pub
+cd /pad/naar/keuzebord-app
+rm -rf ./* && cp -r /tmp/kb-pub/. .
+git add -A && git commit -m "..." && git push
+```
+
+Het script controleert elke keer opnieuw of er niets persoonlijks
+meelift.
 
 ## Waarom niet Cloudflare?
 
