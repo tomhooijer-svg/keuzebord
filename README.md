@@ -20,13 +20,21 @@ beurt komt — wie het langst niet is geweest staat vooraan. Ze werken eraan
 in de **werkplaats**, een hoek op het bord met een beperkt aantal plekken.
 Na afloop vink je per kind per doel af: nog niet, bezig of behaald.
 
+Wat er op het bord gebeurt wordt geteld: welke hoek een kind vaak kiest,
+met wie het daar zit, en welke hoeken blijven liggen. Dat staat bij
+**Statistieken**, en gaat mee in het **verslag** dat je per kind kunt
+afdrukken of als PDF bewaren voor een oudergesprek.
+
 ## Gegevens
 
-Alle gegevens staan in de browser van het apparaat zelf (localStorage en
-IndexedDB). **Er staat niets in deze repository en niets op een server.**
-Foto's van kinderen leven in een aparte fotokluis op het apparaat en
-worden uitgewisseld via een los bestand, bij voorkeur met een wachtwoord
-versleuteld.
+Alles staat in Supabase, achter een login, gescheiden per school en per
+groep — met rechtenregels in de database zelf, niet alleen in de app. Zie
+`supabase/schema.sql`. Het apparaat houdt een kopie in de browser
+(localStorage en IndexedDB), zodat het bord blijft werken als de
+verbinding wegvalt; wat er verschilt reist bij de eerstvolgende
+gelegenheid heen en weer.
+
+**In deze repository staan geen namen, foto's of planning van kinderen.**
 
 De doelenlijst in `data/` komt uit de leer- en ontwikkelingslijnen jonge
 kind, geordend per beheersingsniveau.

@@ -152,11 +152,18 @@ function naarRijen(k){
     });
   });
 
+  /* Aan een taak hoeft geen doel te hangen. Beoordeel je zo'n taak, dan
+     staat hij in de beoordelingen als "<kind>|taak:<taak>". Op de server
+     is dat een observatie zonder doel_id, met alleen de taak erbij --
+     anders zou 'taak:t2' als uuid de deur uit gaan en de hele push omvallen. */
   Object.keys(k.beoordelingen || {}).forEach(function (sleutel) {
     var deel = sleutel.split('|'), b = k.beoordelingen[sleutel];
     if (deel.length !== 2 || !b) return;
-    uit.observaties.push({ _id:'o~' + sleutel, _leerling:deel[0], _doel:deel[1],
-                           _taak:b.taakId || null, stand:b.stand,
+    var losseTaak = deel[1].indexOf('taak:') === 0 ? deel[1].slice(5) : null;
+    uit.observaties.push({ _id:'o~' + sleutel, _leerling:deel[0],
+                           _doel: losseTaak ? null : deel[1],
+                           _taak: losseTaak || b.taakId || null,
+                           stand:b.stand,
                            datum:new Date(b.datum || Date.now()).toISOString().slice(0,10) });
   });
 
@@ -294,8 +301,11 @@ function naarKlas(rijen, bestaande){
 
   k.beoordelingen = {};
   (rijen.observaties || []).forEach(function (r) {
-    if (!r.doel_id) return;
-    k.beoordelingen[lok(r.leerling_id) + '|' + lok(r.doel_id)] = {
+    // zonder doel is het de beoordeling van de taak zelf
+    var waarover = r.doel_id ? lok(r.doel_id)
+                 : r.taak_id ? 'taak:' + lok(r.taak_id) : null;
+    if (!waarover) return;
+    k.beoordelingen[lok(r.leerling_id) + '|' + waarover] = {
       stand:r.stand, taakId:r.taak_id ? lok(r.taak_id) : null,
       datum:new Date(r.datum).getTime() };
   });
@@ -368,7 +378,11 @@ function verschil(nu, toen){
    taken en observaties er gewoon naar wijzen. */
 
 function zorgVoorDoelen(schoolId){
-  var lokaal = (KB.doelenLaad() || []);
+  // doelenLaad() geeft { meta, lijst } terug -- niet de lijst zelf. Dat
+  // verschil kostte ons de hele doelenlijst: hij werd nooit verstuurd, en
+  // alles wat ernaar verwees viel daarna om.
+  var pak = KB.doelenLaad() || {};
+  var lokaal = pak.lijst || (KB.doelen && KB.doelen.lijst) || [];
   if (!lokaal.length) return Promise.resolve();
   return SB.lees('doelen', { kies:'id,code' }).then(function (bestaand) {
     var perCode = {};
@@ -491,9 +505,16 @@ function duw(klasId, groepId, schoolId){
         var stappen = [];
         if (d.nieuw.length) {
           stappen.push(function () {
+            // Een tabel met een samengestelde sleutel kan dezelfde rij niet
+            // twee keer hebben. Ging er onderweg iets mis en proberen we het
+            // opnieuw, dan staat een deel er al -- dus laten we de server
+            // botsingen opvangen in plaats van eraan stuk te gaan.
+            var opties = tabel.samengesteld
+              ? { opKolommen: tabel.samengesteld.join(','), bijBotsing: true }
+              : {};
             return SB.schrijf(tabel.naam, d.nieuw.map(function (r) {
               return serverRij(r, tabel, groepId, schoolId);
-            })).then(function (terug) {
+            }), opties).then(function (terug) {
               // de server gaf ons uuid's; onthouden welke bij welke horen
               if (tabel.samengesteld) return;
               (terug || []).forEach(function (r, i) {

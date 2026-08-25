@@ -322,6 +322,19 @@ end $$;
 create unique index if not exists weekplan_per_maandag
   on public.weekplannen (groep_id, maandag);
 
+-- Aan een taak hoeft geen doel te hangen; die beoordeel je dan als taak.
+-- Zo'n observatie heeft geen doel_id, dus de index hierboven op
+-- (leerling_id, doel_id) vangt hem niet. Ook daarvan één stand per kind.
+-- Staan er in een oudere database al dubbele rijen, dan lukt het aanmaken
+-- niet -- dat mag de rest van dit bestand niet tegenhouden.
+do $$
+begin
+  create unique index if not exists een_stand_per_taak
+    on public.observaties (leerling_id, taak_id) where doel_id is null;
+exception when others then
+  raise notice 'Index een_stand_per_taak niet aangemaakt: %', sqlerrm;
+end $$;
+
 -- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat
 -- ═══════════════════════════════════════════════════════════════════════

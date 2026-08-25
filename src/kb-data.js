@@ -578,6 +578,14 @@ function zorgVoorWerkplaats(k){
 }
 
 /* ── beurten: wie doet welke taak op welke dag ───────────── */
+/* Alleen kijken of een taak deze week gepland staat, zonder hem aan te
+   maken. weekTaak() maakt er namelijk eentje als hij nog niet bestaat, en
+   dat is voor lezen precies wat je niet wilt. */
+function weekTaakAls(sleutel, taakId, k){
+  var w = week(sleutel, k);
+  return (w.taken || []).filter(function (x) { return x.taakId === taakId; })[0] || null;
+}
+
 function weekTaak(sleutel, taakId, k){
   var w = week(sleutel, k);
   var wt = w.taken.filter(function (x) { return x.taakId === taakId; })[0];
@@ -1131,7 +1139,7 @@ global.KB = {
   dagVanVandaag: dagVanVandaag, week: week,
   taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak,
   werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
-  weekTaak: weekTaak, haalWeekTaakWeg: haalWeekTaakWeg,
+  weekTaak: weekTaak, weekTaakAls: weekTaakAls, haalWeekTaakWeg: haalWeekTaakWeg,
   standaardWerkmomenten: standaardWerkmomenten, werkmomenten: werkmomenten,
   dagRuimte: dagRuimte, momentGroepen: momentGroepen,
   geweestVandaag: geweestVandaag, markeerGeweest: markeerGeweest,
