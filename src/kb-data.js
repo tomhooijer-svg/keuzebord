@@ -59,6 +59,11 @@ function laad(){
   return G;
 }
 
+/* Wie hierop luistert, hoort het zodra er iets is opgeslagen. Zo hoeft
+   geen enkele plek in de app zelf te weten dat er ook een server is. */
+var naBewaren = null;
+function opBewaard(fn){ naBewaren = fn; }
+
 function bewaar(){
   try {
     var kopie = JSON.parse(JSON.stringify(G));
@@ -68,6 +73,7 @@ function bewaar(){
       (k.fotoLib || []).forEach(function (f) { if (f._c) f.data = null; });
     });
     localStorage.setItem(SLEUTEL, JSON.stringify(kopie));
+    if (naBewaren) { try { naBewaren(); } catch (e) {} }
     return true;
   } catch (e) {
     return false;   // vol: de aanroeper mag beslissen wat te melden
@@ -977,7 +983,7 @@ global.KB = {
   NIVEAUS_PER_GROEP: NIVEAUS_PER_GROEP,
   uid: uid,
   get G(){ return G; },
-  laad: laad, bewaar: bewaar, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
+  laad: laad, bewaar: bewaar, opBewaard: opBewaard, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,

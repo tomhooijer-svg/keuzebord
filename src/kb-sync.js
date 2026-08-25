@@ -203,8 +203,16 @@ function naarKlas(rijen, bestaande){
              dagOpen:!!stand.dagOpen, dagGesloten:!!stand.dagGesloten,
              dagStart:stand.dagStart || null, thema:stand.thema || 'geen' };
   });
+  // Een groep die op de server is aangemaakt heeft nog geen bord. De app
+  // gaat er wel altijd van uit dat er eentje is, dus die maken we hier --
+  // bij het eerstvolgende opsturen komt hij vanzelf op de server te staan.
+  if (!k.borden.length) {
+    k.borden = [{ id:'b' + Math.random().toString(36).slice(2, 9), naam:'Keuzebord',
+                  hoekLibIds:[], plaatsingen:{}, dagOpen:false, dagGesloten:false,
+                  dagStart:null, thema:'geen' }];
+  }
   var actief = (rijen.borden || []).filter(function (r) { return r.actief; })[0];
-  k.activeBordId = actief ? lok(actief.id) : (k.borden[0] && k.borden[0].id);
+  k.activeBordId = actief ? lok(actief.id) : k.borden[0].id;
 
   k.wachtrij = (rijen.wachtrij || []).map(function (r) {
     return { leerlingId:lok(r.leerling_id), hoekId:lok(r.hoek_id), volgorde:r.volgorde };

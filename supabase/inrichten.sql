@@ -47,7 +47,10 @@ begin
     if not exists (select 1 from public.groepen g
                     where g.school_id = s_id and g.naam = groepnaam) then
       insert into public.groepen (school_id, naam, volgorde)
-      values (s_id, groepnaam, nummer);
+      values (s_id, groepnaam, nummer)
+      returning id into g_id;
+      -- elke groep begint met één leeg keuzebord
+      insert into public.borden (groep_id, naam, actief) values (g_id, 'Keuzebord', true);
       raise notice '  groep % aangemaakt', groepnaam;
     end if;
   end loop;

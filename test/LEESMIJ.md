@@ -35,3 +35,24 @@ toevoegen, verwijderen, twee keer opsturen zonder wijziging, een server die
 wegvalt en weer terugkomt, en een wijziging die de andere kant op reist.
 
 Vierentwintig dingen, en die moeten alle vierentwintig uitkomen.
+
+## De hele keten
+
+`test/keten.test.js` doet het na zoals het in de klas gaat, en raakt
+daarbij de synchronisatie nergens rechtstreeks aan -- alleen de schermen:
+
+De juf logt in op haar laptop, komt in haar eigen beheer uit, en zet haar
+kinderen en hoeken neer. Ze slaat één keer op; de rest hoort vanzelf te
+gaan. Dan logt het digibord in, en daar staat haar groep: de vier hoeken
+met het goede aantal plekken, de zes kinderen die nog moeten kiezen, en de
+timer die zij aanzette. Een kind kiest de bouwhoek, en dat ziet de juf op
+haar laptop. Tot slot logt de beheerder in en ziet alle zes de groepen.
+
+Draai eerst `inrichten.sql` en maak de twee accounts aan, anders is er
+niets om mee in te loggen:
+
+```sh
+sh test/opzetten.sh
+psql -h /var/tmp -p 5439 -U postgres -d kb -f supabase/inrichten.sql
+node test/keten.test.js
+```

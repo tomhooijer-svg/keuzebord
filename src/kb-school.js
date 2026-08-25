@@ -248,7 +248,9 @@ function groepKaart(k, beheerd){
 
 KB.laad();
 KB.doelenLaad();
-KB.fkLees().then(function (m) { if (m) KB.fkPasToe(m); })
+(window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
+  .then(function () { return KB.fkLees(); })
+  .then(function (m) { if (m) KB.fkPasToe(m); })
   .catch(function () {})
   .then(teken);
 

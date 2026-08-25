@@ -808,7 +808,10 @@ function ververTimers(){
 /* ── opstarten ───────────────────────────────────────────── */
 KB.laad();
 KB.doelenLaad();
-KB.fkLees()
+/* Eerst de verbinding: die haalt de groep van dit apparaat binnen. Lukt
+   dat niet, dan tekent het bord gewoon wat er in de browser staat. */
+(window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
+  .then(function () { return KB.fkLees(); })
   .then(function (kluis) { if (kluis) { KB.fkPasToe(kluis); } })
   .catch(function () { /* zonder foto's werkt het bord gewoon */ })
   .then(function () {

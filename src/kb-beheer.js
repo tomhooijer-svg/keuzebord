@@ -1414,7 +1414,13 @@ global.BH = {
     var gebonden = KB.beheerKlasId();
     if (gebonden) KB.G.activeKlasId = gebonden;
 
-    KB.fkLees().then(function (m) { if (m) KB.fkPasToe(m); })
+    (window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
+      .then(function () {
+        var gekozen = KB.beheerKlasId();
+        if (gekozen) KB.G.activeKlasId = gekozen;
+        return KB.fkLees();
+      })
+      .then(function (m) { if (m) KB.fkPasToe(m); })
       .catch(function () {})
       .then(function () { tekenMenu(); teken(); });
   }
