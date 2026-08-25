@@ -3,6 +3,9 @@
 -- ═══════════════════════════════════════════════════════════════════════
 --  Vul hieronder de twee e-mailadressen in en druk op Run.
 --
+--  Let op: vul ze in de SQL Editor in, niet hier in het bestand. Zodra dit
+--  ergens publiek staat, staan die adressen er ook.
+--
 --  Het maakt niet uit of die accounts al bestaan. Bestaan ze al, dan
 --  krijgen ze meteen hun rol en groep. Bestaan ze nog niet, dan blijft er
 --  een uitnodiging klaarliggen: zodra iemand met dat e-mailadres een
@@ -14,9 +17,9 @@
 do $$
 declare
   -- ── hier invullen ────────────────────────────────────────────────────
-  schoolnaam    text := 'Het Kompas';
-  beheerder     text := 'tomhooijer@stichtingwies.nl';
-  leerkracht    text := 'tomhooijer@gmail.com';
+  schoolnaam    text := 'Mijn school';
+  beheerder     text := 'vul.hier.in@school.nl';
+  leerkracht    text := 'en.hier@school.nl';
   groep_van_juf text := 'Groep 1A';        -- welke groep de leerkracht krijgt
   -- ─────────────────────────────────────────────────────────────────────
 

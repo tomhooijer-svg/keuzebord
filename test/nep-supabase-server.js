@@ -6,6 +6,11 @@ const http = require('http');
 const crypto = require('crypto');
 const { Client } = require('pg');
 
+/* De opslag nabootsen: bestanden in het geheugen, met dezelfde adressen
+   als Supabase gebruikt. De rechten komen uit dezelfde regels als de rest,
+   dus we vragen de database of dit pad bij de school van deze persoon hoort. */
+const bestanden = new Map();
+
 const VERBINDING = { host: process.env.PGHOST || '/var/tmp', port: Number(process.env.PGPORT) || 5439,
                      user: process.env.PGUSER || 'postgres', database: process.env.PGDATABASE || 'kb' };
 const sessies = new Map();     // token -> { uid, ververs }
@@ -74,6 +79,15 @@ function bouwWaar(zoek, waarden){
 function lijfLezen(req){
   return new Promise(r => { let d = ''; req.on('data', c => d += c); req.on('end', () => r(d)); });
 }
+function ruwLezen(req){
+  return new Promise(r => { const s = []; req.on('data', c => s.push(c)); req.on('end', () => r(Buffer.concat(s))); });
+}
+async function magBijPad(uid, pad){
+  const school = (pad || '').split('/')[0];
+  if (!uid || !school) return false;
+  const r = await metRol(uid, c => c.query('select public.mijn_school()::text as s'));
+  return r.rows[0].s === school;
+}
 
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
@@ -87,6 +101,31 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return stuur(200, {});
 
   try {
+    // ── de opslag ──
+    const mOpslag = /^\/storage\/v1\/object\/(?:(sign)\/)?kb-media\/(.+)$/.exec(pad);
+    if (mOpslag) {
+      const pad2 = decodeURIComponent(mOpslag[2]);
+      const uid2 = uidVan(req);
+      if (mOpslag[1] === 'sign') {                   // een tijdelijke link vragen
+        if (!await magBijPad(uid2, pad2)) return stuur(403, { message:'geen toegang' });
+        return stuur(200, { signedURL: '/object/kb-media/' + encodeURI(pad2) + '?token=proef' });
+      }
+      if (req.method === 'POST' || req.method === 'PUT') {
+        if (!await magBijPad(uid2, pad2)) return stuur(403, { message:'geen toegang' });
+        bestanden.set(pad2, { bytes: await ruwLezen(req),
+                              type: req.headers['content-type'] || 'application/octet-stream' });
+        return stuur(200, { Key: 'kb-media/' + pad2 });
+      }
+    }
+    // een bestand ophalen met zo'n link
+    const mHaal = /^\/storage\/v1\/object\/kb-media\/(.+)$/.exec(pad);
+    if (mHaal && req.method === 'GET') {
+      const b = bestanden.get(decodeURIComponent(mHaal[1]));
+      if (!b) return stuur(404, { message:'niet gevonden' });
+      res.writeHead(200, { 'Content-Type': b.type, 'Access-Control-Allow-Origin':'*' });
+      return res.end(b.bytes);
+    }
+
     const ruwLijf = await lijfLezen(req);
     const lijf = ruwLijf ? JSON.parse(ruwLijf) : {};
 

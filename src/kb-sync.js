@@ -70,14 +70,20 @@ function naarRijen(k){
     observaties:[]
   };
 
+  var pad = function (mediaId) {
+    return global.KBMEDIA ? KBMEDIA.padVan(mediaId) : null;
+  };
+
   (k.leerlingen || []).forEach(function (l, i) {
     uit.leerlingen.push({ _id:l.id, naam:l.naam, kleur:l.kleur || null,
-                          volgorde:i, actief:l.actief === false ? false : true });
+                          foto_pad:pad(l.pictoId), volgorde:i,
+                          actief:l.actief === false ? false : true });
   });
 
   (k.hoekLib || []).forEach(function (h, i) {
     uit.hoeken.push({ _id:h.id, naam:h.naam, max_kinderen:h.maxKinderen || 4,
                       kleur:h.kleur || null, icoon:h.icoon || null,
+                      foto_pad:pad(h.fotoId),
                       timer_minuten:h.timerMinuten || null,
                       werkplaats:!!h.werkplaats, volgorde:i });
   });
@@ -376,7 +382,12 @@ function duw(klasId, groepId, schoolId){
   var k = (KB.G.klassen || []).filter(function (x) { return x.id === klasId; })[0];
   if (!k) return Promise.reject(new Error('Die groep ken ik niet.'));
 
-  return zorgVoorDoelen(schoolId).then(function () {
+  var vooraf = zorgVoorDoelen(schoolId);
+  // eerst de foto's, want de rijen van kinderen en hoeken wijzen ernaar
+  if (global.KBMEDIA) {
+    vooraf = vooraf.then(function () { return KBMEDIA.stuurOp(k, groepId, schoolId); });
+  }
+  return vooraf.then(function () {
     var nu   = naarRijen(k);
     var toen = afdrukVan(klasId);
     var wat  = verschil(nu, toen);
@@ -493,12 +504,23 @@ function haalBinnen(klasId, groepId){
     if (!bestaande) { bestaande = { id:klasId }; KB.G.klassen.push(bestaande); }
     naarKlas(rijen, bestaande);
     koppel(klasId, groepId);
+    // de foto's erbij, en dan de kinderen en hoeken er weer aan hangen
+    var foto = global.KBMEDIA
+      ? KBMEDIA.haalBinnen(bestaande, groepId)
+          .then(function () { KBMEDIA.koppelTerug(bestaande, rijen); })
+          .then(function () { return KBMEDIA.bewaarInKluis(bestaande); })
+          .catch(function () {})
+      : Promise.resolve();
+    return foto.then(function () { return doorMetAfdruk(bestaande, klasId); });
+  });
+}
+
+function doorMetAfdruk(bestaande, klasId){
     KB.bewaar();
     var plaat = naarRijen(bestaande);
     plaat._groep = groepGegevens(bestaande);
     zetAfdruk(klasId, plaat);
     return bestaande;
-  });
 }
 
 /* ── wat er nog weg moet ─────────────────────────────────────────────── */

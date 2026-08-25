@@ -1,95 +1,71 @@
-# Hosting op Cloudflare Pages
+# De app online zetten
 
-Alles wat hier staat is gratis en blijft gratis bij onze schaal. Deze pagina is
-het klikpad; de afweging waaróm Cloudflare staat in `PLAN.md` §8.
+## Kan het gratis via GitHub?
 
-> Claude kan deze stappen niet voor je doen: `api.cloudflare.com` en
-> `dash.cloudflare.com` zijn vanuit de ontwikkelomgeving niet bereikbaar. Een
-> API-token delen helpt dus niet — dat zou alleen een geheim zijn dat je voor
-> niets hebt weggegeven. Wat hier staat is voorbereid zodat het klikwerk klein is.
+Ja, maar met één belangrijke voorwaarde: **GitHub Pages is alleen gratis
+op een publieke repository.** Op een privé-repo heb je GitHub Pro nodig
+(zo'n vier euro per maand).
 
----
+Publiek mag hier prima. Er staat namelijk geen enkel kindgegeven meer in
+de app zelf — namen, foto's en planning leven allemaal in Supabase, achter
+een login. Wat er in de repo staat is de code, en die mag iedereen zien.
+De publieke sleutel van Supabase hoort ook gewoon in de browser thuis; wat
+iemand daarmee mag zien bepalen de rechtenregels in de database.
 
-## Doe dit in deze volgorde
+## Maar deze repo mag niet zomaar publiek
 
-De volgorde is niet willekeurig. Stap 1 en 2 vóór stap 3, anders publiceer je de
-kinderfoto's op nóg een adres.
+In de geschiedenis van `tomhooijer-svg/keuzebord` zit nog het bestand
+`keuzebordfinal2.html`: de allereerste versie die je uploadde, met echte
+voornamen van kleuters en 62 ingebouwde foto's. Dat bestand is uit de map
+weg, maar met één commando terug te halen — en bij een publieke repo geldt
+dat voor iedereen.
 
-### 1. Repository op privé
+De geschiedenis herschrijven kan, maar GitHub bewaart losgeraakte
+bestanden nog een tijd, en dan gaat het over foto's van kleuters. Dat
+risico hoef je niet te nemen als er een makkelijkere weg is.
 
-GitHub → `tomhooijer-svg/keuzebord` → **Settings** → **General** → helemaal naar
-beneden → **Danger Zone** → **Change repository visibility** → *Make private*.
+## De makkelijkere weg: een nieuwe, schone repository
 
-Zet in hetzelfde scherm **GitHub Pages** uit (Settings → Pages → Source: *None*).
-Cloudflare neemt het publiceren over.
+Eén commit, alleen de bestanden die de site nodig heeft, geen
+geschiedenis. Deze repo blijft privé staan als archief.
 
-### 2. De fotokluis naar `main`
+`test/publieke-kopie.sh` maakt die kopie en controleert hem meteen:
+staat er nog een spoor van het oude bestand in, en staan er echte
+e-mailadressen in?
 
-De branch `claude/digikeuzebord-pwa-expansion-askgwf` bevat de versie zonder
-ingebouwde foto's. Die moet naar `main` voordat Cloudflare gaat publiceren.
+```sh
+sh test/publieke-kopie.sh          # komt in /tmp/keuzebord-publiek
+```
 
-Let op: na het samenvoegen heeft de app op het digibord eenmalig het
-kluisbestand nodig — Beheer → Foto's → *Kluisbestand importeren*. Doe dat op elk
-apparaat waar het bord draait. Zonder import krijgen kinderen een gekleurde
-cirkel met hun beginletter; de app werkt gewoon door.
+### Wat jij doet
 
-### 3. Cloudflare Pages koppelen
+1. Op github.com → **New repository** → naam `keuzebord-app`,
+   **Public**, en zet *Add a README* uit.
+2. Zeg hier hoe hij heet, dan zet ik de schone kopie erin.
 
-1. Maak een gratis account op cloudflare.com (e-mailadres, geen creditcard).
-2. In het dashboard: **Workers & Pages** → **Create** → tabblad **Pages** →
-   **Connect to Git**.
-   *De bewoording in het dashboard verschuift wel eens; zoek op "Pages" en
-   "Connect to Git".*
-3. Autoriseer GitHub en kies de repo `keuzebord`. Geef alleen deze ene repo toegang.
-4. Instellingen:
+### Daarna Pages aanzetten
 
-   | Veld | Waarde |
-   |---|---|
-   | Project name | `keuzebord` |
-   | Production branch | `main` |
-   | Framework preset | **None** |
-   | Build command | *leeg laten* |
-   | Build output directory | `/` |
+In die nieuwe repo → **Settings** → **Pages** → bij *Source* kies
+**Deploy from a branch**, branch `main`, map `/ (root)` → **Save**.
 
-5. **Save and Deploy.** Na ongeveer een minuut staat de app op
-   `https://keuzebord.pages.dev`.
+Na een minuut of twee staat de app op:
 
-Vanaf nu publiceert elke push naar `main` automatisch. Elke andere branch krijgt
-een eigen voorbeeld-URL, zodat nieuwe versies eerst getest kunnen worden zonder
-dat de klas er last van heeft.
+```
+https://tomhooijer-svg.github.io/keuzebord-app/
+```
 
-### 4. Zet er een slot op (aanbevolen, ook gratis)
+Dat adres zet je op het digibord als startpagina.
 
-Zolang er nog geen inlogscherm in de app zit, is `keuzebord.pages.dev` voor
-iedereen bereikbaar die het adres raadt of ergens tegenkomt — inclusief de
-klaslijsten. Cloudflare Access lost dat op tot er echte accounts zijn:
+## Nog één ding in Supabase
 
-**Zero Trust** → **Access** → **Applications** → **Add an application** →
-*Self-hosted* → domein `keuzebord.pages.dev` → policy: *Allow*, met als regel
-**Emails** en daarin de zes leerkrachtadressen.
+Supabase moet weten dat dat adres bij jou hoort, anders weigert het
+inloggen. In Supabase → **Authentication** → **URL Configuration**:
 
-Wie het adres opent, krijgt een eenmalige code per mail en is daarna binnen.
-Gratis tot 50 gebruikers. Dit vervalt zodra de app zijn eigen inlogscherm heeft,
-maar tot die tijd is het de goedkoopste bescherming die er is.
+- **Site URL**: `https://tomhooijer-svg.github.io/keuzebord-app/`
+- bij **Redirect URLs** hetzelfde adres erbij
 
----
+## Waarom niet Cloudflare?
 
-## Wat er al klaarstaat in de repo
-
-| Bestand | Waarvoor |
-|---|---|
-| `_headers` | Beveiligingsheaders, en `noindex` zodat Google de app niet opneemt |
-| `robots.txt` | Zelfde reden, tweede slot |
-| `.gitignore` | Houdt fotokluis-bestanden en back-ups buiten de repo |
-
-Er is bewust geen buildstap: de app is statische HTML en JavaScript. Dat betekent
-niets om te onderhouden en niets dat kan breken bij een deploy.
-
----
-
-## Kosten
-
-€0. Cloudflare Pages heeft op het gratis plan onbeperkt verkeer en 500 builds per
-maand — wij zullen er hooguit een paar per week doen. Cloudflare Access is gratis
-tot 50 gebruikers. Een eigen domeinnaam is niet nodig; wil je het toch, dan kost
-dat ongeveer €10 per jaar.
+Dat kan ook, en dan mag de repo privé blijven. Het zijn een paar klikken
+meer en je krijgt er een tweede plek bij om in de gaten te houden. Als je
+het toch liever zo doet, zeg het — dan schrijf ik die stappen uit.
