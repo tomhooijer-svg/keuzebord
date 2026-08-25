@@ -289,6 +289,14 @@ returns boolean language sql stable security definer set search_path = public as
                    where id = auth.uid()), false);
 $$;
 
+-- Zit deze persoon aan deze groep gekoppeld? Apart, omdat de leesregel
+-- van groepen hem nodig heeft en die niet in groepen zelf mag kijken.
+create or replace function public.zit_in_groep(g uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.groep_leden
+                  where groep_id = g and profiel_id = auth.uid());
+$$;
+
 -- Een schoolbeheerder mag bij elke groep van haar eigen school. Een
 -- leerkracht alleen bij de groepen waar ze aan gekoppeld is.
 create or replace function public.mag_bij_groep(g uuid)
@@ -297,9 +305,7 @@ returns boolean language sql stable security definer set search_path = public as
     select 1 from public.groepen k
     where k.id = g
       and k.school_id = public.mijn_school()
-      and (public.ben_schoolbeheerder()
-           or exists (select 1 from public.groep_leden l
-                      where l.groep_id = g and l.profiel_id = auth.uid()))
+      and (public.ben_schoolbeheerder() or public.zit_in_groep(g))
   );
 $$;
 
@@ -389,8 +395,14 @@ create policy "beheerder trekt uitnodiging in" on public.uitnodigingen
 
 -- ── groepen ────────────────────────────────────────────────────────────
 
+-- Let op de vorm: hier staat bewust niet mag_bij_groep(id). Die zoekt de
+-- groep op in deze tabel, en bij het toevoegen van een groep staat de rij
+-- er nog niet in -- de app krijgt de nieuwe rij altijd terug, en dan viel
+-- een verse groep over zijn eigen leesregel. Dit kijkt naar de kolommen
+-- van de rij zelf en heeft dat probleem niet.
 create policy "eigen groepen lezen" on public.groepen
-  for select using (public.mag_bij_groep(id));
+  for select using (school_id = public.mijn_school()
+                    and (public.ben_schoolbeheerder() or public.zit_in_groep(id)));
 create policy "beheerder maakt groepen" on public.groepen
   for insert with check (school_id = public.mijn_school() and public.ben_schoolbeheerder());
 create policy "groep aanpassen" on public.groepen
@@ -557,6 +569,7 @@ grant execute on function public.school_beginnen(text) to authenticated;
 grant execute on function public.mijn_school()        to authenticated;
 grant execute on function public.ben_schoolbeheerder() to authenticated;
 grant execute on function public.mag_bij_groep(uuid)  to authenticated;
+grant execute on function public.zit_in_groep(uuid)   to authenticated;
 
 -- Zonder deze rechten komt de app niet eens bij de tabellen; de regels
 -- hierboven bepalen daarna pas welke rijen zichtbaar zijn.

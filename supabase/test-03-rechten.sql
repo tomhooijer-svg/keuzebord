@@ -143,3 +143,20 @@ do $$ begin
   raise notice 'GELUKT -- FOUT';
 exception when others then raise notice 'geweigerd'; end $$;
 reset role;
+
+\echo '20 beheerder maakt een groep en krijgt hem terug  verwacht: Nieuwe groep'
+set role authenticated;
+set test.uid = '11111111-1111-1111-1111-111111111111';
+do $$
+declare uit text;
+begin
+  insert into public.groepen (school_id, naam)
+  select school_id, 'Nieuwe groep' from public.profielen where id = auth.uid()
+  returning naam into uit;
+  raise notice '%', uit;
+exception when others then raise notice 'geweigerd -- FOUT (%)', sqlerrm; end $$;
+
+\echo '21 juf1 leest die nieuwe groep niet     verwacht: Groep 1A'
+set test.uid = '55555555-5555-5555-5555-555555555555';
+select string_agg(naam, ', ' order by naam) from public.groepen;
+reset role;
