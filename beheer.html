@@ -131,6 +131,21 @@
 .doelkaart.aan .doelvink{ background:var(--accent); border-color:var(--accent); color:#fff; }
 
 /* ── doelen kiezen: zoeken, suggesties, en bladeren ── */
+.rondekop{ font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+           color:var(--inkt-4); margin:10px 0 5px; padding-top:8px;
+           border-top:1px dashed var(--lijn); }
+.kindchip-naam{ font-size:inherit; color:inherit; text-align:left; flex-grow:1; }
+.kindchip-pijl{ width:20px; height:20px; border-radius:6px; flex:none;
+                font-size:.8rem; line-height:1; color:var(--inkt-3);
+                background:rgba(20,28,44,.05); transition:background .12s ease; }
+.kindchip-pijl:hover:not(:disabled){ background:rgba(20,28,44,.12); color:var(--inkt); }
+.kindchip-pijl:disabled{ opacity:.25; cursor:default; }
+.kindchip.teveel{ opacity:.5; }
+
+.dagvak{ background:var(--vlak-2); border-radius:12px; padding:12px 10px; text-align:center; }
+.dagkop{ font-size:.8rem; font-weight:600; color:var(--inkt-2); margin-bottom:8px; }
+.daghint{ font-size:.72rem; color:var(--inkt-3); margin-top:7px; }
+
 .doelbalk{ margin-bottom:10px; }
 .doelbalk .invoer{ font-size:.95rem; padding:10px 13px; }
 .doelbladeraar{ margin-top:14px; }

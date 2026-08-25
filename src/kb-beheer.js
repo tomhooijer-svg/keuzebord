@@ -1168,12 +1168,55 @@ var FUNCTIES_BORD = [
   ['timerAan',    'Tijdvergrendeling', 'Een kind blijft even in de gekozen hoek. De ring op het picto loopt vol.'],
   ['wachtrijAan', 'Wachtrij bij volle hoek', 'Kinderen melden zich aan en schuiven door zodra er plek is.'],
   ['tellingAan',  'Telling op het picto', 'Laat zien hoe vaak een kind deze week in die hoek was.'],
-  ['werkplaatsAan','Werkplaats klaarzetten', 'Zet de kinderen die aan de beurt zijn alvast in de werkplaats.']
+  ['werkplaatsAan','Werkplaats klaarzetten', 'Zet de kinderen die aan de beurt zijn alvast in de werkplaats.'],
+  ['werkmomentenAan','Twee werkmomenten per dag', 'Op een hele dag werk je twee keer in de werkplaats. De tweede ronde staat er alvast grijs achter; zodra een kind zijn plaatje eruit haalt schuift die naam naar voren.']
 ];
 var FUNCTIES_BEHEER = [
   ['pinAan',        'Code op het bord', 'Vraagt vier cijfers voor je bij de instellingen van het bord komt. Zo maakt een kind niet per ongeluk het bord leeg.'],
   ['signaleringAan','Signalering', 'Waarschuwt als een kind aan het eind van de week nog niet aan de beurt is geweest.']
 ];
+
+/* Hoe vaak er op een dag in de werkplaats wordt gewerkt. Standaard twee
+   keer op maandag, dinsdag en donderdag, en één keer op de halve dagen --
+   maar elke groep regelt dat weer anders. */
+function werkmomentenPaneel(k){
+  var p = paneel('Werkmomenten per dag');
+  if (!KB.instelling('werkmomentenAan', k)) {
+    p.appendChild(el('p', 'hint',
+      'Zet hierboven "Twee werkmomenten per dag" aan om dit te gebruiken. ' +
+      'Zonder deze functie is er één ronde per dag.'));
+    return p;
+  }
+  p.appendChild(el('p', 'hint',
+    'Twee momenten van ' + (KB.werkplaatsHoek(k) ? KB.werkplaatsHoek(k).maxKinderen : KB.WERKPLAATS_PLEKKEN) +
+    ' plekken betekent dat er op zo\'n dag twee groepjes aan de beurt komen. ' +
+    'Het verdelen over de week houdt daar rekening mee.'));
+
+  var huidig = KB.werkmomenten(k);
+  var rooster = el('div', 'weekrooster');
+  KB.DAGEN_KORT.forEach(function (d, i) {
+    var vak = el('div', 'dagvak');
+    vak.appendChild(el('div', 'dagkop', KB.DAGEN_LANG[i]));
+    vak.appendChild(BH.teller(huidig[d], 1, 4, function (n) {
+      if (!k.settings.werkmomenten) k.settings.werkmomenten = KB.standaardWerkmomenten();
+      k.settings.werkmomenten[d] = n;
+      bewaarOfKlaag();
+    }));
+    var plek = KB.werkplaatsHoek(k);
+    vak.appendChild(el('div', 'daghint',
+      (huidig[d] * ((plek && plek.maxKinderen) || KB.WERKPLAATS_PLEKKEN)) + ' kinderen'));
+    rooster.appendChild(vak);
+  });
+  p.appendChild(rooster);
+
+  var rij = el('div', 'knoprij');
+  rij.appendChild(knop('Terug naar 2-2-1-2-1', 'stil', function () {
+    k.settings.werkmomenten = KB.standaardWerkmomenten();
+    bewaarOfKlaag(); teken(); meld('Weer op de gewone week gezet');
+  }));
+  p.appendChild(rij);
+  return p;
+}
 
 /* De code die het bord vraagt. Vier cijfers, meer niet -- het is geen
    kluis maar een drempel voor kleine handen. */
@@ -1283,6 +1326,7 @@ panelen.functies = function (v){
 
   v.appendChild(rooster);
 
+  v.appendChild(werkmomentenPaneel(k));
   v.appendChild(pincodePaneel(k));
   v.appendChild(backupPaneel());
 

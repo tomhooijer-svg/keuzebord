@@ -145,6 +145,7 @@ function naarRijen(k){
         (wt.verdeling && wt.verdeling[dag] || []).forEach(function (lid) {
           uit.taak_toewijzing.push({
             _id:wtId + '~' + lid, _weekplantaak:wtId, _leerling:lid, dag:nr + 1,
+            geweest:(wt.geweest && wt.geweest[lid]) || null,
             stand:(wt.afgerond && wt.afgerond[lid]) ? 'behaald' : 'nog' });
         });
       });
@@ -251,14 +252,16 @@ function naarKlas(rijen, bestaande){
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
-        var afgerond = {};
+        var afgerond = {}, geweest = {};
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
           .forEach(function (t) {
             var dag = DAGEN[(t.dag || 1) - 1] || 'ma';
             verdeling[dag].push(lok(t.leerling_id));
             if (t.stand === 'behaald') afgerond[lok(t.leerling_id)] = true;
+            if (t.geweest) geweest[lok(t.leerling_id)] = String(t.geweest).slice(0, 10);
           });
-        return { taakId:lok(wt.taak_id), verdeling:verdeling, afgerond:afgerond };
+        return { taakId:lok(wt.taak_id), verdeling:verdeling,
+                 afgerond:afgerond, geweest:geweest };
       });
     k.weken[sleutel] = {
       notitie: r.notitie,

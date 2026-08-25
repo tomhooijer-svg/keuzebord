@@ -25,8 +25,69 @@ var G = null;
 function standaardInstellingen(){
   return { timerAan:false, timerMinuten:20, wachtrijAan:false, tellingAan:false,
            werkplaatsAan:false, signaleringAan:false,
+           werkmomentenAan:false, werkmomenten:standaardWerkmomenten(),
            bordLegen:'dag', dagdeelUur:12,
            pinAan:false, pincode:'1234', kolommen:3 };
+}
+
+/* Op maandag, dinsdag en donderdag wordt er twee keer in de werkplaats
+   gewerkt; woensdag en vrijdag maar één keer, want dat zijn halve dagen.
+   Dat is de gewoonte hier, en het staat los van hoeveel plekken de
+   werkplaats heeft -- twee momenten van zes is twaalf kinderen op een dag. */
+function standaardWerkmomenten(){
+  return { ma:2, di:2, wo:1, do:2, vr:1 };
+}
+
+function werkmomenten(k){
+  k = k || klas();
+  var uit = standaardWerkmomenten();
+  var eigen = instelling('werkmomenten', k);
+  if (eigen && typeof eigen === 'object') {
+    DAGEN_KORT.forEach(function (d) {
+      var n = parseInt(eigen[d], 10);
+      if (n >= 1 && n <= 4) uit[d] = n;
+    });
+  }
+  return uit;
+}
+
+/* Hoeveel kinderen er op een dag in de werkplaats passen: de plekken maal
+   het aantal momenten. Staat de functie uit, dan is het gewoon één ronde. */
+function dagRuimte(dag, plekken, k){
+  if (!instelling('werkmomentenAan', k)) return plekken;
+  return plekken * (werkmomenten(k)[dag] || 1);
+}
+
+/* De kinderen van een dag opgedeeld in rondes: de eerste zes zijn moment
+   één, de volgende zes moment twee. De volgorde in de verdeling bepaalt
+   dus wie wanneer gaat -- en die volgorde kun je zelf verslepen. */
+function momentGroepen(wt, dag, plekken, k){
+  var lijst = (wt.verdeling && wt.verdeling[dag]) || [];
+  var aantal = instelling('werkmomentenAan', k) ? (werkmomenten(k)[dag] || 1) : 1;
+  var uit = [];
+  for (var m = 0; m < aantal; m++) {
+    uit.push(lijst.slice(m * plekken, (m + 1) * plekken));
+  }
+  // wat er nog overblijft omdat iemand er te veel op deze dag staat
+  var rest = lijst.slice(aantal * plekken);
+  return { rondes: uit, teveel: rest };
+}
+
+/* Wie er vandaag al in de werkplaats is geweest. Zodra een kind zijn
+   plaatje er weer uithaalt, is zijn beurt voorbij en schuift de volgende
+   ronde in beeld. */
+function geweestVandaag(wt, leerlingId){
+  return !!(wt && wt.geweest && wt.geweest[leerlingId] === datumSleutel());
+}
+function markeerGeweest(wt, leerlingId){
+  if (!wt) return;
+  if (!wt.geweest) wt.geweest = {};
+  wt.geweest[leerlingId] = datumSleutel();
+}
+function datumSleutel(d){
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+         '-' + String(d.getDate()).padStart(2, '0');
 }
 
 function leegKlas(naam){
@@ -201,11 +262,25 @@ function hoekVan(id, k){
 }
 
 function haalWeg(leerlingId, hoekId){
-  var b = bord();
+  var k = klas(), b = bord(k);
+  var stond = (b.plaatsingen[hoekId] || []).some(function (p) {
+    return p.leerlingId === leerlingId;
+  });
   b.plaatsingen[hoekId] = (b.plaatsingen[hoekId] || []).filter(function (p) {
     return p.leerlingId !== leerlingId;
   });
-  logGebeurtenis('weg', { leerlingId: leerlingId, hoekId: hoekId });
+  logGebeurtenis('weg', { leerlingId: leerlingId, hoekId: hoekId }, k);
+
+  // Haalt een kind zijn plaatje uit de werkplaats, dan is zijn beurt
+  // voorbij en mag de volgende ronde in beeld komen.
+  var hoek = hoekVan(hoekId, k);
+  if (stond && hoek && hoek.werkplaats) {
+    var dag = dagVanVandaag();
+    var w = week(weekSleutel(), k);
+    (w.taken || []).forEach(function (wt) {
+      if ((wt.verdeling[dag] || []).indexOf(leerlingId) >= 0) markeerGeweest(wt, leerlingId);
+    });
+  }
   bewaar();
   schuifWachtrijDoor(hoekId);
 }
@@ -587,20 +662,30 @@ function verdeelAutomatisch(sleutel, taakId, opties, k){
   dagen.forEach(function (d) { wt.verdeling[d] = []; });
   DAGEN_KORT.forEach(function (d) { if (dagen.indexOf(d) < 0) wt.verdeling[d] = wt.verdeling[d] || []; });
 
-  // Zo gelijk mogelijke groepjes: liever 5+5+5+4 dan 6+6+6+2.
-  var perDag = Math.ceil(kinderen.length / dagen.length);
-  if (perDag > plekken) perDag = plekken;
+  // Hoeveel er op elke dag past. Op een dag met twee werkmomenten passen er
+  // twee rondes, op een halve dag maar één.
+  var ruimte = {};
+  var totaleRuimte = 0;
+  dagen.forEach(function (d) { ruimte[d] = dagRuimte(d, plekken, k); totaleRuimte += ruimte[d]; });
+
+  // Zo gelijk mogelijk verdelen, maar naar rato van wat er per dag past:
+  // een dag met twee momenten krijgt er ongeveer twee keer zoveel.
   var i = 0;
+  var wens = {};
   dagen.forEach(function (d) {
-    for (var n = 0; n < perDag && i < kinderen.length; n++) {
+    wens[d] = Math.min(ruimte[d],
+      Math.round(kinderen.length * (ruimte[d] / (totaleRuimte || 1))));
+  });
+  dagen.forEach(function (d) {
+    for (var n = 0; n < wens[d] && i < kinderen.length; n++) {
       wt.verdeling[d].push(kinderen[i++].id);
     }
   });
-  // Wat overblijft omdat de plekken op zijn: aanvullen waar nog ruimte is.
+  // Wat overblijft: aanvullen waar nog ruimte is.
   while (i < kinderen.length) {
     var geplaatst = false;
     for (var j = 0; j < dagen.length && i < kinderen.length; j++) {
-      if (wt.verdeling[dagen[j]].length < plekken) {
+      if (wt.verdeling[dagen[j]].length < ruimte[dagen[j]]) {
         wt.verdeling[dagen[j]].push(kinderen[i++].id);
         geplaatst = true;
       }
@@ -1047,6 +1132,10 @@ global.KB = {
   taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak,
   werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
   weekTaak: weekTaak, haalWeekTaakWeg: haalWeekTaakWeg,
+  standaardWerkmomenten: standaardWerkmomenten, werkmomenten: werkmomenten,
+  dagRuimte: dagRuimte, momentGroepen: momentGroepen,
+  geweestVandaag: geweestVandaag, markeerGeweest: markeerGeweest,
+  datumSleutel: datumSleutel,
   toegewezen: toegewezen, dagVanKind: dagVanKind, zetKindOpDag: zetKindOpDag,
   beurtenTot: beurtenTot, verdeelAutomatisch: verdeelAutomatisch,
   geplandVandaag: geplandVandaag, heeftBeurtVandaag: heeftBeurtVandaag,

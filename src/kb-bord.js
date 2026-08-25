@@ -15,6 +15,17 @@ var el = function (tag, klasse, tekst) {
 };
 var veilig = function (s) { return String(s == null ? '' : s); };
 
+/* Een naam die in een klein rondje past: de voornaam, en als die te lang
+   is de eerste letters. Beter iets leesbaars dan een streepje. */
+function kortenaam(naam){
+  var delen = String(naam || '').trim().split(/\s+/);
+  var n = delen[0] || '';
+  // korte voornaam met nog iets erachter: dat erbij, anders staan er drie
+  // keer dezelfde "Kind" naast elkaar
+  if (n.length <= 4 && delen[1]) n += ' ' + delen[1].charAt(0).toUpperCase();
+  return n.length > 8 ? n.slice(0, 7) + '.' : n;
+}
+
 var DAGEN   = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
 var MAANDEN = ['januari','februari','maart','april','mei','juni','juli','augustus',
                'september','oktober','november','december'];
@@ -183,12 +194,35 @@ function tekenBord(){
   tik();
 }
 
-function gereserveerdVoor(hoek, k, b){
-  if (!hoek.werkplaats || !KB.instelling('werkplaatsAan', k)) return [];
+/* Wie er vandaag in de werkplaats hoort. Met werkmomenten aan komt dat in
+   rondes: de eerste zes zijn nu aan de beurt, de volgende zes staan er in
+   het grijs achter. Zodra iemand van ronde één zijn plaatje eruit haalt,
+   schuift de naam daarachter in beeld. */
+function werkplaatsRondes(hoek, k, b){
+  var leeg = { nu: [], straks: [] };
+  if (!hoek.werkplaats || !KB.instelling('werkplaatsAan', k)) return leeg;
+
   var aanwezig = KB.bezetting(hoek.id, b).map(function (p) { return p.leerlingId; });
-  return KB.geplandVandaag(null, null, k)
-    .filter(function (g) { return aanwezig.indexOf(g.leerlingId) < 0; })
-    .map(function (g) { return g.leerlingId; });
+  var dag = KB.dagVanVandaag();
+  var w = KB.week(KB.weekSleutel(), k);
+  var nu = [], straks = [];
+
+  (w.taken || []).forEach(function (wt) {
+    var groepen = KB.momentGroepen(wt, dag, hoek.maxKinderen, k);
+    groepen.rondes.forEach(function (ronde, nr) {
+      ronde.forEach(function (id) {
+        if (aanwezig.indexOf(id) >= 0) return;              // die staat er al
+        if (KB.geweestVandaag(wt, id)) return;              // die is al geweest
+        if (nr === 0) nu.push(id); else straks.push(id);
+      });
+    });
+    groepen.teveel.forEach(function (id) {
+      if (aanwezig.indexOf(id) < 0 && !KB.geweestVandaag(wt, id)) straks.push(id);
+    });
+  });
+
+  // Is ronde één op, dan schuift ronde twee door naar voren.
+  return { nu: nu, straks: straks };
 }
 
 
@@ -259,7 +293,7 @@ function begrens(waarde, laag, hoog){ return Math.round(Math.max(laag, Math.min(
 function maakHoekKaart(hoek, index, k, b, indeling){
   var tint = KB.hoekTinten(hoek, index);
   var kinderen = KB.bezetting(hoek.id, b);
-  var gereserveerd = gereserveerdVoor(hoek, k, b);
+  var gereserveerd = werkplaatsRondes(hoek, k, b);
   var vol = kinderen.length >= hoek.maxKinderen;
   var rij = KB.wachtrijVoor(hoek.id, k);
 
@@ -309,7 +343,8 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     plekken.appendChild(plek);
   });
   var vrijeplekken = Math.max(0, hoek.maxKinderen - kinderen.length);
-  gereserveerd.slice(0, vrijeplekken).forEach(function (id) {
+  var nuLijst = (gereserveerd.nu || []).slice(0, vrijeplekken);
+  nuLijst.forEach(function (id) {
     var l = KB.leerling(id, k);
     if (!l) return;
     var plek = el('div', 'plek gereserveerd');
@@ -318,10 +353,25 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     if (l.image) bol.style.backgroundImage = 'url(' + l.image + ')';
     else bol.textContent = (l.naam || '?').charAt(0).toUpperCase();
     plek.appendChild(bol);
-    plek.title = l.naam + ' is vandaag aan de beurt';
+    plek.title = l.naam + ' is nu aan de beurt';
     plekken.appendChild(plek);
   });
-  for (var i = kinderen.length + Math.min(gereserveerd.length, vrijeplekken);
+
+  // Wat er nog over is aan plekken vullen we met de namen van het volgende
+  // werkmoment, in het grijs. Dan zie je wie er straks aan de beurt is
+  // zonder dat het lijkt alsof ze er al zitten.
+  var nog = hoek.maxKinderen - kinderen.length - nuLijst.length;
+  var straksLijst = (gereserveerd.straks || []).slice(0, Math.max(0, nog));
+  straksLijst.forEach(function (id) {
+    var l = KB.leerling(id, k);
+    if (!l) return;
+    var plek = el('div', 'plek straks');
+    plek.appendChild(el('span', 'plek-naam', kortenaam(l.naam)));
+    plek.title = l.naam + ' is het volgende werkmoment aan de beurt';
+    plekken.appendChild(plek);
+  });
+
+  for (var i = kinderen.length + nuLijst.length + straksLijst.length;
        i < hoek.maxKinderen; i++) {
     plekken.appendChild(el('div', 'plek vrij'));
   }
@@ -521,11 +571,14 @@ function leg(leerling, hoekId){
   // Staat er vandaag een groepje ingepland in de werkplaats, dan zijn de
   // plekken van hen. Een ander kind mag alleen bij wat overblijft.
   if (hoek && hoek.werkplaats && KB.instelling('werkplaatsAan', k)) {
-    var gereserveerd = gereserveerdVoor(hoek, k, b);
+    var rondes = werkplaatsRondes(hoek, k, b);
     var isAanDeBeurt = KB.heeftBeurtVandaag(leerling.id, k);
     var bezet = KB.bezetting(hoek.id, b).length;
-    if (!isAanDeBeurt && bezet + gereserveerd.length >= hoek.maxKinderen) {
-      toonBeurtUitleg(leerling, hoek, gereserveerd, k);
+    // Alleen wie nú aan de beurt is houdt een plek bezet. Wie in het
+    // volgende werkmoment staat, blokkeert niets -- die naam staat er
+    // alleen alvast.
+    if (!isAanDeBeurt && bezet + rondes.nu.length >= hoek.maxKinderen) {
+      toonBeurtUitleg(leerling, hoek, rondes.nu, k);
       return;
     }
   }

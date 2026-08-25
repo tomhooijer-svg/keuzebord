@@ -718,25 +718,55 @@ function tekenWeekTaak(wt, k){
   kop.appendChild(acties);
   p.appendChild(kop);
 
+  var plekken = (t && t.plekken) || KB.WERKPLAATS_PLEKKEN;
+  var metMomenten = KB.instelling('werkmomentenAan', k);
+  var momenten = KB.werkmomenten(k);
+
   var rooster = el('div', 'weekrooster');
-  KB.DAGEN_KORT.forEach(function (dag) {
+  KB.DAGEN_KORT.forEach(function (dag, dagNr) {
     var kolom = el('div', 'weekdag');
+    var ruimte = KB.dagRuimte(dag, plekken, k);
+    var lijst = wt.verdeling[dag] || [];
+    var aantal = lijst.length;
+
     var dagKop = el('div', 'weekdag-kop');
-    dagKop.appendChild(el('span', null, KB.DAGEN_LANG[dag]));
-    var plekken = (t && t.plekken) || KB.WERKPLAATS_PLEKKEN;
-    var aantal = (wt.verdeling[dag] || []).length;
-    dagKop.appendChild(el('span', 'weekdag-telling' + (aantal >= plekken ? ' vol' : ''),
-                          aantal + '/' + plekken));
+    dagKop.appendChild(el('span', null, KB.DAGEN_LANG[dagNr]));
+    dagKop.appendChild(el('span', 'weekdag-telling' + (aantal >= ruimte ? ' vol' : ''),
+                          aantal + '/' + ruimte));
     kolom.appendChild(dagKop);
 
     var vak = el('div', 'weekdag-vak');
-    (wt.verdeling[dag] || []).forEach(function (id) {
+    lijst.forEach(function (id, nr) {
+      // Bij twee werkmomenten een streepje tussen de rondes, zodat je ziet
+      // wie er in het eerste moment gaat en wie in het tweede.
+      if (metMomenten && nr > 0 && nr % plekken === 0) {
+        var ronde = Math.floor(nr / plekken) + 1;
+        vak.appendChild(el('div', 'rondekop',
+          ronde <= (momenten[dag] || 1) ? ronde + 'e werkmoment' : 'past er niet meer bij'));
+      }
       var l = KB.leerling(id, k);
       if (!l) return;
-      var chip = el('button', 'kindchip');
+      var chip = el('div', 'kindchip' +
+        (metMomenten && nr >= ruimte ? ' teveel' : ''));
       chip.appendChild(BH.pictoBol(l, 26));
-      chip.appendChild(el('span', null, l.naam));
-      chip.addEventListener('click', function () { verplaatsKind(wt, l, dag); });
+      var naam = el('button', 'kindchip-naam', l.naam);
+      naam.addEventListener('click', function () { verplaatsKind(wt, l, dag); });
+      chip.appendChild(naam);
+
+      // Wie eerder in de rij staat gaat in het eerste werkmoment. Met deze
+      // pijltjes bepaal je dat zelf.
+      if (metMomenten && lijst.length > 1) {
+        var omhoog = el('button', 'kindchip-pijl', '\u2191');
+        omhoog.title = 'Eerder aan de beurt';
+        omhoog.disabled = nr === 0;
+        omhoog.addEventListener('click', function () { schuif(wt, dag, nr, -1); });
+        chip.appendChild(omhoog);
+        var omlaag = el('button', 'kindchip-pijl', '\u2193');
+        omlaag.title = 'Later aan de beurt';
+        omlaag.disabled = nr === lijst.length - 1;
+        omlaag.addEventListener('click', function () { schuif(wt, dag, nr, 1); });
+        chip.appendChild(omlaag);
+      }
       vak.appendChild(chip);
     });
     if (!aantal) vak.appendChild(el('div', 'weekdag-leeg', 'niemand'));
@@ -744,6 +774,14 @@ function tekenWeekTaak(wt, k){
     rooster.appendChild(kolom);
   });
   p.appendChild(rooster);
+
+  if (metMomenten) {
+    p.appendChild(el('p', 'hint',
+      'Op een dag met twee werkmomenten passen er ' + (plekken * 2) + ' kinderen: ' +
+      'de eerste ' + plekken + ' gaan in de ochtend, de rest daarna. Met de pijltjes ' +
+      'bepaal je wie in welk moment gaat; klik op een naam om iemand naar een andere ' +
+      'dag te verplaatsen.'));
+  }
 
   /* wie is er deze week niet aan de beurt */
   var niet = (k.leerlingen || []).filter(function (l) {

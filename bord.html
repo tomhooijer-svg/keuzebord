@@ -233,6 +233,25 @@ body.bord{
   width: 100%; height: 100%; opacity: .45; box-shadow: none;
   font-size: calc(var(--slot, 40px) * .38);
 }
+
+/* Wie in het volgende werkmoment aan de beurt is: alleen de naam, grijs,
+   zodat je ziet wie er straks komt zonder dat het lijkt alsof hij er al
+   zit. Zodra iemand van de ronde ervoor zijn plaatje eruit haalt, schuift
+   deze naam naar voren. */
+.plek.straks{
+  border: 2px dashed var(--inkt-4); box-sizing: border-box;
+  background: rgba(20,28,44,.035);
+  color: var(--inkt-3); overflow: hidden;
+}
+.plek-naam{
+  font-size: calc(var(--slot, 40px) * .3); font-weight: 600;
+  letter-spacing: -.01em; line-height: 1; text-align: center;
+  padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hoek.fotohoek .plek.straks{
+  border-color: rgba(255,255,255,.5); background: rgba(12,17,28,.3);
+  color: rgba(255,255,255,.85);
+}
 .plek.bezet .picto-rond{
   width: var(--slot, 40px); height: var(--slot, 40px);
   font-size: calc(var(--slot, 40px) * .42);
