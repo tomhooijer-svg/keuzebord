@@ -14,9 +14,9 @@
 do $$
 declare
   -- ── hier invullen ────────────────────────────────────────────────────
-  schoolnaam    text := 'Mijn school';
-  beheerder     text := 'beheerder@mijnschool.nl';
-  leerkracht    text := 'juf@mijnschool.nl';
+  schoolnaam    text := 'Het Kompas';
+  beheerder     text := 'tomhooijer@stichtingwies.nl';
+  leerkracht    text := 'tomhooijer@gmail.com';
   groep_van_juf text := 'Groep 1A';        -- welke groep de leerkracht krijgt
   -- ─────────────────────────────────────────────────────────────────────
 
