@@ -386,9 +386,11 @@ async function inloggen(p, email, waarheen){
              werkplaats: KB.instelling('werkplaatsAan', k),
              momenten: KB.instelling('werkmomentenAan', k) };
   })));
+  /* De groepsnaam erbij: staat er ergens de standaardwaarde, dan wil je
+     meteen zien wélk bord zijn instellingen niet heeft opgehaald. */
   zeg('elk bord heeft zijn eigen groepstimer',
       new Set(timers.map(t => t.groepsTimer)).size === BORDEN,
-      timers.map(t => t.groepsTimer).join(', '));
+      timers.map(t => t.groep + ':' + t.groepsTimer).join(' '));
   zeg('en hoeken met een eigen speelduur ernaast',
       timers.every(t => t.eigen >= 8), timers.map(t=>t.eigen).join(', '));
   zeg('functies staan per bord anders aan',
