@@ -521,14 +521,21 @@ function kiesDoelen(huidig, klaar, omschrijving){
       var lijnVak = el('div', 'leerlijnen');
       lijnen.forEach(function (lijn) {
         var doelenHier = vanDomein.filter(function (d) { return d.leerlijn === lijn; });
-        var open = openLeerlijn === lijn || lijnen.length === 1;
-        var kop = el('button', 'leerlijnkop' + (open ? ' uitgeklapt' : ''));
+        /* Heeft dit domein maar één leerlijn, dan staat die altijd open:
+           dichtklappen zou je een leeg domein opleveren. Dan hoort de kop
+           ook niet als knop te reageren -- hij zag er klikbaar uit en deed
+           niets, en dat is precies zo'n knop waar je twee keer op drukt
+           voordat je doorhebt dat het aan jou ligt. */
+        var enige = lijnen.length === 1;
+        var open = openLeerlijn === lijn || enige;
+        var kop = el('button', 'leerlijnkop' + (open ? ' uitgeklapt' : '') + (enige ? ' vast' : ''));
         kop.appendChild(el('span', 'leerlijnnaam', lijn));
         var gekozenHier = doelenHier.filter(function (d) { return selectie.indexOf(d.id) >= 0; }).length;
         kop.appendChild(el('span', 'leerlijntel',
           (gekozenHier ? gekozenHier + ' van ' : '') + doelenHier.length));
-        kop.addEventListener('click', function () {
-          openLeerlijn = open && lijnen.length > 1 ? null : lijn; hertekenen();
+        if (enige) kop.disabled = true;
+        else kop.addEventListener('click', function () {
+          openLeerlijn = open ? null : lijn; hertekenen();
         });
         lijnVak.appendChild(kop);
 

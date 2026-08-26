@@ -286,6 +286,9 @@
               background:var(--vlak-2); margin-bottom:6px; transition:background .14s ease; }
 .leerlijnkop:hover{ background:rgba(20,28,44,.09); }
 .leerlijnkop.uitgeklapt{ background:var(--accent-zacht); }
+/* De enige leerlijn van een domein staat altijd open: geen knop, een kop. */
+.leerlijnkop.vast{ cursor:default; }
+.leerlijnkop.vast:hover{ background:var(--accent-zacht); }
 .leerlijnnaam{ font-size:.94rem; font-weight:600; color:var(--inkt); }
 .leerlijntel{ font-size:.78rem; color:var(--inkt-3); font-variant-numeric:tabular-nums; }
 .leerlijninhoud{ padding:2px 0 12px 8px; border-left:2px solid var(--vlak-2); margin:0 0 10px 8px; }
