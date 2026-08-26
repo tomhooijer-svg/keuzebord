@@ -209,6 +209,23 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
       if (window.SCH && SCH.teken) { SCH.teken(); return; }
       if (window.BORD && BORD.teken) BORD.teken();
     };
+    /* Knoppen die het scherm verlaten drukken we niet in -- dan is de
+       proef voorbij. */
+    window.__nietKlikken = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
+    window.__noem = function (kn){
+      return (kn.textContent || '').trim().slice(0, 44) ||
+             kn.getAttribute('title') ||
+             (typeof kn.className === 'string' ? kn.className : kn.tagName);
+    };
+    window.__klik = function (kn){
+      if (typeof kn.click === 'function') kn.click();
+      else kn.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true }));
+    };
+    window.__wacht = function (ms){ return new Promise(function (r){ setTimeout(r, ms); }); };
+    window.__vensterOpen = function (){
+      var o = document.getElementById('overlay');
+      return !!(o && o.classList.contains('open'));
+    };
     window.__bewaarStand = function (){ window.__stand = JSON.stringify(KB.G); };
     window.__zetTerug = function (){
       if (!window.__stand) return;
@@ -232,45 +249,70 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
     const apparaat = [];
     let gedaan = 0;
 
-    for (let i = 0; i < aantal; i++) {
+    /* Eerst de knoppen van het paneel zelf, daarna die in de vensters die
+       zij openen. Dat tweede rondje wordt onderweg gevuld. */
+    const paden = [];
+    for (let i = 0; i < aantal; i++) paden.push([i]);
+
+    for (let n = 0; n < paden.length; n++) {
+      const pad = paden[n];
       /* Een knop kan de pagina verlaten, ook als hij er niet naar heet.
          Dan is de proef niet stuk -- we gaan terug en lopen verder. */
       const adresVoor = p.url();
       let r;
       try {
-        r = await p.evaluate(async (i) => {
+        r = await p.evaluate(async (pad) => {
         /* Alles dicht en terug naar de kale toestand van dit scherm. */
         __sluitAlles();
         __zetTerug();
         __herteken();
-        await new Promise(r2 => setTimeout(r2, 60));
+        await __wacht(60);
 
         const lijst = __klikbaar();
-        const kn = lijst[i];
+        const kn = lijst[pad[0]];
         if (!kn) return { over:'weg' };
-        const naam = (kn.textContent || '').trim().slice(0, 44) ||
-                     kn.getAttribute('title') ||
-                     (typeof kn.className === 'string' ? kn.className : kn.tagName);
-        if (/Uitloggen|Wisselen van account|Bord openen|Afmelden/i.test(naam))
-          return { over:'zou het scherm verlaten', naam };
-        /* Klikken op wat al aanstaat -- het menu-item waar je staat, de
-           stap die open is, de kleur die al gekozen is -- hoort niets te
-           doen. Dat is geen kapotte knop. */
-        if (kn.classList.contains('aan'))
-          return { over:'staat al aan', naam };
+        const naam = __noem(kn);
+        if (__nietKlikken.test(naam)) return { over:'zou het scherm verlaten', naam };
 
-        const voor = __afdruk();
-        const vensterVoor = window.__apparaatvenster;
-        try {
-          if (typeof kn.click === 'function') kn.click();
-          else kn.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true }));
-        } catch (e) { return { naam, stuk: e.message }; }
-        await new Promise(r2 => setTimeout(r2, 220));
-        const na = __afdruk();
-        if (window.__apparaatvenster > vensterVoor)
-          return { naam, deedIets: true, apparaat: true };
-        return { naam, deedIets: voor !== na };
-        }, i);
+        if (pad.length === 1) {
+          /* Klikken op wat al aanstaat -- het menu-item waar je staat, de
+             stap die open is, de kleur die al gekozen is -- hoort niets te
+             doen. Dat is geen kapotte knop. */
+          if (kn.classList.contains('aan')) return { over:'staat al aan', naam };
+          const voor = __afdruk();
+          const vensterVoor = window.__apparaatvenster;
+          try { __klik(kn); } catch (e) { return { naam, stuk: e.message }; }
+          await __wacht(220);
+          const na = __afdruk();
+          const apparaat = window.__apparaatvenster > vensterVoor;
+          /* Ging er een venster open? Dan hangen daar knoppen in die
+             verder niemand indrukt. Hoeveel het er zijn geven we door;
+             de proef komt er zo een voor een op terug. */
+          const blad = document.getElementById('blad');
+          return { naam, deedIets: apparaat || voor !== na, apparaat: apparaat,
+                   vensterKnoppen: (__vensterOpen() && blad) ? __klikbaar(blad).length : 0 };
+        }
+
+        /* Twee stappen: eerst het venster openen, dan de knop daarbinnen. */
+        try { __klik(kn); } catch (e) { return { over:'venster ging niet open', naam }; }
+        await __wacht(280);
+        const blad = document.getElementById('blad');
+        if (!__vensterOpen() || !blad) return { over:'venster ging niet open', naam };
+        const binnen = __klikbaar(blad);
+        const kn2 = binnen[pad[1]];
+        if (!kn2) return { over:'weg' };
+        const naam2 = naam + ' \u2192 ' + __noem(kn2);
+        if (__nietKlikken.test(__noem(kn2)))
+          return { over:'zou het scherm verlaten', naam: naam2 };
+        if (kn2.classList.contains('aan')) return { over:'staat al aan', naam: naam2 };
+        const voor2 = __afdruk();
+        const vensterVoor2 = window.__apparaatvenster;
+        try { __klik(kn2); } catch (e) { return { naam: naam2, stuk: e.message }; }
+        await __wacht(220);
+        const na2 = __afdruk();
+        const apparaat2 = window.__apparaatvenster > vensterVoor2;
+        return { naam: naam2, deedIets: apparaat2 || voor2 !== na2, apparaat: apparaat2 };
+        }, pad);
       } catch (e) {
         /* Context weg = de knop navigeerde. Dat telt als "deed iets". */
         if (/context was destroyed|Target closed|Execution context/i.test(e.message)) {
@@ -303,6 +345,8 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
       if (!r || r.over === 'weg') continue;
       if (r.over) { overgeslagen.push(r.naam); continue; }
       gedaan++;
+      if (r.vensterKnoppen)
+        for (let j = 0; j < r.vensterKnoppen; j++) paden.push([pad[0], j]);
       if (r.apparaat) apparaat.push(r.naam);
       if (r.stuk) doden.push(r.naam + ' (klapte eruit: ' + r.stuk + ')');
       else if (!r.deedIets) doden.push(r.naam);

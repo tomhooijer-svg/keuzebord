@@ -231,6 +231,12 @@ link, een schakelaar, en alles waar de muisaanwijzer een handje van
 maakt. Vakjes die alleen iets laten zien -- de dagen in het weekplan --
 horen er niet bij.
 
+De knoppen in de vensters worden apart nagelopen. Merkt de proef dat een
+knop een venster opent, dan komt hij daar een voor een op terug: venster
+openen, één knop erin indrukken, meten, opnieuw. Zonder dat rondje bleef
+alles wat achter "Nieuwe taak" of "Bewerken" zit ongemoeid -- en daar
+zitten juist Opslaan, Annuleren en Verwijderen.
+
 Drie dingen tellen niet mee als "doet niets", en dat is geen coulance
 maar een eerlijke grens:
 
