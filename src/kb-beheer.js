@@ -112,13 +112,18 @@ function schakelaar(aan, bijWissel){
 function teller(waarde, min, max, bijWijziging){
   var t = el('div', 'teller');
   var m = el('button', null, '−'), w = el('div', 'w', String(waarde)), p = el('button', null, '+');
+  /* Staat de teller op zijn laagste of hoogste stand, dan wordt de knop
+     die niets meer kan doen grijs. Zo zie je waar de grens ligt in plaats
+     van te blijven drukken op een knop die niet reageert. */
+  function grenzen(n){ m.disabled = n <= min; p.disabled = n >= max; }
   function zet(n){
     n = Math.max(min, Math.min(max, n));
-    w.textContent = String(n); bijWijziging(n);
+    w.textContent = String(n); grenzen(n); bijWijziging(n);
   }
   m.addEventListener('click', function () { zet(parseInt(w.textContent, 10) - 1); });
   p.addEventListener('click', function () { zet(parseInt(w.textContent, 10) + 1); });
   t.appendChild(m); t.appendChild(w); t.appendChild(p);
+  grenzen(Math.max(min, Math.min(max, waarde)));
   return t;
 }
 function pictoBol(l, maat){

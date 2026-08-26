@@ -207,10 +207,11 @@ onderweg op alles wat omvalt: fouten op de pagina, fouten in de console,
 en panelen die leeg blijven. Niet op zoek naar één ding, maar naar wat er
 kapot is zonder dat iemand het weet.
 
-Drieëntwintig punten: de drie onderdelen van het schoolbeheer, alle elf
-panelen van het groepsbeheer, het bord met een kind dat een hoek kiest, het
-bordmenu, het testbord, en tot slot dezelfde ronde als leerkracht om te
-zien dat zij alleen haar eigen groep krijgt en meteen op het bord uitkomt.
+Vijfentwintig punten: de drie onderdelen van het schoolbeheer, alle
+dertien panelen van het groepsbeheer, het bord met een kind dat een hoek
+kiest, het bordmenu, het testbord, en tot slot dezelfde ronde als
+leerkracht om te zien dat zij alleen haar eigen groep krijgt en meteen op
+het bord uitkomt.
 
 ## Het verslag voor het oudergesprek
 
