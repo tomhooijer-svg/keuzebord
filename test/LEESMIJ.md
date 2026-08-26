@@ -213,6 +213,53 @@ kiest, het bordmenu, het testbord, en tot slot dezelfde ronde als
 leerkracht om te zien dat zij alleen haar eigen groep krijgt en meteen op
 het bord uitkomt.
 
+## Elke knop apart
+
+`test/doorloop.test.js` kijkt of elk scherm heel opengaat.
+`test/knoppen.test.js` gaat een stap verder: die drukt in elk paneel
+alles in wat een mens kan indrukken, en kijkt of er daarna iets ánders
+is -- een venster dat opengaat, een melding, een scherm dat verandert,
+gegevens die veranderen. Gebeurt er niets, dan staat die knop met naam en
+al in de uitslag.
+
+Tussen elke klik gaan de gegevens terug zoals ze waren. Daardoor mag
+alles ingedrukt worden, ook "Verwijderen": het kind is een tel later weer
+terug en de volgende knop treft hetzelfde scherm aan als de vorige.
+
+Wat een knop is, is met opzet ruim genomen: een echte `<button>`, een
+link, een schakelaar, en alles waar de muisaanwijzer een handje van
+maakt. Vakjes die alleen iets laten zien -- de dagen in het weekplan --
+horen er niet bij.
+
+Drie dingen tellen niet mee als "doet niets", en dat is geen coulance
+maar een eerlijke grens:
+
+- **Wat geen klik vangt.** Een gesloten venster staat nog in de pagina,
+  doorzichtig en met `pointer-events: none`. Een mens kan er niet op
+  klikken; de proef kon dat wel, en meldde de knoppen erin als dood.
+- **Wat al aanstaat.** Het menu-item waar je staat, de stap die open is,
+  de kleur die al gekozen is. Daar hoort niets van te gebeuren.
+- **Wat een venster van het apparaat opent.** Een bestandskiezer of het
+  kleurenpalet van het besturingssysteem valt buiten de pagina. Dat de
+  knop het opent, is wél te merken, en dat wordt geteld.
+
+Bij het bouwen van deze proef zaten de fouten eerst in de proef zelf. De
+vingerafdruk keek naar de *lengte* van de gegevens, en `warm` -> `koel`
+is even lang, net als `#3b6ff0` -> `#ff8a3d`: alle kleurknoppen leken
+niets te doen. En er werd geteld hoevéél er aanstond, niet wát: gaat er
+in een rij kleuren één uit en één aan, dan blijft dat aantal gelijk.
+
+Eén echte vondst: de teller bij "aantal plekken" en "werkmomenten" liet
+je op de − blijven drukken als hij al op zijn laagste stand stond. Die
+knop wordt nu grijs.
+
+Draaien:
+
+```sh
+sh test/opzetten.sh && sh test/proefschool.sh
+node test/knoppen.test.js
+```
+
 ## Het verslag voor het oudergesprek
 
 `test/verslag.test.js` gaat na of er uit de observaties een blaadje komt
