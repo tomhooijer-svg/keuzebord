@@ -1489,10 +1489,12 @@ function bouwVerslagBlad(blad, k, kinderen){
   links.appendChild(el('div', 'paneelkop', 'Voor wie'));
   kop.appendChild(links);
   var rechts = el('div', 'knoprij');
-  rechts.appendChild(knop('Iedereen', 'stil', function () {
+  var allen = knop('Iedereen', 'stil', function () {
     kinderen.forEach(function (l) { vKeuze[l.id] = true; }); opnieuw();
-  }));
-  rechts.appendChild(knop('Niemand', 'stil', function () { vKeuze = {}; opnieuw(); }));
+  });
+  var geen = knop('Niemand', 'stil', function () { vKeuze = {}; opnieuw(); });
+  rechts.appendChild(allen);
+  rechts.appendChild(geen);
   kop.appendChild(rechts);
   blad.appendChild(kop);
 
@@ -1563,6 +1565,11 @@ function bouwVerslagBlad(blad, k, kinderen){
   blad.appendChild(uitleg);
   function tel(){
     var n = gekozen().length;
+    /* Staat iedereen al aan, dan valt er met "Iedereen" niets meer te
+       kiezen -- en met "Niemand" niets als er al niemand staat. Grijs,
+       zodat je ziet dat je er bent en er niet op blijft drukken. */
+    allen.disabled = n === kinderen.length;
+    geen.disabled  = n === 0;
     uitleg.textContent = n
       ? n + (n === 1 ? ' blad' : ' bladen') + '. In het venster dat opengaat kies je bij ' +
         '"Bestemming" of "Printer" de optie "Bewaren als PDF" — dan krijg je een bestand ' +
