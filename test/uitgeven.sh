@@ -118,11 +118,11 @@ EOF
 echo "── uitgeven ($V) ──"
 bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
   "'statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
-  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html"
+  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html diagnose.html"
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
-  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html"
+  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html"
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
 # In de geschiedenis van de werkplaats zit een oud bestand met echte
