@@ -241,6 +241,44 @@ en laat de keuze niet zien, na het afronden verhuist het kind ook echt,
 uit de hoek halen zet hem terug in de strook, en zonder timer werkt het
 gewoon ook.
 
+## Twee uitgaven uit één werkplaats
+
+Sinds de splitsing zijn er twee apps:
+
+| | Keuzebord | Planbord |
+|---|---|---|
+| adres | `tomhooijer-svg.github.io/keuzebord-app/` | `tomhooijer-svg.github.io/planbord/` |
+| menu | Statistieken, Leerlingen, Picto's, Hoeken, Uiterlijk, Groep, Functies | Vandaag, Weekplan, Thema's, Taken, Doelen, Observaties, Groep |
+| pagina's | index, inloggen, bord, testbord, school, beheer | index, inloggen, school, beheer |
+
+Deze repo is de **werkplaats**: hier zit alles nog bij elkaar en lopen
+de proeven overheen. `test/uitgeven.sh` maakt er twee uitgaven van. Het
+enige bestand dat verschilt is `src/kb-app.js`, waarin staat welke
+panelen die uitgave heeft en waar de andere te vinden is. Een bug in de
+synchronisatie los je dus één keer op.
+
+De knip zit in de schermen, niet in de gegevens -- en dat kan ook niet
+anders. Taken plan je in Planbord maar ze worden gedaan in de werkplaats
+op het bord; hoeken beheer je in Keuzebord maar je hangt ze aan een
+thema in Planbord. Allebei de apps lezen dezelfde database; ze laten
+alleen wat anders zien.
+
+Dat ze onder hetzelfde adres staan is geen toeval maar het hele punt:
+projectsites van GitHub Pages delen één herkomst, dus je bent één keer
+ingelogd, deelt de opslag en deelt de fotokluis. Zet je er één op een
+eigen domeinnaam, dan valt dat weg en moet je in allebei apart inloggen.
+
+`test/gesplitst.test.js` bouwt de twee uitgaven, zet ze allebei op een
+eigen webserver en gaat na: het juiste menu, geen verwijzingen naar code
+die niet is meegekomen, elk paneel vult zich, en de oversteek van de een
+naar de ander brengt je op de goede groep uit -- met een schoolbeheerder
+die meer dan één groep heeft, want met één groep bewijs je geen wissel.
+
+Het uitgeefscript weigert een uitgave die verwijst naar code die er niet
+is. Dat sloeg meteen toe: `school.html` laadde twee bestanden die het
+niet gebruikte, en zonder die controle was Keuzebord met een stille 404
+uitgekomen.
+
 ## Elke knop apart
 
 `test/doorloop.test.js` kijkt of elk scherm heel opengaat.

@@ -36,7 +36,12 @@ bouw(){
   for f in $KERN $schermen; do cp "$R/src/$f" "$D/src/"; done
   cp "$R/src/kb-stijl.css" "$D/src/"
   cp -r "$R/data/." "$D/data/"
-  cp "$R/supabase/schema.sql" "$D/supabase/" 2>/dev/null || true
+  # De hele supabase-map gaat mee: zonder inrichten.sql en de leesmij
+  # daar kun je geen verse database opzetten, en dat is precies wat
+  # iemand met deze repo in handen wil doen. De proeven gaan níet mee --
+  # die horen bij de werkplaats waar alle schermen nog bij elkaar zitten,
+  # en zouden hier over panelen struikelen die deze uitgave niet heeft.
+  cp -r "$R/supabase/." "$D/supabase/" 2>/dev/null || true
 
   # kb-app.js: het enige bestand dat per uitgave verschilt
   cat > "$D/src/kb-app.js" <<EOF
@@ -54,6 +59,16 @@ window.KB_APP = {
   ander: { id:'$ander', naam:'$anderNaam', adres:'$anderPad' }
 };
 EOF
+
+  # Het beginscherm stuurt door naar het scherm waar je wilt zijn. In
+  # Keuzebord is dat het bord; Planbord heeft geen bord, dus daar het
+  # beheer -- anders kom je op een 404 uit.
+  if [ -f "$D/index.html" ]; then
+    sed -i "s|<title>[^<]*</title>|<title>$naam</title>|" "$D/index.html"
+    if [ "$app" != "keuzebord" ]; then
+      sed -i 's|bord\.html|beheer.html|g; s|ga naar het keuzebord|ga naar het planbord|' "$D/index.html"
+    fi
+  fi
 
   # de schermen die deze uitgave niet heeft uit beheer.html knippen
   if [ -f "$D/beheer.html" ]; then
@@ -102,6 +117,43 @@ for d in "$UIT"/keuzebord "$UIT"/planbord; do
   rm -rf "$d/docs"
   [ -f "$R/docs/PUBLIEK-LEESMIJ.md" ] && cp "$R/docs/PUBLIEK-LEESMIJ.md" "$d/README.md"
 done
+
+# Elke uitgave zegt op zijn voorpagina wat hij is en waar de andere staat.
+kop(){
+  d=$1
+  { cat "$2"; echo; cat "$d/README.md"; } > "$d/README.tmp" && mv "$d/README.tmp" "$d/README.md"
+}
+cat > /tmp/kb-kop-keuzebord.md <<'MD'
+# Keuzebord
+
+Het digibord in de kleutergroep: kinderen kiezen een hoek, jij ziet wie
+waar zit. Hier beheer je de kinderen, de klassen, de picto's, de hoeken
+met hun foto's en wat het bord kan -- en je ziet de statistieken over wat
+er in de hoeken gebeurde.
+
+Het planwerk -- weekplan, thema's, taken, doelen en observaties -- zit in
+**[Planbord](https://tomhooijer-svg.github.io/planbord/)**. De twee delen
+dezelfde gegevens en hetzelfde inloggen; een knop onderin het menu brengt
+je van de een naar de ander, met de groep mee.
+
+---
+MD
+cat > /tmp/kb-kop-planbord.md <<'MD'
+# Planbord
+
+Het werk van vóór en ná het spelen: de week plannen, thema's uitwerken
+langs verwonderen, vragen, onderzoeken en betekenis geven, taken maken
+die aan doelen hangen, en observeren wat een kind al kan.
+
+Het bord zelf -- kiezen, hoeken, picto's, statistieken -- zit in
+**[Keuzebord](https://tomhooijer-svg.github.io/keuzebord-app/)**. De twee
+delen dezelfde gegevens en hetzelfde inloggen; een knop onderin het menu
+brengt je van de een naar de ander, met de groep mee.
+
+---
+MD
+kop "$UIT/keuzebord" /tmp/kb-kop-keuzebord.md
+kop "$UIT/planbord"  /tmp/kb-kop-planbord.md
 
 n=$(grep -rlE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" "$UIT" 2>/dev/null \
     | xargs grep -hoE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" 2>/dev/null \
