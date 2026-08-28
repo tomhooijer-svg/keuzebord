@@ -14,7 +14,18 @@
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
 UIT=${1:-/tmp/keuzebord-uitgaven}
-V=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | tr -cd 'A-Za-z0-9')
+# De stempel die in het adres van de code komt. Dit was eerst de datum,
+# en dat ging mis: twee keer publiceren op dezelfde dag gaf twee keer
+# hetzelfde adres, dus browsers hielden de oude code vast bij een nieuwe
+# pagina -- het nieuwe menu met de oude panelen erachter. Een cachebreker
+# die niet verandert als de code verandert, breekt niets.
+#
+# Nu is het een korte vingerafdruk van de code zelf. Verandert er één
+# letter in één bestand, dan verandert de stempel; verandert er niets,
+# dan blijft hij staan en hoeft er ook niets opnieuw geladen te worden.
+DATUM=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | tr -cd 'A-Za-z0-9')
+VINGER=$(cat "$R"/src/*.js "$R"/src/*.css "$R"/*.html 2>/dev/null | sha1sum | cut -c1-8)
+V="$DATUM-$VINGER"
 
 rm -rf "$UIT"; mkdir -p "$UIT"
 
@@ -55,6 +66,11 @@ bouw(){
 window.KB_APP = {
   id: '$app',
   naam: '$naam',
+  /* De vingerafdruk van de code in deze uitgave. Staat onder in het
+     bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
+     elkaar kunt houden -- en kunt zien of een wijziging bij je is
+     aangekomen. */
+  bouw: '$VINGER',
   panelen: [$panelen],
   ander: { id:'$ander', naam:'$anderNaam', adres:'$anderPad' }
 };
