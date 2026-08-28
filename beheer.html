@@ -438,18 +438,27 @@
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
+<script src="src/kb-app.js"></script>
 <script src="src/kb-data.js"></script>
 <script src="src/kb-supabase.js"></script>
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>
 <script src="src/kb-verbinding.js"></script>
+<!-- het rekenwerk van de statistieken: Keuzebord toont het, Planbord
+     gebruikt het voor het verslag -- allebei dus. -->
 <script src="src/kb-statistiek.js"></script>
+<script src="src/kb-beheer.js"></script>
+<!-- schermen: het uitgeefscript laat hier per app staan wat erbij hoort -->
+<!-- keuzebord -->
+<script src="src/kb-statistiekpaneel.js"></script>
+<script src="src/kb-docx.js"></script>
+<!-- /keuzebord -->
+<!-- planbord -->
 <script src="src/kb-doelzoeker.js"></script>
 <script src="src/kb-verslag.js"></script>
-<script src="src/kb-docx.js"></script>
-<script src="src/kb-beheer.js"></script>
 <script src="src/kb-plan.js"></script>
 <script src="src/kb-thema.js"></script>
+<!-- /planbord -->
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>
