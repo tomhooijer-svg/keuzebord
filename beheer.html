@@ -423,9 +423,12 @@
     </div>
     <div class="zij-menu" id="zij-menu"></div>
     <div class="zij-onder" id="zij-onder">
-      <a class="zij-link" href="bord.html">
+      <!-- Waar het bord staat verschilt per uitgave: in Keuzebord ligt het
+           hiernaast, in Planbord in de andere app. Het adres en de tekst
+           worden daarom bij het tekenen gezet, niet hier. -->
+      <a class="zij-link" id="zij-naar-bord" href="bord.html">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
-        Terug naar het bord
+        <span id="zij-naar-bord-tekst">Terug naar het bord</span>
       </a>
     </div>
   </nav>

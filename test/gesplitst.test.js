@@ -139,6 +139,50 @@ const zeg = (n, ok, extra) => {
       bordRonde.every(x => x.tekens > 40),
       bordRonde.map(x => x.naam + ':' + x.tekens).join(' '));
 
+  /* ── wijst elke link naar iets dat er is? ─────────────────────── *
+     Het uitgeefscript kijkt of elk <script src> bestaat, maar niet naar
+     de links die de app tijdens het draaien maakt. Daar zat de fout:
+     "Bord openen" wees naar bord.html, en Planbord heeft geen bord --
+     dus kwam je op de 404 van GitHub uit in plaats van op je bord. */
+  async function linksNa(wat, x, basis){
+    const adressen = await x.p.evaluate(async () => {
+      const gezien = {};
+      const knoppen = [...document.querySelectorAll('.zij-knop')].filter(k => k.tagName === 'BUTTON');
+      for (const k of knoppen) {
+        k.click();
+        await new Promise(r => setTimeout(r, 300));
+        [...document.querySelectorAll('a[href]')].forEach(a => {
+          const h = a.getAttribute('href');
+          if (!h || /^(https?:|mailto:|#|javascript:)/.test(h)) return;
+          gezien[h] = (a.textContent || '').trim().slice(0, 30) || a.className;
+        });
+      }
+      /* de knop naar de andere app hoort er ook bij */
+      [...document.querySelectorAll('a[href]')].forEach(a => {
+        const h = a.getAttribute('href');
+        if (h && !/^(https?:|mailto:|#|javascript:)/.test(h)) gezien[h] = (a.textContent||'').trim().slice(0,30);
+      });
+      return gezien;
+    });
+
+    const stuk = [];
+    for (const adres of Object.keys(adressen)) {
+      const heel = new URL(adres, basis + '/beheer.html').href;
+      const r = await x.p.evaluate(async (u) => {
+        try { const a = await fetch(u, { method:'GET', cache:'no-store' }); return a.status; }
+        catch (e) { return 'onbereikbaar'; }
+      }, heel);
+      if (r !== 200) stuk.push(adressen[adres] + ' → ' + adres + ' (' + r + ')');
+    }
+    zeg(wat, stuk.length === 0,
+        stuk.length ? stuk.join(' | ') : Object.keys(adressen).length + ' links, allemaal raak');
+  }
+
+  await bord.p.goto(BORD + '/beheer.html'); await bord.p.waitForTimeout(3000);
+  await linksNa('elke link in Keuzebord wijst naar iets dat bestaat', bord, BORD);
+  await plan.p.goto(PLAN + '/beheer.html'); await plan.p.waitForTimeout(3000);
+  await linksNa('elke link in Planbord wijst naar iets dat bestaat', plan, PLAN);
+
   /* ── de oversteek: kom je aan waar je was ─────────────────────── */
   /* Een link maken is niet hetzelfde als aankomen. We zetten Planbord op
      een andere groep dan waar hij nu staat, en lopen dan het adres af

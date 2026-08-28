@@ -29,6 +29,12 @@ window.KB_APP = {
      werkplaats, waar de proeven overheen lopen. */
   panelen: null,
 
+  /* Heeft deze uitgave het bord zelf? Planbord niet: daar staat wel een
+     knop "Bord openen", maar het bord ligt in de andere app. Zonder dit
+     wees die knop naar een bestand dat er niet is, en dan krijg je de
+     404 van GitHub in plaats van je bord. */
+  heeftBord: true,
+
   /* De andere app, voor de knop die je ernaartoe brengt. Allebei staan
      ze onder hetzelfde adres van GitHub Pages, dus een pad naast dit
      is genoeg -- en omdat het dezelfde herkomst is, blijf je ingelogd

@@ -37,7 +37,7 @@ PLAN_SCHERMEN="kb-school.js kb-doelzoeker.js kb-verslag.js kb-plan.js kb-thema.j
 
 bouw(){
   app=$1; naam=$2; ander=$3; anderNaam=$4; anderPad=$5; panelen=$6
-  schermen=$7; paginas=$8
+  schermen=$7; paginas=$8; heeftBord=$9
   D="$UIT/$app"
   mkdir -p "$D/src" "$D/data" "$D/supabase"
 
@@ -71,6 +71,9 @@ window.KB_APP = {
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
   bouw: '$VINGER',
+  /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
+     knop "Bord openen" naar de andere app, met de groep mee. */
+  heeftBord: $heeftBord,
   panelen: [$panelen],
   ander: { id:'$ander', naam:'$anderNaam', adres:'$anderPad' }
 };
@@ -118,11 +121,11 @@ EOF
 echo "── uitgeven ($V) ──"
 bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
   "'statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
-  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html diagnose.html"
+  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html diagnose.html" true
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
-  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html"
+  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html" false
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
 # In de geschiedenis van de werkplaats zit een oud bestand met echte
