@@ -263,6 +263,26 @@ const zeg = (n, ok, extra) => {
   zeg('het andere tabblad merkt dat er elders is gewerkt', gemerkt.verouderd === true,
       'verouderd: ' + gemerkt.verouderd);
   zeg('en zegt het ook', /ander tabblad/i.test(gemerkt.melding), gemerkt.melding.slice(0,70));
+
+  /* En nu waar het echt om gaat: tabblad A slaat daarna zelf iets op.
+     Vroeger schreef dat de wijziging van B eroverheen. */
+  await tabA.evaluate(() => {
+    KB.G.settings = KB.G.settings || {};
+    KB.G.settings.proefstempel = 'A was hier';
+    KB.bewaar();
+  });
+  await tabA.waitForTimeout(800);
+  const eind = await tabA.evaluate(() => {
+    const opslag = JSON.parse(localStorage.getItem('kb_v5'));
+    return {
+      vanB: (opslag.klassen || []).some(k => k.naam === 'Gewijzigd in tabblad B'),
+      vanA: !!(opslag.settings || {}).proefstempel,
+      groepen: (opslag.klassen || []).length
+    };
+  });
+  zeg('het werk van tabblad B blijft staan als A daarna opslaat', eind.vanB === true,
+      eind.groepen + ' groepen, B erin: ' + eind.vanB);
+  zeg('en het werk van A staat er ook in', eind.vanA === true);
   await samen.close();
 
   const alleFouten = bord.fouten.concat(plan.fouten).concat(baas.fouten);

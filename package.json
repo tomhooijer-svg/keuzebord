@@ -25,6 +25,7 @@
     "test:aanuit": "node test/aanuit.test.js",
     "test:juf": "node test/juf.test.js",
     "test:gesplitst": "node test/gesplitst.test.js",
+    "test:tabbladen": "node test/tabbladen.test.js",
     "uitgeven": "sh test/uitgeven.sh",
     "test:uiterste": "node test/uiterste.test.js",
     "test:dubbel": "node test/dubbel.test.js",
