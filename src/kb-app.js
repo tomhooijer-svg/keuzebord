@@ -35,9 +35,24 @@ window.KB_APP = {
      404 van GitHub in plaats van je bord. */
   heeftBord: true,
 
-  /* De andere app, voor de knop die je ernaartoe brengt. Allebei staan
-     ze onder hetzelfde adres van GitHub Pages, dus een pad naast dit
-     is genoeg -- en omdat het dezelfde herkomst is, blijf je ingelogd
-     en houd je dezelfde fotokluis. null betekent: er is er maar één. */
+  /* Waar beide uitgaven staan. Volledige adressen, niet alleen een pad
+     naast dit: een relatief pad gaat er stilzwijgend van uit dat de twee
+     als buren onder hetzelfde domein staan. Zet je er één op een eigen
+     domeinnaam, of hernoem je een repo, dan wijst zo'n pad naar het niets
+     -- zonder dat er iets waarschuwt. Hier staat het één keer, en elke
+     knop leest het hier.
+
+     De mapnaam staat er los bij, want op een testserver of een ander
+     domein klopt het volledige adres niet en vallen we terug op de buur
+     naast ons. Zo werkt het in de klas én in de proeven. */
+  apps: {
+    keuzebord: { naam:'Keuzebord', map:'keuzebord-app',
+                 url:'https://tomhooijer-svg.github.io/keuzebord-app/' },
+    planbord:  { naam:'Planbord',  map:'planbord',
+                 url:'https://tomhooijer-svg.github.io/planbord/' }
+  },
+
+  /* Welke van die twee de andere is. null betekent: er is er maar één --
+     dat is de werkplaats, waar alles nog bij elkaar zit. */
   ander: null
 };

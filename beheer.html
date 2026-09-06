@@ -426,7 +426,11 @@
       <!-- Waar het bord staat verschilt per uitgave: in Keuzebord ligt het
            hiernaast, in Planbord in de andere app. Het adres en de tekst
            worden daarom bij het tekenen gezet, niet hier. -->
-      <a class="zij-link" id="zij-naar-bord" href="bord.html">
+      <!-- index.html bestaat in allebei de uitgaven en brengt je naar het
+           juiste beginscherm. Hier stond bord.html, en dat bestaat in
+           Planbord niet: klikte je voordat de app klaar was met opstarten,
+           dan kreeg je de 404 van GitHub. -->
+      <a class="zij-link" id="zij-naar-bord" href="index.html">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
         <span id="zij-naar-bord-tekst">Terug naar het bord</span>
       </a>

@@ -28,8 +28,15 @@ for naam in $LIJST; do
   echo "── $naam ──"
   # Alleen echte fouten. Let op de vorm: "geen fout" en "geen enkele fout"
   # staan in geslaagde regels, en die mogen niet meetellen.
-  if node "$R/test/$naam.test.js" 2>&1 | tee /var/tmp/kb-$naam.log \
+  # stdbuf: zonder dat houdt node zijn uitvoer in een buffer zodra er een
+  # pijp achter staat, en bij een crash gaat die buffer verloren. Dan zie
+  # je alleen de crash en geen enkele van de controles die er al waren.
+  if stdbuf -o0 -e0 node "$R/test/$naam.test.js" 2>&1 | tee /var/tmp/kb-$naam.log \
        | grep -E "^  FOUT|^  \[fout\]|^[A-Za-z]*Error|ER GING IETS MIS" ; then mis=1; fi
-  grep -cE "^  (goed|ja) " /var/tmp/kb-$naam.log | sed 's/^/   goed: /'
+  n=$(grep -cE "^  (goed|ja) " /var/tmp/kb-$naam.log)
+  echo "   goed: $n"
+  # Een proef die niets oplevert is niet geslaagd maar omgevallen. Zonder
+  # deze regel meldde de ronde "ALLES GOED" terwijl een hele proef stuk was.
+  if [ "$n" -eq 0 ]; then echo "   GEEN ENKELE CONTROLE — deze proef is omgevallen"; mis=1; fi
 done
 [ $mis -eq 0 ] && echo "ALLES GOED" || echo "ER GING IETS MIS"

@@ -229,6 +229,42 @@ const zeg = (n, ok, extra) => {
   zeg('een onbekende groep in het adres laat de app gewoon staan',
       !!onzin.groep && onzin.inhoud > 40, onzin.groep + ', ' + onzin.inhoud + ' tekens');
 
+  /* ── twee tabbladen op één apparaat ───────────────────────────── *
+     Ze delen dezelfde opslag, en elk tabblad schrijft zijn eigen kopie in
+     zijn geheel terug. Dat is het echte risico bij het testen met twee
+     groepen. Samenvoegen komt later; nu moet het scherm het in elk geval
+     merken en zeggen, in plaats van er stil overheen te schrijven. */
+  const samen = await b.newContext();
+  const tabA = await samen.newPage();
+  const tabB = await samen.newPage();
+  await tabA.goto(BORD + '/inloggen.html');
+  await tabA.evaluate(() => { localStorage.setItem('kb_server','http://localhost:5455');
+                              localStorage.setItem('kb_serversleutel','proefsleutel'); });
+  await tabA.goto(BORD + '/inloggen.html');
+  await tabA.fill('#email','juf@mijnschool.nl'); await tabA.fill('#ww','proefproef');
+  await tabA.click('#verstuur'); await tabA.waitForTimeout(4500);
+  await tabA.goto(BORD + '/beheer.html');   await tabA.waitForTimeout(3500);
+  await tabB.goto(PLAN + '/beheer.html');   await tabB.waitForTimeout(3500);
+
+  const beideOpen = await Promise.all([
+    tabA.evaluate(() => !!(window.KB && KB.klas())),
+    tabB.evaluate(() => !!(window.KB && KB.klas()))
+  ]);
+  zeg('twee tabbladen op één apparaat draaien allebei', beideOpen[0] && beideOpen[1],
+      beideOpen.join(', '));
+
+  /* in tabblad B iets opslaan */
+  await tabB.evaluate(() => { KB.klas().naam = 'Gewijzigd in tabblad B'; KB.bewaar(); });
+  await tabA.waitForTimeout(1500);
+  const gemerkt = await tabA.evaluate(() => ({
+    verouderd: KB.verouderd(),
+    melding: (document.getElementById('melding')||{}).textContent || ''
+  }));
+  zeg('het andere tabblad merkt dat er elders is gewerkt', gemerkt.verouderd === true,
+      'verouderd: ' + gemerkt.verouderd);
+  zeg('en zegt het ook', /ander tabblad/i.test(gemerkt.melding), gemerkt.melding.slice(0,70));
+  await samen.close();
+
   const alleFouten = bord.fouten.concat(plan.fouten).concat(baas.fouten);
   zeg('er viel nergens iets om', alleFouten.length === 0,
       alleFouten.slice(0,3).join(' | ') || 'geen enkele fout');

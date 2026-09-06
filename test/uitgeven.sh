@@ -27,6 +27,13 @@ DATUM=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' 
 VINGER=$(cat "$R"/src/*.js "$R"/src/*.css "$R"/*.html 2>/dev/null | sha1sum | cut -c1-8)
 V="$DATUM-$VINGER"
 
+# Waar de twee uitgaven publiek staan. Eén plek; het uitgeefscript schrijft
+# ze in kb-app.js van allebei, zodat er nergens een adres los rondslingert.
+BORDMAP=keuzebord-app
+PLANMAP=planbord
+BORDURL="https://tomhooijer-svg.github.io/$BORDMAP/"
+PLANURL="https://tomhooijer-svg.github.io/$PLANMAP/"
+
 rm -rf "$UIT"; mkdir -p "$UIT"
 
 # ── wat elke uitgave krijgt ──────────────────────────────────────────
@@ -75,7 +82,14 @@ window.KB_APP = {
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: $heeftBord,
   panelen: [$panelen],
-  ander: { id:'$ander', naam:'$anderNaam', adres:'$anderPad' }
+  /* Waar beide uitgaven staan. Volledige adressen, met de mapnaam er los
+     bij als terugval voor een testserver of een ander domein. Dit is de
+     enige plek waar die adressen staan. */
+  apps: {
+    keuzebord: { naam:'Keuzebord', map:'$BORDMAP', url:'$BORDURL' },
+    planbord:  { naam:'Planbord',  map:'$PLANMAP', url:'$PLANURL' }
+  },
+  ander: '$ander'
 };
 EOF
 
@@ -121,11 +135,11 @@ EOF
 echo "── uitgeven ($V) ──"
 bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
   "'statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
-  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html diagnose.html" true
+  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html diagnose.html 404.html" true
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
-  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html" false
+  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html 404.html" false
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
 # In de geschiedenis van de werkplaats zit een oud bestand met echte
