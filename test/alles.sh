@@ -31,8 +31,15 @@ for naam in $LIJST; do
   # stdbuf: zonder dat houdt node zijn uitvoer in een buffer zodra er een
   # pijp achter staat, en bij een crash gaat die buffer verloren. Dan zie
   # je alleen de crash en geen enkele van de controles die er al waren.
+  # Wat als fout telt. Let op de eerste stap: onze eigen geslaagde regels
+  # beginnen met twee spaties en "goed", en die mogen nooit meetellen --
+  # er staat weleens het woord Error in de toelichting. Al het andere met
+  # "Error:" erin is een crash, ook als de regel begint met "page.evaluate:".
+  # Zonder dat laatste gleed een halverwege omgevallen proef er stil
+  # doorheen zolang hij één controle had opgeleverd.
   if stdbuf -o0 -e0 node "$R/test/$naam.test.js" 2>&1 | tee /var/tmp/kb-$naam.log \
-       | grep -E "^  FOUT|^  \[fout\]|^[A-Za-z]*Error|ER GING IETS MIS" ; then mis=1; fi
+       | grep -vE "^  goed " \
+       | grep -E "^  FOUT|^  \[fout\]|Error:|ER GING IETS MIS|triggerUncaughtException" ; then mis=1; fi
   n=$(grep -cE "^  (goed|ja) " /var/tmp/kb-$naam.log)
   echo "   goed: $n"
   # Een proef die niets oplevert is niet geslaagd maar omgevallen. Zonder

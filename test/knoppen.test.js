@@ -158,7 +158,7 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
         melding: melding ? melding.classList.contains('zichtbaar') : false,
         meldingTekst: melding ? __code(melding.textContent || '') : 0,
         adres: location.hash,
-        gegevens: __code(JSON.stringify(KB.G)),
+        gegevens: (typeof KB !== 'undefined' && KB.G) ? __code(JSON.stringify(KB.G)) : 0,
         uiterlijk: (document.documentElement.getAttribute('style') || '') +
                    '|' + document.body.className +
                    '|' + getComputedStyle(document.body).backgroundColor,
@@ -243,9 +243,17 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
       var o = document.getElementById('overlay');
       return !!(o && o.classList.contains('open'));
     };
-    window.__bewaarStand = function (){ window.__stand = JSON.stringify(KB.G); };
+    /* Niet elke pagina heeft de gegevenslaag -- het inlogscherm bijvoorbeeld
+       niet. Belandt de veger daar (na een klik die uitlogt, of een sessie
+       die verloopt), dan hoort hij dat te overleven in plaats van eruit te
+       klappen. */
+    window.__bewaarStand = function (){
+      if (typeof KB === 'undefined' || !KB.G) return;
+      window.__stand = JSON.stringify(KB.G);
+    };
     window.__zetTerug = function (){
       if (!window.__stand) return;
+      if (typeof KB === 'undefined' || !KB.G) return;
       const g = JSON.parse(window.__stand);
       KB.G.klassen = g.klassen;
       KB.G.activeKlasId = g.activeKlasId;
@@ -437,7 +445,7 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
         melding: document.getElementById('melding').classList.contains('zichtbaar'),
         pauze: getComputedStyle(document.getElementById('pauzevlak')).display,
         aanuit: (document.getElementById('knop-aanuit-tekst')||{}).textContent,
-        gegevens: __code(JSON.stringify(KB.G)),
+        gegevens: (typeof KB !== 'undefined' && KB.G) ? __code(JSON.stringify(KB.G)) : 0,
         uiterlijk: (document.documentElement.getAttribute('style') || '') +
                    '|' + document.body.className
       });
