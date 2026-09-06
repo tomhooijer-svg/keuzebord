@@ -202,12 +202,23 @@ function naarKlas(rijen, bestaande){
   /* Van server-id naar lokaal id. Kent dit apparaat de rij nog niet -- het
      digibord dat de groep voor het eerst ophaalt -- dan wordt het server-id
      meteen ook het lokale id, en leggen we dat vast. Zonder die stap zou
-     een wijziging vanaf dat apparaat als een nieuwe rij terugkomen. */
+     een wijziging vanaf dat apparaat als een nieuwe rij terugkomen.
+
+     De hele vertaaltabel gaat hier één keer open en aan het eind één keer
+     dicht. Per rij zoeken en opslaan kan ook, maar bij een groep met een
+     jaar aan observaties zijn dat duizenden keren de opslag in en uit --
+     en dat gebeurt elke keer dat er opgehaald wordt. */
+  var kop = koppelingen(), terug = {}, veranderd = false;
+  Object.keys(kop).forEach(function (l) { terug[kop[l]] = l; });
+  var onthoud = function (lokaalId, serverId) {
+    if (!lokaalId || !serverId || kop[lokaalId] === serverId) return;
+    kop[lokaalId] = serverId; terug[serverId] = lokaalId; veranderd = true;
+  };
   var lok = function (serverId) {
     if (!serverId) return serverId;
-    var l = opLokaal(serverId);
+    var l = terug[serverId];
     if (l) return l;
-    koppel(serverId, serverId);
+    onthoud(serverId, serverId);
     return serverId;
   };
 
@@ -266,7 +277,7 @@ function naarKlas(rijen, bestaande){
         // zie hieronder bij het weekplan: het id dat wij hiervoor verzinnen
         // moet aan de server-rij gekoppeld blijven, anders sturen we hem
         // straks als nieuw op en botst hij met zichzelf.
-        koppel(bordId + '~' + kind, p.id);
+        onthoud(bordId + '~' + kind, p.id);
         (plaatsingen[h] = plaatsingen[h] || []).push({
           leerlingId: kind, startTijd: new Date(p.start_tijd).getTime() });
       });
@@ -289,7 +300,7 @@ function naarKlas(rijen, bestaande){
 
   k.wachtrij = (rijen.wachtrij || []).map(function (r) {
     var kind = lok(r.leerling_id);
-    koppel('w~' + kind, r.id);
+    onthoud('w~' + kind, r.id);
     return { leerlingId:kind, hoekId:lok(r.hoek_id), volgorde:r.volgorde };
   });
 
@@ -316,19 +327,19 @@ function naarKlas(rijen, bestaande){
   k.weken = {};
   (rijen.weekplannen || []).forEach(function (r) {
     var sleutel = String(r.maandag).slice(0, 10);
-    koppel('wp~' + sleutel, r.id);
+    onthoud('wp~' + sleutel, r.id);
     var taken = (rijen.weekplan_taken || []).filter(function (x) { return x.weekplan_id === r.id; })
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
         var afgerond = {}, geweest = {};
         var wtId = 'wt~' + sleutel + '~' + lok(wt.taak_id);
-        koppel(wtId, wt.id);
+        onthoud(wtId, wt.id);
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
           .forEach(function (t) {
             var dag = DAGEN[(t.dag || 1) - 1] || 'ma';
             var kind = lok(t.leerling_id);
-            koppel(wtId + '~' + kind, t.id);
+            onthoud(wtId + '~' + kind, t.id);
             verdeling[dag].push(kind);
             if (t.stand === 'behaald') afgerond[kind] = true;
             if (t.geweest) geweest[kind] = String(t.geweest).slice(0, 10);
@@ -373,13 +384,14 @@ function naarKlas(rijen, bestaande){
                  : r.taak_id ? 'taak:' + lok(r.taak_id) : null;
     if (!waarover) return;
     var sleutel = lok(r.leerling_id) + '|' + waarover;
-    koppel('o~' + sleutel, r.id);
+    onthoud('o~' + sleutel, r.id);
     k.beoordelingen[sleutel] = {
       stand:r.stand, taakId:r.taak_id ? lok(r.taak_id) : null,
       datum:new Date(r.datum).getTime() };
   });
 
   if (!k.fotoLib) k.fotoLib = [];
+  if (veranderd) bewaarKoppelingen(kop);
   return k;
 }
 

@@ -1913,6 +1913,9 @@ function opslagKnop(klasse){
   tekst.appendChild(el('span', 'opslaguitleg', ''));
   b.appendChild(tekst);
   b.addEventListener('click', function () { nuOpslaan(); });
+  /* Hij staat nog niet in het scherm -- dat gebeurt bij de aanroeper --
+     dus mag de opruiming hem deze ronde nog niet als weggegooid zien. */
+  b.__vers = true;
   opslagVakken.push(b);
   ververOpslagstand();
   return b;
@@ -1920,8 +1923,9 @@ function opslagKnop(klasse){
 
 function ververOpslagstand(){
   var w = opslagWoorden();
-  opslagVakken = opslagVakken.filter(function (b) { return b.isConnected !== false; });
+  opslagVakken = opslagVakken.filter(function (b) { return b.__vers || b.isConnected; });
   opslagVakken.forEach(function (b) {
+    b.__vers = false;
     b.className = b.className.replace(/ ?stand-[a-z]+/g, '') + ' stand-' + w.soort;
     b.querySelector('.opslagnaam').textContent = w.tekst;
     b.querySelector('.opslaguitleg').textContent = w.uitleg;

@@ -4,6 +4,17 @@ const { chromium } = require('playwright');
 const CHROME = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const APP = process.env.APP || 'http://localhost:8899';
 
+// Naar een paneel gaan doe je via het menu. Het adres met #week erachter
+// werkt alleen bij het openen van de pagina; staat de pagina er al, dan
+// verandert er niets en kijk je nog steeds naar Vandaag.
+async function naarPaneel(p, naam){
+  await p.evaluate(n => {
+    const b = [...document.querySelectorAll('.zij-knop')].filter(x => x.textContent.trim() === n)[0];
+    if (b) b.click();
+  }, naam);
+  await p.waitForTimeout(700);
+}
+
 (async () => {
   const b = await chromium.launch({ executablePath: CHROME });
   const c = await b.newContext({ viewport:{width:1500,height:1000} });
@@ -43,8 +54,7 @@ const APP = process.env.APP || 'http://localhost:8899';
   zeg('de stand staat onderin de zijbalk',
       !!(await lezen('.zij-onder .opslagstand')), JSON.stringify(await lezen('.zij-onder .opslagstand')));
 
-  await p.goto(APP + '/beheer.html#week');
-  await p.waitForTimeout(3000);
+  await naarPaneel(p, 'Weekplan');
   const inWeek = await lezen('.opslagstrook .opslagstand');
   zeg('en onderaan het weekplan', !!inWeek, JSON.stringify(inWeek));
   zeg('hij zegt dat het opgeslagen is', !!inWeek && /stand-klaar/.test(inWeek.klasse) &&

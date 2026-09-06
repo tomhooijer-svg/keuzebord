@@ -155,8 +155,17 @@ function laad(){
 
 /* Wie hierop luistert, hoort het zodra er iets is opgeslagen. Zo hoeft
    geen enkele plek in de app zelf te weten dat er ook een server is. */
-var naBewaren = null;
-function opBewaard(fn){ naBewaren = fn; }
+/* Wie wil weten dat er iets opgeslagen is. Dat waren er eerst één -- de
+   verbinding, die het meteen wil opsturen -- en de tweede aanmelder gooide
+   de eerste er stilletjes uit. Nu is het een rijtje: de verbinding stuurt
+   het op, en het scherm zet de stand op "bezig". */
+var naBewaren = [];
+function opBewaard(fn){
+  if (typeof fn === 'function' && naBewaren.indexOf(fn) < 0) naBewaren.push(fn);
+}
+function zegDatErBewaardIs(){
+  naBewaren.forEach(function (fn) { try { fn(); } catch (e) {} });
+}
 
 /* Opslaan, en niet omvallen als het niet past.
 
@@ -308,7 +317,7 @@ function bewaar(){
       localStorage.setItem(SLEUTEL, tekst);
       onthoudStand(tekst);
       if (trappen > 0) laatsteAfpelling = Date.now();
-      if (naBewaren) { try { naBewaren(); } catch (e) {} }
+      zegDatErBewaardIs();
       /* Hebben we werk van een ander tabblad overgenomen, dan klopt wat er
          nu op dit scherm staat niet meer met de gegevens. Zeggen dus. */
       if (namenOver && elders) { try { elders(); } catch (e) {} }
@@ -323,7 +332,7 @@ function bewaar(){
      weg, dus we vragen om een ronde versturen en melden dat het krap is.
      De aanroeper krijgt `false` en mag het zeggen. */
   laatsteAfpelling = Date.now();
-  if (naBewaren) { try { naBewaren(); } catch (e) {} }
+  zegDatErBewaardIs();
   return false;
 }
 

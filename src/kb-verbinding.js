@@ -194,15 +194,19 @@ function haalOp(){
      het vergelijkt eerst met de laatste afdruk en stuurt alleen wat
      verschilt. */
   var eerst = lopend.catch(function () {}).then(function () {
-    return stuurNu().catch(function () {});
+    return stuurNu().catch(function () { return { gelukt:false }; });
   });
-  return eerst.then(function () {
+  return eerst.then(function (uit) {
     /* Lukte het versturen niet, dan halen we ook niet op. Wat de server
        stuurt vervangt hier het weekplan, de taken en de hoeken in één
        keer; doen we dat terwijl er hier nog iets klaarstaat, dan is dat
        weg. Liever een scherm dat even niet bijgepraat is dan een
-       weekplan dat verdwijnt -- de volgende ronde probeert het opnieuw. */
-    if (KBSYNC.wachtErIetsOp(klasId)) { meldStand('wacht'); return false; }
+       weekplan dat verdwijnt -- de volgende ronde probeert het opnieuw.
+       Dat het niet gelukt is blijft zichtbaar: de stand onderin zegt
+       "nog niet verstuurd" en je kunt er zelf op drukken. */
+    if ((uit && uit.gelukt === false) || KBSYNC.wachtErIetsOp(klasId)) {
+      meldStand('wacht'); return false;
+    }
     return KBSYNC.haalBinnen(klasId, groepId).then(function () {
       meldStand('klaar');
       return true;
