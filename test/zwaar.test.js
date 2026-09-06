@@ -63,6 +63,7 @@ async function inloggen(p, email, waarheen){
 
   // ── de beheerder vult alle zes de groepen ───────────────────────────
   const baas = await apparaat(b, 'beheer');
+  baas.on('console', m => { if (/ZWAAR/.test(m.text())) console.log('        ' + m.text()); });
   await inloggen(baas, 'beheerder@mijnschool.nl', /school\.html/);
 
   const namen = await baas.evaluate(() => KB.G.klassen.map(k => k.naam).sort());
@@ -216,10 +217,18 @@ async function inloggen(p, email, waarheen){
            pas later opsturen betekent er eerst weer naartoe wisselen, en
            dat haalt hem van de server op -- dan stuur je terug wat er al
            stond in plaats van wat je net hebt gemaakt. */
+        /* Ging het opsturen mis, dan zeggen we dát ook. Het stil
+           wegslikken kostte een uur zoeken: de proef telde wat er op de
+           server stond en zei "vier van de vierentwintig", maar niet
+           waarom. */
+        let stuurfout = null;
         try {
-          await KBSYNC.duw(KBV.klasId(), KBV.groepId(), KBV.wie().profiel.school_id);
-        } catch (e) { /* de proef hieronder telt wat er staat */ }
-        verslag.push({ groep:k.naam, hoeken:kk.hoekLib.length, kinderen:kk.leerlingen.length,
+          const uit = await KBSYNC.duw(KBV.klasId(), KBV.groepId(), KBV.wie().profiel.school_id);
+          if (uit && uit.overgeslagen) stuurfout = 'overgeslagen: ' + uit.overgeslagen;
+          if (uit && uit.mislukt) stuurfout = 'tabellen mislukt: ' + JSON.stringify(uit.mislukt);
+        } catch (e) { stuurfout = e.message; }
+        if (stuurfout) console.warn('ZWAAR ' + k.naam + ': ' + stuurfout);
+        verslag.push({ groep:k.naam, stuurfout:stuurfout, hoeken:kk.hoekLib.length, kinderen:kk.leerlingen.length,
                        taken:kk.taken.length, weken:Object.keys(kk.weken).length,
                        themas:kk.themas.length, gebeurtenissen:kk.gebeurtenissen.length,
                        beoordelingen:Object.keys(kk.beoordelingen).length });
