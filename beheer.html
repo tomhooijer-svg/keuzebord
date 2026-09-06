@@ -139,7 +139,18 @@
 .weekkop-verte.nu{ color:var(--accent); }
 .weekstrook{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
 .weekdagvak{ background:var(--vlak); border:1.5px solid var(--lijn); border-radius:12px;
-             padding:10px 6px; text-align:center; }
+             padding:10px 6px; text-align:center; font-family:inherit; color:inherit;
+             cursor:pointer; transition:border-color .14s ease, background .14s ease; }
+.weekdagvak:hover{ border-color:var(--accent); background:var(--accent-zacht); }
+.dagronde{ margin-bottom:18px; }
+.kindchip-notitie{ font-size:.8rem; color:var(--let-op); cursor:help; }
+.themavoortgang{ margin:8px 0 2px; }
+.themavoortgang-tekst{ font-size:.72rem; color:var(--inkt-3); margin-top:3px; }
+.merkje.klaar{ background:var(--goed-zacht); color:var(--goed); }
+.merkje.nu{ background:var(--accent-zacht); color:var(--accent); }
+.merkje.straks{ background:var(--let-op-zacht); color:var(--let-op); }
+.merkje.geweest{ background:var(--vlak-2); color:var(--inkt-3); }
+.dagtaak{ display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
 .weekdagvak.vandaag{ border-color:var(--accent); background:var(--accent-zacht); }
 .weekdagvak-naam{ font-size:.7rem; font-weight:700; letter-spacing:.08em;
                   text-transform:uppercase; color:var(--inkt-3); }

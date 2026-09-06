@@ -131,7 +131,8 @@ function naarRijen(k){
                       vraag:t.vraag || '', start_tekst:t.start || '',
                       afsluiting:t.afsluiting || '',
                       van:t.van || null, tot:t.tot || null,
-                      kleur:t.kleur || null, archief:!!t.archief, volgorde:i,
+                      kleur:t.kleur || null, archief:!!t.archief,
+                      klaar:!!t.klaar, volgorde:i,
                       vragen:t.vragen || [], activiteiten:t.activiteiten || [] });
     (t.doelIds || []).forEach(function (d) {
       uit.thema_doelen.push({ _id:t.id + '~' + d, _thema:t.id, _doel:d });
@@ -169,6 +170,7 @@ function naarRijen(k){
           uit.taak_toewijzing.push({
             _id:wtId + '~' + lid, _weekplantaak:wtId, _leerling:lid, dag:nr + 1,
             geweest:(wt.geweest && wt.geweest[lid]) || null,
+            notitie:(wt.notities && wt.notities[lid]) || '',
             stand:(wt.afgerond && wt.afgerond[lid]) ? 'behaald' : 'nog' });
         });
       });
@@ -251,7 +253,7 @@ function naarKlas(rijen, bestaande){
                // een date komt als tijdstempel terug; wij rekenen met weeksleutels
                van:r.van ? String(r.van).slice(0, 10) : null,
                tot:r.tot ? String(r.tot).slice(0, 10) : null,
-               kleur:r.kleur || null, archief:!!r.archief,
+               kleur:r.kleur || null, archief:!!r.archief, klaar:!!r.klaar,
                vragen:r.vragen || [], activiteiten:r.activiteiten || [],
                doelIds:(rijen.thema_doelen || [])
                  .filter(function (x) { return x.thema_id === r.id; })
@@ -332,7 +334,7 @@ function naarKlas(rijen, bestaande){
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
-        var afgerond = {}, geweest = {};
+        var afgerond = {}, geweest = {}, notities = {};
         var wtId = 'wt~' + sleutel + '~' + lok(wt.taak_id);
         onthoud(wtId, wt.id);
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
@@ -343,9 +345,10 @@ function naarKlas(rijen, bestaande){
             verdeling[dag].push(kind);
             if (t.stand === 'behaald') afgerond[kind] = true;
             if (t.geweest) geweest[kind] = String(t.geweest).slice(0, 10);
+            if (t.notitie) notities[kind] = t.notitie;
           });
         return { taakId:lok(wt.taak_id), verdeling:verdeling,
-                 afgerond:afgerond, geweest:geweest };
+                 afgerond:afgerond, geweest:geweest, notities:notities };
       });
     k.weken[sleutel] = {
       notitie: r.notitie,
@@ -644,6 +647,15 @@ function duwNu(klasId, groepId, schoolId){
       start = SB.wijzig('groepen', groepGegevens(k), { id:'eq.' + groepId });
     }
 
+    /* Loopt één tabel stuk, dan mag dat de rest niet meenemen. Dat is
+       precies wat er eerder gebeurde: één botsing op het weekplan en
+       alles wat daarna in de rij stond kwam nooit meer weg. Nu onthouden
+       we welke tabel het was, gaan we door met de rest, en houden we voor
+       die ene tabel de oude afdruk aan -- dan probeert de volgende ronde
+       hem opnieuw. Alleen bij "geen verbinding" stoppen we wel meteen; dan
+       heeft doorgaan geen zin. */
+    var mislukt = {};
+
     // dan alles wat erbij hoort, in de goede volgorde
     var rij = start;
     TABELLEN.forEach(function (tabel) {
@@ -651,6 +663,33 @@ function duwNu(klasId, groepId, schoolId){
       if (!d) return;
       rij = rij.then(function () {
         var stappen = [];
+        /* "Nieuw" betekent hier: staat niet in de afdruk. Dat is niet
+           hetzelfde als: staat niet op de server. Ging er onderweg iets
+           mis, dan klopt de afdruk niet meer met wat er al verstuurd is --
+           en dan zou dit dezelfde rij nog een keer neerzetten. Kennen we
+           het server-id al, dan werken we die rij dus bij in plaats van
+           er een tweede naast te zetten. */
+        var echtNieuw = [], alBekend = [];
+        d.nieuw.forEach(function (r) {
+          if (!tabel.samengesteld && opServer(r._id)) alBekend.push(r);
+          else echtNieuw.push(r);
+        });
+        alBekend.forEach(function (r) {
+          stappen.push(function () {
+            var waarden = serverRij(r, tabel, groepId, schoolId);
+            return SB.wijzig(tabel.naam, waarden, { id:'eq.' + opServer(r._id) })
+              .then(function (terug) {
+                if (terug && terug.length) return;
+                /* Er staat daar niets meer -- de rij is elders weggehaald.
+                   Dan hoort hij hier alsnog nieuw neergezet te worden, en
+                   moet de oude koppeling weg. */
+                koppel(r._id, null);
+                return SB.schrijf(tabel.naam, [serverRij(r, tabel, groepId, schoolId)])
+                  .then(function (t) { if (t && t[0]) koppel(r._id, t[0].id); });
+              });
+          });
+        });
+        d = { nieuw: echtNieuw, gewijzigd: d.gewijzigd, weg: d.weg };
         if (d.nieuw.length) {
           stappen.push(function () {
             // Een tabel met een samengestelde sleutel kan dezelfde rij niet
@@ -698,6 +737,11 @@ function duwNu(klasId, groepId, schoolId){
               tabel.samengesteld.forEach(function (kol) { waar[kol] = 'eq.' + waarden[kol]; });
               return SB.wis(tabel.naam, waar);
             }
+            /* De koppeling laten we staan, ook al is de rij weg. Andere
+               rijen wijzen er nog naar -- de plaatsingen van een hoek die
+               je net weghaalde -- en die moeten hun verwijzing nog kunnen
+               vertalen om zelf opgeruimd te worden. Komt de rij ooit terug,
+               dan merkt het bijwerken vanzelf dat er niets meer staat. */
             var id = opServer(r._id);
             if (id) return SB.wis(tabel.naam, { id:'eq.' + id });
             // Ook hier: geen id, maar wel een sleutel om hem op te vinden.
@@ -712,7 +756,11 @@ function duwNu(klasId, groepId, schoolId){
             return compleet ? SB.wis(tabel.naam, waar) : Promise.resolve();
           });
         });
-        return stappen.reduce(function (p, stap) { return p.then(stap); }, Promise.resolve());
+        return stappen.reduce(function (p, stap) { return p.then(stap); }, Promise.resolve())
+          .catch(function (e) {
+            if (e && e.offline) throw e;
+            mislukt[tabel.naam] = (e && e.message) || 'onbekend';
+          });
       });
     });
 
@@ -720,7 +768,17 @@ function duwNu(klasId, groepId, schoolId){
       return stuurLogOp(k, klasId, groepId).catch(function () { return 0; });
     }).then(function () {
       nu._groep = groepGegevens(k);
+      /* Wat niet weg is, mag de afdruk niet als verstuurd opschrijven. */
+      Object.keys(mislukt).forEach(function (naam) {
+        nu[naam] = (toen && toen[naam]) || [];
+      });
       zetAfdruk(klasId, nu);
+      /* Wat er misging hangen we onzichtbaar aan de uitslag: wie vraagt
+         "wat is er veranderd" krijgt tabelnamen, geen boekhouding. */
+      if (Object.keys(mislukt).length) {
+        try { Object.defineProperty(wat, 'mislukt', { value:mislukt, enumerable:false }); }
+        catch (e) { wat.mislukt = mislukt; }
+      }
       return wat;
     });
   });
@@ -830,6 +888,12 @@ function wachtErIetsOp(klasId){
    niet kan. Een leerkracht hoeft niet te weten dat de wifi hikte. */
 function stuurOp(klasId, groepId, schoolId){
   return duw(klasId, groepId, schoolId).then(function (wat) {
+    /* Ging er onderweg één tabel mis, dan is er nog iets te doen: het
+       vlaggetje blijft staan en het scherm zegt "nog niet verstuurd". */
+    if (wat && wat.mislukt) {
+      markeerWachtend(klasId, true);
+      return { gelukt:false, mislukt:wat.mislukt };
+    }
     markeerWachtend(klasId, false);
     return { gelukt:true, veranderd:wat };
   }, function (e) {

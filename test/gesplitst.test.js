@@ -64,7 +64,7 @@ const zeg = (n, ok, extra) => {
       ['Statistieken','Leerlingen',"Picto's",'Hoeken','Uiterlijk','Groep','Functies']
         .every(n => bordMenu.indexOf(n) >= 0), bordMenu.join(', '));
   zeg('en geen planwerk',
-      !['Weekplan',"Thema's",'Taken','Doelen','Observaties','Vandaag']
+      !['Weekplan',"Thema's",'Taken','Doelen','Observaties','Overzicht']
         .some(n => bordMenu.indexOf(n) >= 0), bordMenu.join(', '));
   zeg('het planwerk is er ook echt niet, niet alleen verstopt',
       !bord.beeld.panelen.some(x => ['week','themas','taken','doelen','observaties'].indexOf(x) >= 0),
@@ -95,12 +95,12 @@ const zeg = (n, ok, extra) => {
 
   const planMenu = plan.beeld.menu.filter(x => !/^Naar /.test(x));
   zeg('Planbord heeft het planwerk',
-      ['Vandaag','Weekplan',"Thema's",'Taken','Doelen','Observaties']
+      ['Overzicht','Weekplan',"Thema's",'Taken','Doelen','Observaties']
         .every(n => planMenu.indexOf(n) >= 0), planMenu.join(', '));
   zeg('en niet het bordbeheer',
       !['Statistieken',"Picto's",'Hoeken','Uiterlijk','Functies','Leerlingen']
         .some(n => planMenu.indexOf(n) >= 0), planMenu.join(', '));
-  zeg('Planbord opent op Vandaag', plan.beeld.inhoud > 40, plan.beeld.inhoud + ' tekens');
+  zeg('Planbord opent op Overzicht', plan.beeld.inhoud > 40, plan.beeld.inhoud + ' tekens');
   zeg('en wijst de weg naar Keuzebord',
       plan.beeld.over.length === 1 && /keuzebord/.test(plan.beeld.over[0]),
       plan.beeld.over.join(' '));

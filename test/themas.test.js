@@ -212,7 +212,7 @@ const APP = process.env.APP || 'http://localhost:8899';
   zeg('de afsluiting laat zien waar het thema staat',
       check.rijen.length === 8, check.rijen.length + ' punten');
   zeg('en wat al af is staat aangevinkt',
-      ['Startactiviteit','Onderzoeksvraag','Vragen van de kinderen','Hoeken ingericht',
+      ['Startactiviteit','Onderzoeksvraag','Vragen van de kinderen','Hoeken',
        'Activiteiten','Taken','Doelen'].every(n => goedNamen.indexOf(n) >= 0),
       goedNamen.join(', '));
   zeg('de afsluiting zelf staat nog open',
@@ -296,7 +296,8 @@ const APP = process.env.APP || 'http://localhost:8899';
   zeg('een afgesloten thema verhuist naar "Geweest"',
       afgesloten.archief === true && afgesloten.koppen.indexOf('Geweest') >= 0,
       afgesloten.koppen.join(' / '));
-  zeg('en de taak die eraan hing blijft gewoon bestaan', afgesloten.taakBlijft === 1);
+  zeg('en de taak die eraan hing blijft gewoon bestaan', afgesloten.taakBlijft === 1,
+      'taken: ' + afgesloten.taakBlijft);
 
   await p.screenshot({ path:'/tmp/themas.png', fullPage:true });
   console.log(uit.filter(x=>/FOUT/.test(x)).length ? 'ER GING IETS MIS' : 'alles goed');

@@ -308,6 +308,11 @@ input, select, textarea{ font: inherit; color: inherit; }
   font-size: .85rem; font-weight: 600; color: var(--inkt-2); text-decoration: none;
 }
 
+/* Een doel dat via een taak of het thema meeloopt, zegt erbij waar het
+   vandaan komt. */
+.minichip.via{ display: inline-flex; align-items: baseline; gap: 6px; }
+.minichip-bron{ font-size: .68rem; opacity: .62; font-style: italic; }
+
 /* ── is het opgeslagen? ───────────────────────────────── */
 /* Staat onderin de zijbalk en onderaan het weekplan. Een stip met een
    woord erbij: rustig als het goed is, opvallend als er iets klaarstaat

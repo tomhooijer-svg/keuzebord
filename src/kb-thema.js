@@ -64,11 +64,19 @@ BH.panelen.themas = function (v){
   }
 
   var nu = KB.weekSleutel();
-  if (lopend.length) {
+  var opDatum = function (a, b) { return (a.van || '9999') < (b.van || '9999') ? -1 : 1; };
+  /* Een thema dat je af hebt staat apart van een thema waar je nog aan
+     werkt. Anders is aan de lijst niet te zien wat er klaarstaat. */
+  var klaar = lopend.filter(function (t) { return t.klaar; });
+  var inDeMaak = lopend.filter(function (t) { return !t.klaar; });
+  if (klaar.length) {
+    var pk = paneel('Klaar om te draaien');
+    klaar.slice().sort(opDatum).forEach(function (t) { pk.appendChild(themaRij(t, k, nu)); });
+    v.appendChild(pk);
+  }
+  if (inDeMaak.length) {
     var p = paneel('In de maak');
-    lopend.slice().sort(function (a, b) {
-      return (a.van || '9999') < (b.van || '9999') ? -1 : 1;
-    }).forEach(function (t) { p.appendChild(themaRij(t, k, nu)); });
+    inDeMaak.slice().sort(opDatum).forEach(function (t) { p.appendChild(themaRij(t, k, nu)); });
     v.appendChild(p);
   }
 
@@ -95,8 +103,13 @@ function themaRij(t, k, nu){
   if (t.van && t.tot && nu >= t.van && nu <= t.tot) {
     titel.appendChild(el('span', 'merkje', 'deze week'));
   }
+  if (t.klaar && !t.archief) titel.appendChild(el('span', 'merkje klaar', 'klaar'));
   tekst.appendChild(titel);
   tekst.appendChild(el('div', 'rij-sub', t.vraag || periodeZin(t) || 'nog geen onderzoeksvraag'));
+
+  /* Hoever is het uitgewerkt? Eén balk zegt dat sneller dan vijf getallen. */
+  var vg = KB.themaVoortgang(t, k);
+  tekst.appendChild(voortgangsbalk(vg, t.klaar));
 
   var mc = el('div', 'minichips');
   [[st.vragen, 'vragen'], [st.doelen, 'doelen'], [st.activiteiten, 'activiteiten'],
@@ -108,6 +121,24 @@ function themaRij(t, k, nu){
 
   rij.addEventListener('click', function () { open = t.id; stap = 'verwonder'; teken(); });
   return rij;
+}
+
+/* De balk met "5 van de 8 ingevuld" eronder. Groen als de leerkracht het
+   thema zelf klaar heeft gemeld -- niet als de balk toevallig vol is, want
+   niet alles hoeft ingevuld. */
+function voortgangsbalk(vg, klaar){
+  var vak = el('div', 'themavoortgang');
+  var baan = el('div', 'staafbaan');
+  var vul = el('span');
+  vul.style.width = vg.deel + '%';
+  if (klaar) vul.style.background = 'var(--goed)';
+  else if (vg.deel < 50) vul.style.background = 'var(--let-op)';
+  baan.appendChild(vul);
+  vak.appendChild(baan);
+  vak.appendChild(el('div', 'themavoortgang-tekst',
+    klaar ? 'klaar \u00b7 ' + vg.gedaan + ' van de ' + vg.totaal + ' ingevuld'
+          : vg.gedaan + ' van de ' + vg.totaal + ' ingevuld'));
+  return vak;
 }
 
 function periodeZin(t){
@@ -517,22 +548,25 @@ function betekenisStap(v, t, k){
     t.afsluiting, function (w) { t.afsluiting = w; bewaar(); }));
   v.appendChild(p);
 
-  var st = KB.themaStand(t, k);
+  var uitleg = {
+    'Startactiviteit':        'Nog niets opgeschreven bij Verwonderen',
+    'Onderzoeksvraag':        'Nog geen vraag die het thema draagt',
+    'Vragen van de kinderen': 'De vragenmuur is nog leeg',
+    'Hoeken':                 'Nog geen hoeken aan dit thema gehangen',
+    'Activiteiten':           'Nog geen activiteiten',
+    'Taken':                  'Nog geen taken in de werkplaats',
+    'Doelen':                 'Nog geen doelen gekozen',
+    'Afsluiting':             'Nog niets opgeschreven'
+  };
+  var vg = KB.themaVoortgang(t, k);
   var p2 = paneel('Waar staat dit thema');
-  [['Startactiviteit', st.heeftStart, 'Nog niets opgeschreven bij Verwonderen'],
-   ['Onderzoeksvraag', !!(t.vraag || '').trim(), 'Nog geen vraag die het thema draagt'],
-   ['Vragen van de kinderen', st.vragen > 0, 'De vragenmuur is nog leeg'],
-   ['Hoeken ingericht', st.hoeken > 0, 'Nog geen hoeken aan dit thema gehangen'],
-   ['Activiteiten', st.activiteiten > 0, 'Nog geen activiteiten'],
-   ['Taken', st.taken > 0, 'Nog geen taken in de werkplaats'],
-   ['Doelen', st.doelen > 0, 'Nog geen doelen gekozen'],
-   ['Afsluiting', st.heeftAfsluiting, 'Nog niets opgeschreven']
-  ].forEach(function (r) {
-    var rij = el('div', 'checkrij' + (r[1] ? ' goed' : ''));
-    rij.appendChild(el('span', 'checkmerk', r[1] ? '✓' : '·'));
+  p2.appendChild(voortgangsbalk(vg, t.klaar));
+  vg.punten.forEach(function (r) {
+    var rij = el('div', 'checkrij' + (r.goed ? ' goed' : ''));
+    rij.appendChild(el('span', 'checkmerk', r.goed ? '✓' : '·'));
     var tekst = el('div', 'checktekst');
-    tekst.appendChild(el('div', 'rij-naam', r[0]));
-    if (!r[1]) tekst.appendChild(el('div', 'rij-sub', r[2]));
+    tekst.appendChild(el('div', 'rij-naam', r.naam));
+    if (!r.goed) tekst.appendChild(el('div', 'rij-sub', uitleg[r.naam] || ''));
     rij.appendChild(tekst);
     p2.appendChild(rij);
   });
@@ -541,10 +575,30 @@ function betekenisStap(v, t, k){
     'kinderen iets anders willen weten, is geen mislukt thema.'));
   v.appendChild(p2);
 
-  var p3 = paneel();
+  /* Zelf zeggen dat het af is. Dat is wat anders dan afsluiten: klaar
+     betekent "uitgewerkt, ik kan ermee beginnen", afgesloten betekent
+     "geweest". */
+  var p3 = paneel(t.klaar ? 'Dit thema is klaar' : 'Ben je klaar met uitwerken?');
+  if (t.klaar) {
+    p3.appendChild(el('p', 'hint',
+      'Het staat in de lijst onder "Klaar om te draaien". Je kunt er gewoon nog ' +
+      'aan werken -- zet hem dan even terug in de maak.'));
+  } else {
+    p3.appendChild(el('p', 'hint',
+      'Zet hem op klaar als je hem af hebt. Dan zie je in de lijst in één oogopslag ' +
+      'welke thema’s klaarstaan en aan welke je nog werkt.'));
+  }
   var rij3 = el('div', 'knoprij');
+  rij3.appendChild(knop(t.klaar ? 'Weer in de maak zetten' : 'Thema is klaar',
+                        t.klaar ? 'stil' : 'primair', function () {
+    t.klaar = !t.klaar; bewaar(); teken();
+    meld(t.klaar ? t.naam + ' staat klaar' : t.naam + ' staat weer in de maak');
+  }));
+  rij3.appendChild(knop('Gegevens aanpassen', 'stil', function () { nieuwThemaBlad(t); }));
   rij3.appendChild(knop(t.archief ? 'Weer in de maak zetten' : 'Thema afsluiten', 'stil', function () {
-    t.archief = !t.archief; bewaar();
+    t.archief = !t.archief;
+    if (t.archief) t.klaar = false;
+    bewaar();
     if (t.archief) { open = null; meld(t.naam + ' is afgesloten'); }
     teken();
   }));
