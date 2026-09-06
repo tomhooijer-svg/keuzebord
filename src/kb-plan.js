@@ -419,6 +419,15 @@ function planTaakInWeek(t, k){
     keuze.appendChild(metKinderen);
     keuze.appendChild(el('span', null, 'Meteen alle kinderen over de week verdelen'));
     blad.appendChild(keuze);
+    var gevolg = el('p', 'hint', '');
+    var zegGevolg = function () {
+      gevolg.textContent = metKinderen.checked
+        ? 'Ik verdeel alle kinderen over de dagen; in het weekplan kun je schuiven.'
+        : 'De taak komt leeg in de week te staan. Wie hem doet, kies je later.';
+    };
+    zegGevolg();
+    metKinderen.addEventListener('change', zegGevolg);
+    blad.appendChild(gevolg);
 
     var rij = el('div', 'knoprij');
     rij.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
@@ -977,7 +986,18 @@ function toonDag(d, w, k){
         wie.forEach(function (id) {
           ingedeeld[id] = true;
           var l = KB.leerling(id, k);
-          if (l) namen.appendChild(BH.kindKaart(l, 40));
+          if (!l) return;
+          /* Tik op een kind om hem naar een andere dag te zetten. Dat is
+             wat je hier wilt doen als je ziet dat een dag te vol staat. */
+          var chip = el('button', 'kindchip');
+          chip.appendChild(BH.pictoBol(l, 26));
+          chip.appendChild(el('span', null, l.naam));
+          chip.title = l.naam + ' naar een andere dag';
+          chip.addEventListener('click', function () {
+            BH.sluitBlad();
+            verplaatsKind(wt, l, d.dag);
+          });
+          namen.appendChild(chip);
         });
         vak.appendChild(namen);
         rij.appendChild(vak);
@@ -1013,7 +1033,12 @@ function toonDag(d, w, k){
       var vrijVak = el('div', 'dagronde');
       vrijVak.appendChild(el('div', 'rondekop', 'Kiezen zelf op het bord'));
       var vrijRij = el('div', 'kindrij');
-      vrij.forEach(function (l) { vrijRij.appendChild(BH.kindKaart(l, 40)); });
+      vrij.forEach(function (l) {
+        var chip = el('div', 'kindchip');
+        chip.appendChild(BH.pictoBol(l, 26));
+        chip.appendChild(el('span', null, l.naam));
+        vrijRij.appendChild(chip);
+      });
       vrijVak.appendChild(vrijRij);
       blad.appendChild(vrijVak);
     }
