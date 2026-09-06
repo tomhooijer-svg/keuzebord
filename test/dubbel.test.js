@@ -47,15 +47,20 @@ const zeg = (n, ok, extra) => {
   const tegelijk = await p.evaluate(async () => {
     const kid = KBV.klasId(), gid = KBV.groepId(), sid = KBV.wie().profiel.school_id;
     /* Niet achter elkaar maar echt tegelijk starten. */
-    const a = KBSYNC.duw(kid, gid, sid);
-    const b2 = KBSYNC.duw(kid, gid, sid);
-    const zelfde = a === b2;
+    const volgorde = [];
+    const a = KBSYNC.duw(kid, gid, sid).then(r => { volgorde.push('a'); return r; },
+                                             e => { volgorde.push('a'); throw e; });
+    const b2 = KBSYNC.duw(kid, gid, sid).then(r => { volgorde.push('b'); return r; },
+                                              e => { volgorde.push('b'); throw e; });
     const uitkomst = await Promise.all([a.catch(e=>({fout:e.message})),
                                         b2.catch(e=>({fout:e.message}))]);
-    return { zelfde, fouten: uitkomst.filter(x => x && x.fout).map(x => x.fout) };
+    return { volgorde: volgorde.join(''), fouten: uitkomst.filter(x => x && x.fout).map(x => x.fout) };
   });
-  zeg('een tweede ronde sluit aan bij de lopende in plaats van ernaast te gaan',
-      tegelijk.zelfde === true, tegelijk.zelfde ? 'dezelfde ronde' : 'twee aparte rondes');
+  /* De tweede ronde gaat er niet naast lopen maar erachteraan. Aansluiten
+     bij de lopende -- wat hier eerst gebeurde -- leek hetzelfde, maar die
+     ronde had de nieuwe wijziging niet gezien en meldde toch "klaar". */
+  zeg('een tweede ronde wacht op de lopende in plaats van ernaast te gaan',
+      tegelijk.volgorde === 'ab', 'volgorde: ' + tegelijk.volgorde);
   zeg('en geen van beide klapt eruit', tegelijk.fouten.length === 0,
       tegelijk.fouten.join(' | ') || 'geen fout');
 

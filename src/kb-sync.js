@@ -262,9 +262,13 @@ function naarKlas(rijen, bestaande){
     var plaatsingen = {};
     (rijen.plaatsingen || []).filter(function (p) { return p.bord_id === r.id; })
       .forEach(function (p) {
-        var h = lok(p.hoek_id);
+        var h = lok(p.hoek_id), kind = lok(p.leerling_id);
+        // zie hieronder bij het weekplan: het id dat wij hiervoor verzinnen
+        // moet aan de server-rij gekoppeld blijven, anders sturen we hem
+        // straks als nieuw op en botst hij met zichzelf.
+        koppel(bordId + '~' + kind, p.id);
         (plaatsingen[h] = plaatsingen[h] || []).push({
-          leerlingId: lok(p.leerling_id), startTijd: new Date(p.start_tijd).getTime() });
+          leerlingId: kind, startTijd: new Date(p.start_tijd).getTime() });
       });
     return { id:bordId, naam:r.naam, hoekLibIds:hoekIds, plaatsingen:plaatsingen,
              dagOpen:!!stand.dagOpen, dagGesloten:!!stand.dagGesloten,
@@ -284,7 +288,9 @@ function naarKlas(rijen, bestaande){
   k.activeBordId = actief ? lok(actief.id) : k.borden[0].id;
 
   k.wachtrij = (rijen.wachtrij || []).map(function (r) {
-    return { leerlingId:lok(r.leerling_id), hoekId:lok(r.hoek_id), volgorde:r.volgorde };
+    var kind = lok(r.leerling_id);
+    koppel('w~' + kind, r.id);
+    return { leerlingId:kind, hoekId:lok(r.hoek_id), volgorde:r.volgorde };
   });
 
   k.taken = (rijen.taken || []).map(function (r) {
@@ -299,20 +305,33 @@ function naarKlas(rijen, bestaande){
   k.doelActief = {};
   (rijen.groep_doelen || []).forEach(function (r) { k.doelActief[lok(r.doel_id)] = true; });
 
+  /* Het weekplan heeft hier geen eigen id: het heet naar zijn maandag,
+     en de taken en toewijzingen eronder heten naar wat ze verbinden.
+     Precies daarom moeten we ze hier aan de server-rij koppelen. Deden we
+     dat niet, dan zag het opsturen ze aan voor nieuwe rijen -- en liep het
+     vast op "die week staat er al". Die botsing brak de hele ronde af, en
+     alles wat er in de volgorde na kwam (de ingeplande taken, wie er aan
+     de beurt is) kwam nooit meer weg. Dat is waarom kinderen die je vooraf
+     had ingedeeld niet op het bord verschenen. */
   k.weken = {};
   (rijen.weekplannen || []).forEach(function (r) {
     var sleutel = String(r.maandag).slice(0, 10);
+    koppel('wp~' + sleutel, r.id);
     var taken = (rijen.weekplan_taken || []).filter(function (x) { return x.weekplan_id === r.id; })
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
         var afgerond = {}, geweest = {};
+        var wtId = 'wt~' + sleutel + '~' + lok(wt.taak_id);
+        koppel(wtId, wt.id);
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
           .forEach(function (t) {
             var dag = DAGEN[(t.dag || 1) - 1] || 'ma';
-            verdeling[dag].push(lok(t.leerling_id));
-            if (t.stand === 'behaald') afgerond[lok(t.leerling_id)] = true;
-            if (t.geweest) geweest[lok(t.leerling_id)] = String(t.geweest).slice(0, 10);
+            var kind = lok(t.leerling_id);
+            koppel(wtId + '~' + kind, t.id);
+            verdeling[dag].push(kind);
+            if (t.stand === 'behaald') afgerond[kind] = true;
+            if (t.geweest) geweest[kind] = String(t.geweest).slice(0, 10);
           });
         return { taakId:lok(wt.taak_id), verdeling:verdeling,
                  afgerond:afgerond, geweest:geweest };
@@ -353,7 +372,9 @@ function naarKlas(rijen, bestaande){
     var waarover = r.doel_id ? lok(r.doel_id)
                  : r.taak_id ? 'taak:' + lok(r.taak_id) : null;
     if (!waarover) return;
-    k.beoordelingen[lok(r.leerling_id) + '|' + waarover] = {
+    var sleutel = lok(r.leerling_id) + '|' + waarover;
+    koppel('o~' + sleutel, r.id);
+    k.beoordelingen[sleutel] = {
       stand:r.stand, taakId:r.taak_id ? lok(r.taak_id) : null,
       datum:new Date(r.datum).getTime() };
   });
@@ -369,21 +390,29 @@ function naarKlas(rijen, bestaande){
 /* Per tabel: waar hij aan hangt, en welke van onze verwijzingen naar
    welke kolom gaat. De volgorde telt -- een plaatsing kan pas weg als het
    bord en het kind er al zijn. Bij het verwijderen gaan we achterstevoren. */
+/* 'samengesteld' = de sleutel is de rij; er is geen eigen id.
+   'sleutel'       = de rij heeft wel een eigen id, maar de server laat er
+                     maar één van bestaan: één weekplan per maandag, één
+                     plek per kind per bord. Wisten wij niet meer welk
+                     server-id daarbij hoorde, dan stuurden we hem als
+                     nieuw op en viel de hele ronde om. Nu laten we de
+                     server de bestaande rij bijwerken en onthouden we
+                     alsnog welk id het was. */
 var TABELLEN = [
   { naam:'leerlingen',      hangtAan:'groep' },
   { naam:'hoeken',          hangtAan:'groep', ook:['school'] },
   { naam:'themas',          hangtAan:'groep', ook:['school'] },
   { naam:'taken',           hangtAan:'groep' },
   { naam:'borden',          hangtAan:'groep' },
-  { naam:'weekplannen',     hangtAan:'groep' },
+  { naam:'weekplannen',     hangtAan:'groep', sleutel:['groep_id','maandag'] },
   { naam:'groep_doelen',    hangtAan:'groep', samengesteld:['groep_id','doel_id'] },
   { naam:'bord_hoeken',     samengesteld:['bord_id','hoek_id'] },
   { naam:'taak_doelen',     samengesteld:['taak_id','doel_id'] },
   { naam:'week_doelen',     samengesteld:['weekplan_id','doel_id'] },
-  { naam:'weekplan_taken' },
-  { naam:'plaatsingen' },
-  { naam:'wachtrij' },
-  { naam:'taak_toewijzing' },
+  { naam:'weekplan_taken',  sleutel:['weekplan_id','taak_id'] },
+  { naam:'plaatsingen',     sleutel:['bord_id','leerling_id'] },
+  { naam:'wachtrij',        sleutel:['bord_id','leerling_id'] },
+  { naam:'taak_toewijzing', sleutel:['weekplan_taak_id','leerling_id'] },
   { naam:'observaties',     hangtAan:'groep' },
   { naam:'thema_doelen',    samengesteld:['thema_id','doel_id'] },
   { naam:'thema_hoeken',    samengesteld:['thema_id','hoek_id'] }
@@ -534,15 +563,38 @@ function serverRij(rij, tabel, groepId, schoolId){
    allebei "dit is allemaal nieuw", en zetten alles twee keer op de server.
    Bij een grote groep zijn dat honderden dubbele rijen.
 
-   Dus houden we per groep bij of er al een ronde loopt, en sluit de tweede
-   daarbij aan in plaats van ernaast te gaan lopen. */
-var lopendeDuw = {};
+   Dus houden we per groep bij of er al een ronde loopt, en gaat de tweede
+   er niet naast lopen.
+
+   Maar aansluiten bij de lopende ronde -- wat hier eerst gebeurde -- is
+   niet hetzelfde als verstuurd worden. Een ronde neemt aan het begin een
+   foto van de groep; wie daarna binnenkomt staat daar niet op. En aan het
+   eind legt die ronde die foto vast als "zo staat het op de server". Wie
+   was aangesloten kreeg dus "klaar" terug terwijl zijn wijziging nergens
+   heen was, en de afdruk beweerde bovendien dat er niets meer te
+   versturen viel. Het weekplan dat je inplande terwijl de vorige ronde
+   nog liep, verdween zo bij de eerstvolgende keer ophalen.
+
+   Dus wachten we de lopende ronde af en gaan daarna alsnog. Eén zo'n
+   vervolgronde is genoeg, hoeveel mensen er ook staan te wachten: die
+   neemt zijn foto pas als hij begint, en dan staat alles erop. */
+var lopendeDuw = {}, volgendeDuw = {};
 
 function duw(klasId, groepId, schoolId){
-  if (lopendeDuw[klasId]) return lopendeDuw[klasId];
+  if (lopendeDuw[klasId]) {
+    if (volgendeDuw[klasId]) return volgendeDuw[klasId];
+    var na = lopendeDuw[klasId].catch(function () {}).then(function () {
+      delete volgendeDuw[klasId];
+      return duw(klasId, groepId, schoolId);
+    });
+    volgendeDuw[klasId] = na;
+    return na;
+  }
   var beurt = duwNu(klasId, groepId, schoolId);
   lopendeDuw[klasId] = beurt;
-  var klaar = function () { delete lopendeDuw[klasId]; };
+  var klaar = function () {
+    if (lopendeDuw[klasId] === beurt) delete lopendeDuw[klasId];
+  };
   beurt.then(klaar, klaar);
   return beurt;
 }
@@ -595,6 +647,8 @@ function duwNu(klasId, groepId, schoolId){
             // botsingen opvangen in plaats van eraan stuk te gaan.
             var opties = tabel.samengesteld
               ? { opKolommen: tabel.samengesteld.join(','), bijBotsing: true }
+              : tabel.sleutel
+              ? { opKolommen: tabel.sleutel.join(','), bijBotsing: true }
               : {};
             return SB.schrijf(tabel.naam, d.nieuw.map(function (r) {
               return serverRij(r, tabel, groepId, schoolId);
@@ -612,21 +666,38 @@ function duwNu(klasId, groepId, schoolId){
             var waarden = serverRij(r, tabel, groepId, schoolId);
             if (tabel.samengesteld) return Promise.resolve();   // niets om te wijzigen
             var id = opServer(r._id);
-            if (!id) return SB.schrijf(tabel.naam, [waarden]).then(function (t) {
-              if (t && t[0]) koppel(r._id, t[0].id);
-            });
+            if (!id) {
+              // Weten we niet welke rij dit is, dan mag de server hem op
+              // zijn eigen sleutel terugvinden in plaats van te botsen.
+              var opties = tabel.sleutel
+                ? { opKolommen: tabel.sleutel.join(','), bijBotsing: true } : {};
+              return SB.schrijf(tabel.naam, [waarden], opties).then(function (t) {
+                if (t && t[0]) koppel(r._id, t[0].id);
+              });
+            }
             return SB.wijzig(tabel.naam, waarden, { id:'eq.' + id });
           });
         });
         d.weg.forEach(function (r) {
           stappen.push(function () {
+            var waarden, waar;
             if (tabel.samengesteld) {
-              var waar = {}; var waarden = serverRij(r, tabel, groepId, schoolId);
+              waar = {}; waarden = serverRij(r, tabel, groepId, schoolId);
               tabel.samengesteld.forEach(function (kol) { waar[kol] = 'eq.' + waarden[kol]; });
               return SB.wis(tabel.naam, waar);
             }
             var id = opServer(r._id);
-            return id ? SB.wis(tabel.naam, { id:'eq.' + id }) : Promise.resolve();
+            if (id) return SB.wis(tabel.naam, { id:'eq.' + id });
+            // Ook hier: geen id, maar wel een sleutel om hem op te vinden.
+            // Anders bleef een kind dat je van het bord haalde op de server
+            // staan en kwam het bij het volgende ophalen gewoon terug.
+            if (!tabel.sleutel) return Promise.resolve();
+            waar = {}; waarden = serverRij(r, tabel, groepId, schoolId);
+            var compleet = tabel.sleutel.every(function (kol) {
+              waar[kol] = 'eq.' + waarden[kol];
+              return waarden[kol] != null;
+            });
+            return compleet ? SB.wis(tabel.naam, waar) : Promise.resolve();
           });
         });
         return stappen.reduce(function (p, stap) { return p.then(stap); }, Promise.resolve());

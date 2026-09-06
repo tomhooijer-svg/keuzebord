@@ -2,7 +2,7 @@
 # Alle proeven achter elkaar. Elke proef krijgt een verse database met een
 # verse proefschool, zodat de ene proef de andere niet in de weg zit.
 R=$(cd "$(dirname "$0")/.." && pwd)
-LIJST=${*:-"inloggen sync rollen keten fotos beheerder accounts losgeraakt doelen browsers werkmomenten statistiek verslag themas aanuit dubbel plaatshouder uiterste leerkracht tabbladen gesplitst knoppen doorloop"}
+LIJST=${*:-"inloggen sync rollen keten fotos beheerder accounts losgeraakt doelen browsers werkmomenten statistiek verslag themas aanuit dubbel plaatshouder uiterste onderweg verdwenen naarhetbord leerkracht tabbladen gesplitst knoppen doorloop"}
 mis=0
 for naam in $LIJST; do
   sh "$R/test/opzetten.sh"   >/dev/null

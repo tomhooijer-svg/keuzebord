@@ -132,12 +132,28 @@ function kiesGroep(){
    je keek naar een lege groep met de standaardinstellingen erin.
 
    Dus houden we niet bij *of* er iets loopt maar *wat* er loopt, zodat
-   wie later komt gewoon kan aansluiten. */
-var lopend = Promise.resolve();
+   wie later komt gewoon kan aansluiten.
+
+   Voor ophalen is aansluiten genoeg. Voor versturen niet: een ronde kijkt
+   aan het begin wat er weg moet, dus wie tijdens die ronde iets opslaat
+   gaat niet mee. Kreeg die dan "klaar" terug, dan bleef zijn wijziging
+   hier staan terwijl niemand er nog om dacht -- en werd hij bij het
+   volgende ophalen overschreven. Dat is het weekplan dat verdween.
+
+   Dus wachten we de lopende ronde af en versturen daarna alsnog. Eén
+   vervolgronde is genoeg voor iedereen die staat te wachten. */
+var lopend = Promise.resolve(), volgende = null;
 
 function stuurNu(){
   if (!klasId || !groepId) return Promise.resolve();
-  if (bezig) return lopend.catch(function () {});
+  if (bezig) {
+    if (volgende) return volgende;
+    volgende = lopend.catch(function () {}).then(function () {
+      volgende = null;
+      return stuurNu();
+    });
+    return volgende;
+  }
   bezig = true;
   meldStand('bezig');
   lopend = KBSYNC.stuurOp(klasId, groepId, ik.profiel.school_id).then(function (uit) {
@@ -181,6 +197,12 @@ function haalOp(){
     return stuurNu().catch(function () {});
   });
   return eerst.then(function () {
+    /* Lukte het versturen niet, dan halen we ook niet op. Wat de server
+       stuurt vervangt hier het weekplan, de taken en de hoeken in één
+       keer; doen we dat terwijl er hier nog iets klaarstaat, dan is dat
+       weg. Liever een scherm dat even niet bijgepraat is dan een
+       weekplan dat verdwijnt -- de volgende ronde probeert het opnieuw. */
+    if (KBSYNC.wachtErIetsOp(klasId)) { meldStand('wacht'); return false; }
     return KBSYNC.haalBinnen(klasId, groepId).then(function () {
       meldStand('klaar');
       return true;
