@@ -1878,6 +1878,92 @@ function functieRij(k, sleutel, naam, uitleg){
   return rij;
 }
 
+/* ── is het opgeslagen? ──────────────────────────────────────
+   Een leerkracht die een weekplan invult wil zien dát het bewaard is.
+   Tot nu toe gebeurde dat onzichtbaar: opslaan gaat vanzelf, en of het
+   ook verstuurd was zag je nergens. Dus tonen we het, en kun je er zelf
+   op drukken als je zeker wilt weten dat het weg is.
+
+   De woorden zijn met opzet gewoon: "opgeslagen" betekent hier dat het
+   ook op de server staat, want dat is waar het vandaan komt als je
+   morgen op een ander apparaat kijkt. */
+var opslagStand = 'klaar', opslagTijd = null, opslagVakken = [];
+
+function opslagWoorden(){
+  if (!window.KBV || !KBV.wie || !KBV.wie()) {
+    return { tekst:'Alleen op dit apparaat', soort:'lokaal', uitleg:'' };
+  }
+  if (opslagStand === 'bezig') return { tekst:'Bezig met opslaan\u2026', soort:'bezig', uitleg:'' };
+  if (opslagStand === 'wacht') return { tekst:'Nog niet verstuurd', soort:'wacht',
+    uitleg:'Het staat op dit apparaat. Tik om het nu te versturen.' };
+  if (opslagStand === 'mis')   return { tekst:'Versturen lukt niet', soort:'mis',
+    uitleg:'Het staat op dit apparaat. Tik om het opnieuw te proberen.' };
+  return { tekst:'Opgeslagen', soort:'klaar',
+           uitleg: opslagTijd ? 'om ' + opslagTijd : '' };
+}
+
+/* Een knop die de stand laat zien en hem desgevraagd afdwingt. Zowel de
+   zijbalk als het weekplan gebruiken hem. */
+function opslagKnop(klasse){
+  var b = el('button', 'opslagstand' + (klasse ? ' ' + klasse : ''));
+  b.type = 'button';
+  b.appendChild(el('span', 'opslagstip'));
+  var tekst = el('span', 'opslagtekst');
+  tekst.appendChild(el('span', 'opslagnaam', ''));
+  tekst.appendChild(el('span', 'opslaguitleg', ''));
+  b.appendChild(tekst);
+  b.addEventListener('click', function () { nuOpslaan(); });
+  opslagVakken.push(b);
+  ververOpslagstand();
+  return b;
+}
+
+function ververOpslagstand(){
+  var w = opslagWoorden();
+  opslagVakken = opslagVakken.filter(function (b) { return b.isConnected !== false; });
+  opslagVakken.forEach(function (b) {
+    b.className = b.className.replace(/ ?stand-[a-z]+/g, '') + ' stand-' + w.soort;
+    b.querySelector('.opslagnaam').textContent = w.tekst;
+    b.querySelector('.opslaguitleg').textContent = w.uitleg;
+    b.title = w.uitleg || w.tekst;
+  });
+}
+
+/* Zelf op opslaan drukken. Slaat eerst op wat er in het scherm staat en
+   duwt het daarna meteen naar de server, zonder de gebruikelijke
+   wachttijd. */
+function nuOpslaan(){
+  if (!bewaarOfKlaag()) return Promise.resolve(false);
+  if (!window.KBV || !KBV.wie || !KBV.wie()) { meld('Bewaard op dit apparaat'); return Promise.resolve(true); }
+  opslagStand = 'bezig'; ververOpslagstand();
+  return KBV.stuurNu().then(function (uit) {
+    var gelukt = !uit || uit.gelukt !== false;
+    meld(gelukt ? 'Opgeslagen'
+       : 'Het staat op dit apparaat en gaat mee zodra er verbinding is');
+    return gelukt;
+  }, function () {
+    meld('Het staat op dit apparaat en gaat mee zodra er verbinding is');
+    return false;
+  });
+}
+
+function volgOpslag(){
+  if (window.KBV && KBV.opStand) {
+    KBV.opStand(function (stand) {
+      opslagStand = stand;
+      if (stand === 'klaar') {
+        var d = new Date();
+        opslagTijd = String(d.getHours()).padStart(2, '0') + ':' +
+                     String(d.getMinutes()).padStart(2, '0');
+      }
+      ververOpslagstand();
+    });
+  }
+  KB.opBewaard(function () {
+    if (opslagStand !== 'bezig') { opslagStand = 'bezig'; ververOpslagstand(); }
+  });
+}
+
 /* ── naar buiten, voor kb-plan.js ────────────────────────── */
 /* Onderin de zijbalk: wie er is ingelogd, met de weg naar buiten. Een
    schoolbeheerder die hier via het schoolbeheer terechtkwam krijgt er de
@@ -1908,6 +1994,7 @@ global.BH = {
   pictoBol:pictoBol, kindKaart:kindKaart, kopregel:kopregel, leegBericht:leegBericht,
   bestandKnop:bestandKnop,
   panelen:panelen, ga:ga, teken:teken, tekenMenu:tekenMenu,
+  opslagKnop:opslagKnop, nuOpslaan:nuOpslaan,
   alsJeBinnenkomt: alsJeBinnenkomt,
   start: function () {
     if (!mijnOnderdelen().some(function (o) { return o.id === huidig; })) huidig = eersteOnderdeel();
@@ -1919,6 +2006,12 @@ global.BH = {
     if (vraag && KBSYNC && KBSYNC.opLokaal) {
       var lok = KBSYNC.opLokaal(vraag);
       if (lok) { KB.zetBeheerKlas(lok); KB.G.activeKlasId = lok; }
+    }
+    volgOpslag();
+    /* De stand hoort onderin de zijbalk, waar hij op elk scherm meekijkt. */
+    var onder = $('zij-onder');
+    if (onder && !onder.querySelector('.opslagstand')) {
+      onder.insertBefore(opslagKnop('in-zijbalk'), onder.firstChild);
     }
     $('overlay').addEventListener('click', function (e) { if (e.target.id === 'overlay') sluitBlad(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluitBlad(); });

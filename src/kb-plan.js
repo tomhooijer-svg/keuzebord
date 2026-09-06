@@ -629,13 +629,27 @@ BH.panelen.week = function (v){
       'kinderen over de dagen zodat iedereen aan de beurt komt.',
       knop('Taak inplannen', 'primair', kiesTaakVoorWeek)));
     v.appendChild(leegP);
+    v.appendChild(opslagStrook());
     return;
   }
 
   w.taken.forEach(function (wt) {
     v.appendChild(tekenWeekTaak(wt, k));
   });
+
+  v.appendChild(opslagStrook());
 };
+
+/* Onderaan het weekplan: staat het goed, en een knop om het zelf vast te
+   zetten. Het opslaan gebeurt vanzelf -- maar dat is niet te zien, en een
+   weekplan is te veel werk om op goed vertrouwen achter te laten. */
+function opslagStrook(){
+  var p = paneel();
+  p.className = 'paneel opslagstrook';
+  p.appendChild(BH.opslagKnop());
+  p.appendChild(knop('Weekplan opslaan', 'primair', function () { BH.nuOpslaan(); }));
+  return p;
+}
 
 /* De week zelf, groot in beeld. */
 function weekKop(w, k, vandaag, isNu){
