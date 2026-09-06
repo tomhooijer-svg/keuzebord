@@ -317,12 +317,25 @@ async function inloggen(p, email, waarheen){
         await KBV.naarGroep(k.id);
       }, kl.naam);
       await p.goto(APP + '/bord.html');
-      await p.waitForTimeout(4000);
-      borden.push({ p, naam: kl.naam });
+      /* Wachten tot het bord er staat mét zijn foto's. Zes borden die
+         tegelijk vijftien foto's ophalen doen daar langer over dan één;
+         een vaste wachttijd meet dan de snelheid van de proefopstelling
+         in plaats van of het werkt. We wachten dus op de uitkomst, en
+         schrijven op hoe lang het duurde. */
+      const begin = Date.now();
+      await p.waitForFunction(() => {
+        const h = [...document.querySelectorAll('.hoek')];
+        if (!h.length) return false;
+        return h.every(x => [...x.querySelectorAll('*')].some(e =>
+          /url\(/.test(getComputedStyle(e).backgroundImage)));
+      }, null, { timeout: 40000 }).catch(() => {});
+      borden.push({ p, naam: kl.naam, klaarIn: Date.now() - begin });
     }));
     return borden.length;
   });
   zeg('alle borden staan tegelijk open', borden.length === BORDEN, borden.length + ' borden');
+  console.log('        foto\u2019s in beeld na: ' +
+              borden.map(x => Math.round(x.klaarIn / 100) / 10 + 's').join(', '));
 
   const beeld = await Promise.all(borden.map(async (x) => x.p.evaluate(() => ({
     groep: (document.getElementById('bord-groep')||{}).textContent,
@@ -367,7 +380,10 @@ async function inloggen(p, email, waarheen){
     for (const x of borden.slice(0, 3)) {
       const voor = await x.p.evaluate(() => document.querySelectorAll('.strook .picto').length);
       const picto = await x.p.$('.strook .picto');
-      const hoek = await x.p.$('.hoek');
+      /* Een hoek die vol is neemt geen kind meer aan -- en dat hoort ook
+         zo. De vorige stap heeft er twintig neergezet, dus we zoeken er
+         eentje waar nog plek is. */
+      const hoek = await x.p.$('.hoek:not(.vol)');
       if (!picto || !hoek) { uitkomst.push({ over:'geen picto of hoek' }); continue; }
       const a = await picto.boundingBox(), c2 = await hoek.boundingBox();
       if (!a || !c2) { uitkomst.push({ over:'niet zichtbaar' }); continue; }
