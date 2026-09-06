@@ -1051,7 +1051,7 @@ function heeftBeurtVandaag(leerlingId, k){
 /* Welke versie van de app draait hier. Staat onder in het bordmenu en
    bij Groep, zodat je kunt zien of je de nieuwe versie al voor je hebt
    of nog naar de oude uit de cache van je browser kijkt. */
-var VERSIE = '28 augustus 2026';
+var VERSIE = '6 september 2026';
 
 /* Waar het bord staat. In Keuzebord is dat gewoon bord.html hiernaast.
    In Planbord ligt het bord in de andere app, en dan moet de groep mee
