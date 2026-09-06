@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    VERSLAG
-   Een oudergesprek gaat over één kind. De juf wil dan geen scherm
+   Een oudergesprek gaat over één kind. De leerkracht wil dan geen scherm
    met filters, maar een blaadje: dit heeft hij al onder de knie,
    hier zijn we mee bezig, dit kiest hij graag, en hier speelt hij
    het liefst met wie.

@@ -2,7 +2,7 @@
    THEMA'S
    Thematisch onderzoekend leren begint niet bij een doel maar bij
    verwondering. Een kind ziet iets, vraagt zich iets af, en daar
-   ga je samen achteraan. Pas daarna kijkt de juf welke doelen ze
+   ga je samen achteraan. Pas daarna kijk je welke doelen
    onderweg kan raken.
 
    Dit scherm houdt die volgorde aan. Je werkt een thema vooruit
@@ -259,10 +259,10 @@ function vragenStap(v, t, k){
     rij.appendChild(inv);
     setTimeout(function () { groei(inv); if (!vr.tekst) inv.focus(); }, 0);
 
-    var wie = el('button', 'vraagwie', vr.van === 'kind' ? 'van een kind' : 'van de juf');
+    var wie = el('button', 'vraagwie', vr.van === 'kind' ? 'van een kind' : 'van de leerkracht');
     wie.title = 'Van wie komt deze vraag?';
     wie.addEventListener('click', function () {
-      vr.van = vr.van === 'kind' ? 'juf' : 'kind'; bewaar(); teken();
+      vr.van = vr.van === 'kind' ? 'leerkracht' : 'kind'; bewaar(); teken();
     });
     rij.appendChild(wie);
 

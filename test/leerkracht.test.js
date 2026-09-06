@@ -1,9 +1,9 @@
-/* De juf mag de timer overrulen.
+/* De leerkracht mag de timer overrulen.
 
    Staat de timer aan, dan zit een kind vast tot het rondje vol is. Dat
    is de bedoeling -- maar niet als het misgaat in de bouwhoek, als er
    iemand naar de logopedist moet, of als de kring eerder begint. Deze
-   proef kijkt of de juf er dan langs kan, en of een kleuter dat niet
+   proef kijkt of de leerkracht er dan langs kan, en of een kleuter dat niet
    kan. */
 const { chromium } = require('playwright');
 const CHROME = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -88,20 +88,22 @@ const zeg = (n, ok, extra) => {
   zeg('slepen lukt niet zolang de timer loopt', naSleep.nogInBouw === true);
   zeg('en het bord legt uit dat het nog even duurt',
       naSleep.open && /nog|duurt|rondje/i.test(naSleep.tekst), naSleep.tekst.slice(0,60));
-  zeg('met daaronder de weg voor de juf',
-      /Juf: toch eruit halen/.test(naSleep.tekst));
+  /* De weg voor de leerkracht is met opzet niet te lezen: een kind dat te
+     horen krijgt dat het nog even moet wachten, leest een knop ook. */
+  zeg('er staat geen knop die het kind kan lezen',
+      !/eruit halen|leerkracht/i.test(naSleep.tekst), naSleep.tekst.slice(0,70));
 
-  /* ── zonder code gaat de juf er meteen langs ─────────────────────── */
+  /* ── de handeling: twee keer op de foto ──────────────────────────── */
   await p.evaluate(() => {
-    [...document.querySelectorAll('#blad button')]
-      .filter(x => /Juf: toch eruit halen/.test(x.textContent))[0].click();
+    const bol = document.querySelector('#blad .picto-rond');
+    bol.dispatchEvent(new MouseEvent('dblclick', { bubbles:true }));
   });
   await p.waitForTimeout(600);
   const keuze = await p.evaluate(() => ({
     open: document.getElementById('overlay').classList.contains('open'),
     knoppen: [...document.querySelectorAll('#blad button')].map(x => x.textContent.trim())
   }));
-  zeg('de juf krijgt drie mogelijkheden', keuze.open && keuze.knoppen.length === 3,
+  zeg('de leerkracht krijgt drie mogelijkheden', keuze.open && keuze.knoppen.length === 3,
       keuze.knoppen.join(' | '));
   zeg('de timer afronden staat erbij',
       keuze.knoppen.some(t => /timer is klaar/i.test(t)));
@@ -234,7 +236,7 @@ const zeg = (n, ok, extra) => {
     tekst: (document.getElementById('blad')||{}).textContent || ''
   }));
   zeg('een verkeerde code laat de timer staan', naFout.nogVast === true);
-  zeg('en de keuze van de juf komt niet in beeld',
+  zeg('en de keuze van de leerkracht komt niet in beeld',
       !/uit de hoek halen/i.test(naFout.tekst));
 
   await p.evaluate(() => {

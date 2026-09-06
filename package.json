@@ -23,7 +23,7 @@
     "test:zwaar": "node test/zwaar.test.js",
     "test:knoppen": "node test/knoppen.test.js",
     "test:aanuit": "node test/aanuit.test.js",
-    "test:juf": "node test/juf.test.js",
+    "test:leerkracht": "node test/leerkracht.test.js",
     "test:gesplitst": "node test/gesplitst.test.js",
     "test:tabbladen": "node test/tabbladen.test.js",
     "uitgeven": "sh test/uitgeven.sh",

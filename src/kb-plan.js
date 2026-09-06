@@ -1165,7 +1165,7 @@ function beoordeelPaneel(onderwerp, kinderen, ingedeeld, taak, k){
 
 /* ══════════════════════════════════════════════════════════
    VERSLAG VOOR HET OUDERGESPREK
-   Wat er op het scherm staat is voor de juf; een verslag is voor
+   Wat er op het scherm staat is voor de leerkracht; een verslag is voor
    de ouders. Je kiest wie, over welke periode, en wat erin komt --
    en de browser drukt het af of bewaart het als PDF.
    ══════════════════════════════════════════════════════════ */

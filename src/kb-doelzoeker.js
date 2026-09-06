@@ -34,7 +34,8 @@ var GEENINHOUD = ('de het een en of met van in op te is zijn worden wordt was ' 
 var STOP = {};
 GEENINHOUD.forEach(function (w) { if (w) STOP[w] = true; });
 
-/* Een paar woorden die kleuterjuffen anders zeggen dan de doelenlijst. */
+/* Een paar woorden die in de kleutergroep anders klinken dan in de
+   doelenlijst. */
 var ZELFDE = {
   plakken:'lijm', lijmen:'lijm', kleven:'lijm',
   kleuren:'kleur', inkleuren:'kleur', tekenen:'teken',
