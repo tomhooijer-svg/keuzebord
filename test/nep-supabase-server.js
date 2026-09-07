@@ -182,6 +182,22 @@ const server = http.createServer(async (req, res) => {
       const r = await alsBeheer(c => c.query('select id, email from auth.users where id=$1', [uid]));
       return stuur(200, nieuweSessie(uid, r.rows[0]));
     }
+    /* Een inloglink of een herstelmail: hier gaat niets de deur uit. Wat we
+       wél nabootsen is het gevolg dat ertoe doet -- bij een inloglink maakt
+       Supabase het account alvast aan, en dan pakt de trekker de uitnodiging
+       op dat adres op. */
+    if (pad === '/auth/v1/otp') {
+      const adres = String((lijf && lijf.email) || '').trim().toLowerCase();
+      if (!adres) return stuur(400, { message: 'geen adres' });
+      const bestaat = await alsBeheer(c => c.query(
+        'select id from auth.users where lower(email) = $1', [adres]));
+      if (!bestaat.rows.length && lijf.create_user) {
+        await alsBeheer(c => c.query(
+          'insert into auth.users (email) values ($1)', [adres]));
+      }
+      return stuur(200, {});
+    }
+    if (pad === '/auth/v1/recover') return stuur(200, {});
     if (pad === '/auth/v1/logout') return stuur(204, null);
 
     // ── de tabellen ──
@@ -190,7 +206,16 @@ const server = http.createServer(async (req, res) => {
     if (mRpc) {
       const naam = mRpc[1];
       const sleutels = Object.keys(lijf);
-      const vraag = `select public.${naam}(${sleutels.map((k,i)=>`${k} => $${i+1}`).join(',')}) as uit`;
+      const args = sleutels.map((k,i)=>`${k} => $${i+1}`).join(',');
+      /* Een functie die rijen teruggeeft levert bij PostgREST een lijst op,
+         geen enkele waarde. Dat verschil moeten we hier ook maken, anders
+         ziet de app alleen de eerste rij. */
+      const soort = await alsBeheer(c => c.query(
+        'select proretset from pg_proc where proname = $1 limit 1', [naam]));
+      const geeftRijen = soort.rows[0] && soort.rows[0].proretset;
+      const vraag = geeftRijen
+        ? `select coalesce(json_agg(t), '[]'::json) as uit from public.${naam}(${args}) t`
+        : `select public.${naam}(${args}) as uit`;
       const r = await metRol(uid, c => c.query(vraag, sleutels.map(k => lijf[k])));
       return stuur(200, r.rows[0].uit);
     }

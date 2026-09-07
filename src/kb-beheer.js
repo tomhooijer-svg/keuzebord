@@ -707,6 +707,17 @@ panelen.groep = function (v){
   instellen.appendChild(niveauVeld);
   v.appendChild(instellen);
 
+  /* ── toegang tot een andere groep vragen ──
+     Zelf een groep aan jezelf hangen kan niet, en dat is met opzet: dan
+     zou de grens tussen groepen niets meer voorstellen en kon iedereen die
+     kan inloggen bij de kinderen, de foto's en de observaties van elke
+     groep -- ook in de observatie-app, want die kijkt naar dezelfde regel.
+     Vragen kan wel, en je schoolbeheerder beslist. */
+  if (window.KBV && KBV.wie && KBV.wie() && KBV.wie().profiel &&
+      KBV.wie().profiel.school_id) {
+    v.appendChild(toegangPaneel());
+  }
+
   var beheer = paneel('Schoolbeheer');
   beheer.appendChild(el('p', 'hint',
     'Deze omgeving hoort bij \u00e9\u00e9n groep. Groepen aanmaken, wisselen of over de hele ' +
@@ -724,6 +735,83 @@ panelen.groep = function (v){
   merk.style.cssText = 'margin:22px 2px 0;font-size:.82rem;color:var(--inkt-4)';
   v.appendChild(merk);
 };
+
+/* De groepen van deze school, met erbij of je er al bij mag en of je er al
+   naar hebt gevraagd. De namen mag je zien; de inhoud niet -- daar gaat het
+   verzoek nu juist over. */
+function toegangPaneel(){
+  var p = paneel('Bij een andere groep');
+  p.appendChild(el('p', 'hint',
+    'Je ziet alleen de groepen waar je aan gekoppeld bent. Hoor je ergens anders ' +
+    'ook bij, vraag het dan aan \u2014 je schoolbeheerder keurt het goed.'));
+  var lijst = el('div', 'kindrij');
+  lijst.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'));
+  p.appendChild(lijst);
+
+  SB.roep('groepen_van_mijn_school', {}).then(function (groepen) {
+    leeg(lijst);
+    var anderen = (groepen || []).filter(function (g) { return !g.ben_ik_lid; });
+    if (!anderen.length) {
+      lijst.appendChild(el('p', 'hint', 'Je mag al bij alle groepen van deze school.'));
+      return;
+    }
+    anderen.forEach(function (g) {
+      var rij = el('div', 'rij');
+      var tekst = el('div');
+      tekst.style.flexGrow = '1';
+      tekst.appendChild(el('div', 'rij-naam', g.naam));
+      tekst.appendChild(el('div', 'rij-sub', g.gevraagd
+        ? 'je verzoek staat open'
+        : 'je mag hier nu niet bij'));
+      rij.appendChild(tekst);
+      var acties = el('div', 'rij-acties');
+      if (!g.gevraagd) {
+        acties.appendChild(knop('Toegang vragen', 'stil', function () {
+          vraagToegang(g);
+        }));
+      }
+      rij.appendChild(acties);
+      lijst.appendChild(rij);
+    });
+  }, function () {
+    leeg(lijst);
+    lijst.appendChild(el('p', 'hint', 'De groepen van de school zijn nu niet op te halen.'));
+  });
+  return p;
+}
+
+function vraagToegang(groep){
+  toonBlad(function (blad) {
+    blad.appendChild(bladTitel('Toegang vragen', groep.naam));
+    blad.appendChild(el('p', 'hint',
+      'Je schoolbeheerder ziet dit verzoek en beslist erover. Schrijf er even bij ' +
+      'waarom \u2014 dat scheelt heen en weer vragen.'));
+    var veld = el('div', 'veld');
+    veld.appendChild(el('label', null, 'Waarom (mag kort)'));
+    var invoer = el('input');
+    invoer.type = 'text';
+    invoer.placeholder = 'bijvoorbeeld: ik sta er dit jaar op donderdag';
+    veld.appendChild(invoer);
+    blad.appendChild(veld);
+
+    var rij = el('div', 'knoprij');
+    rij.appendChild(knop('Verzoek versturen', 'primair', function () {
+      SB.schrijf('groep_verzoeken', [{ groep_id: groep.id,
+                                       profiel_id: KBV.wie().profiel.id,
+                                       reden: (invoer.value || '').trim() }])
+        .then(function () {
+          sluitBlad(); teken();
+          meld('Je verzoek staat bij je schoolbeheerder');
+        }, function (e) {
+          meld(/duplicate|unique/i.test(e && e.message || '')
+            ? 'Je hebt hier al een verzoek voor openstaan'
+            : 'Dat lukte niet: ' + (e && e.message));
+        });
+    }));
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    blad.appendChild(rij);
+  });
+}
 
 /* ══════════════════════════════════════════════════════════
    LEERLINGEN
