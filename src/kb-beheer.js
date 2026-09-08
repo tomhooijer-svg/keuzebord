@@ -131,7 +131,15 @@ function pictoBol(l, maat){
   maat = maat || 54;
   rond.style.width = rond.style.height = maat + 'px';
   rond.style.fontSize = Math.round(maat * 0.42) + 'px';
-  rond.style.background = (l && l.kleur) || '#3b6ff0';
+  /* Een tekening moet je helemaal zien -- een paddenstoel waar de hoed van
+     af is gesneden is niet meer jouw paddenstoel. Die krijgt dus wit onder
+     zich en past zich in het rondje in plaats van het te vullen. Bij een
+     foto is vullen juist goed: een gezicht hoort het rondje te vullen. */
+  var tekening = l && l.image && KB.isTekening(l);
+  if (tekening) rond.classList.add('tekening');
+  // backgroundColor, niet background: de verkorte vorm wist background-size
+  rond.style.backgroundColor = tekening ? '#fff' : ((l && l.kleur) || '#3b6ff0');
+  if (tekening) rond.style.setProperty('--kindkleur', (l && l.kleur) || '#3b6ff0');
   if (l && l.image) rond.style.backgroundImage = 'url(' + l.image + ')';
   else rond.textContent = ((l && l.naam) || '?').charAt(0).toUpperCase();
   return rond;
@@ -873,7 +881,7 @@ function leesWordBestand(file){
       return;
     }
     return Promise.all(uit.paren.map(function (p) {
-      return KB.verklein(p.blob, KB.FOTO_MAAT.leerling)
+      return KB.verkleinTekening(p.blob, KB.TEKENING_MAAT)
         .then(function (data) { return { naam: p.naam, data: data }; })
         .catch(function () { return null; });
     })).then(function (lijst) {
@@ -971,6 +979,7 @@ function toonWordBevestiging(lijst){
         vak.appendChild(vink);
         var bol = el('div', 'picto-rond');
         bol.style.cssText = 'width:64px;height:64px;background-image:url(' + item.data + ')';
+        bol.classList.add('tekening');
         vak.appendChild(bol);
         var invoer = el('input');
         invoer.type = 'text'; invoer.value = item.naam || '';
@@ -1014,14 +1023,16 @@ function toonWordBevestiging(lijst){
         var bestaand = groep.leerlingen.filter(function (l) {
           return l.naam.trim().toLowerCase() === naam.toLowerCase();
         })[0];
-        if (bestaand) { bestaand.image = item.data; bestaand._c = false; gekoppeld++; }
-        else {
+        var picto = KB.voegPictoToe(naam, item.data, groep);
+        if (bestaand) {
+          bestaand.image = item.data; bestaand.pictoId = picto.id;
+          bestaand._c = false; gekoppeld++;
+        } else {
           groep.leerlingen.push({ id:'ll' + KB.uid(), naam:naam,
             kleur: KB.KIND_KLEUREN[groep.leerlingen.length % KB.KIND_KLEUREN.length],
-            image:item.data, lid:true });
+            image:item.data, pictoId:picto.id, lid:true });
           nieuwAantal++;
         }
-        KB.voegPictoToe(naam, item.data, groep);
       });
 
       if (doelGroep === 'nieuw') {
@@ -1041,7 +1052,7 @@ function toonWordBevestiging(lijst){
 function bewerkLeerling(l){
   var k = KB.klas(), nieuw = !l;
   var concept = { naam: l ? l.naam : '', kleur: l ? l.kleur : KB.KIND_KLEUREN[0],
-                  image: l ? l.image : null };
+                  image: l ? l.image : null, pictoId: l ? (l.pictoId || null) : null };
 
   toonBlad(function (blad) {
     blad.appendChild(bladTitel(nieuw ? 'Kind toevoegen' : l.naam));
@@ -1053,6 +1064,7 @@ function bewerkLeerling(l){
     boven.appendChild(bestandKnop('Foto kiezen', 'image/*', false, function (f) {
       KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (d) {
         concept.image = d;
+        concept.pictoId = null;          // dit is een foto, geen tekening
         bol.style.backgroundImage = 'url(' + d + ')'; bol.textContent = '';
         meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
       }).catch(function () { meld('Die foto lukte niet'); });
@@ -1060,7 +1072,7 @@ function bewerkLeerling(l){
     boven.appendChild(knop("Uit picto's kiezen", 'stil', function () {
       // Het formulier wordt opnieuw getekend zodra de kiezer sluit, dus
       // hoeven we hier alleen het concept bij te werken.
-      kiesPicto(function (p) { concept.image = p.data; });
+      kiesPicto(function (p) { concept.image = p.data; concept.pictoId = p.id; });
     }));
     blad.appendChild(boven);
 
@@ -1100,10 +1112,11 @@ function bewerkLeerling(l){
       if (!naam) { meld('Vul een naam in'); return; }
       if (nieuw) {
         k.leerlingen.push({ id:'ll' + KB.uid(), naam:naam, kleur:concept.kleur,
-                            image:concept.image, lid:true });
+                            image:concept.image, pictoId:concept.pictoId || null, lid:true });
       } else {
         l.naam = naam; l.kleur = concept.kleur;
         if (concept.image !== l.image) { l.image = concept.image; l._c = false; }
+        l.pictoId = concept.pictoId || null;
       }
       bewaarOfKlaag(); sluitBlad(); teken(); meld('Opgeslagen');
     }));
@@ -1143,7 +1156,7 @@ panelen.pictos = function (v){
     rooster.style.marginTop = '14px';
     lijst.forEach(function (picto) {
       var kaart = el('button', 'leerlingkaart');
-      var bol = el('div', 'picto-rond');
+      var bol = el('div', 'picto-rond tekening');
       bol.style.cssText = 'width:54px;height:54px;background-image:url(' + picto.data + ')';
       kaart.appendChild(bol);
       kaart.appendChild(el('div', 'picto-naam', picto.naam));
@@ -1159,7 +1172,7 @@ function voegPictosToe(bestanden){
   var k = KB.klas(), klaar = 0, gelukt = 0;
   meld('Bezig met ' + bestanden.length + ' afbeeldingen…');
   bestanden.forEach(function (f) {
-    KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (data) {
+    KB.verkleinTekening(f, KB.TEKENING_MAAT).then(function (data) {
       KB.voegPictoToe(f.name.replace(/\.[^.]+$/, '').slice(0, 30), data, k);
       gelukt++;
     }).catch(function () {}).then(function () {
@@ -1175,7 +1188,7 @@ function bewerkPicto(picto){
   var k = KB.klas();
   toonBlad(function (blad) {
     blad.appendChild(bladTitel(picto.naam));
-    var bol = el('div', 'picto-rond');
+    var bol = el('div', 'picto-rond tekening');
     bol.style.cssText = 'width:96px;height:96px;margin-bottom:16px;background-image:url(' + picto.data + ')';
     blad.appendChild(bol);
 
@@ -1224,7 +1237,7 @@ function kiesPicto(bijKeuze){
       var rooster = el('div', 'leerlingrooster');
       lijst.forEach(function (p) {
         var kaart = el('button', 'leerlingkaart');
-        var bol = el('div', 'picto-rond');
+        var bol = el('div', 'picto-rond tekening');
         bol.style.cssText = 'width:54px;height:54px;background-image:url(' + p.data + ')';
         kaart.appendChild(bol);
         kaart.appendChild(el('div', 'picto-naam', p.naam));
