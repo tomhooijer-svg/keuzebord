@@ -422,6 +422,23 @@
 .hoekvoorbeeld-plek{ width:14px; height:14px; border-radius:50%; border:2px dashed; opacity:.4; box-sizing:border-box; }
 .schuif{ width:100%; accent-color:var(--accent); margin:4px 0 6px; }
 
+/* het kaartje van het bord: waar komt welke hoek te staan */
+.bordkaartje{ display:grid; gap:8px; margin:14px 0 6px; }
+.bordkaartje-vak{ border:2px solid var(--lijn); border-radius:10px; padding:10px 8px;
+                  min-height:52px; display:flex; flex-direction:column; gap:3px;
+                  align-items:center; justify-content:center; text-align:center;
+                  background:var(--vlak); }
+.bordkaartje-vak.werkplaats{ border-style:dashed; }
+.bordkaartje-nr{ font-size:.7rem; font-weight:700; color:var(--inkt-4);
+                 font-variant-numeric:tabular-nums; }
+.bordkaartje-naam{ font-size:.86rem; font-weight:600; letter-spacing:-.01em;
+                   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+                   max-width:100%; }
+.volgnummer{ width:26px; height:26px; border-radius:50%; flex:none;
+             display:flex; align-items:center; justify-content:center;
+             background:var(--vlak-2); color:var(--inkt-3);
+             font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums; }
+
 </style>
 </head>
 <body class="beheer">

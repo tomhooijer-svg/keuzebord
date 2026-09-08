@@ -278,19 +278,8 @@ function berekenIndeling(rooster, aantal){
   if (breedte < 40 || hoogte < 40) return null;
   var tussen = 18;
 
-  var besteKolommen = 1, besteScore = -Infinity;
-  for (var kol = 1; kol <= aantal; kol++) {
-    var rijen = Math.ceil(aantal / kol);
-    var kb = (breedte - tussen * (kol - 1)) / kol;
-    var kh = (hoogte - tussen * (rijen - 1)) / rijen;
-    if (kb < 130 || kh < 110) continue;
-    var verhouding = kb / kh;
-    // een kaart die te smal of te breed wordt telt minder mee
-    var straf = verhouding < 0.95 ? Math.pow(verhouding / 0.95, 2)
-              : verhouding > 2.1  ? Math.pow(2.1 / verhouding, 2) : 1;
-    var score = Math.sqrt(kb * kh) * straf;
-    if (score > besteScore) { besteScore = score; besteKolommen = kol; }
-  }
+  // dezelfde som gebruikt het beheer om te laten zien waar een hoek komt
+  var besteKolommen = KB.bordKolommen(breedte, hoogte, aantal, tussen);
   var rijenNu = Math.ceil(aantal / besteKolommen);
   rooster.style.setProperty('--kolommen', besteKolommen);
   rooster.style.setProperty('--rijen', rijenNu);

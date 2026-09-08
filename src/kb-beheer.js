@@ -1312,8 +1312,84 @@ panelen.hoeken = function (v){
   }
   v.appendChild(p);
 
+  if ((b.hoekLibIds || []).length > 1) v.appendChild(volgordePaneel(k, b));
   if ((k.hoekLib || []).length) v.appendChild(balansPaneel(k, b));
 };
+
+/* ── waar staat welke hoek ────────────────────────────────
+   Het bord vult van linksboven naar rechts en dan de volgende rij, in de
+   volgorde van deze lijst. Dus is "de werkplaats linksbovenin" hetzelfde
+   als "de werkplaats vooraan". Met een kaartje erbij, want die zin moet je
+   twee keer lezen en een plaatje niet. */
+function volgordePaneel(k, b){
+  var opBord = (b.hoekLibIds || []).map(function (id) { return KB.hoekVan(id, k); })
+                 .filter(Boolean);
+  var p = paneel('Waar staat welke hoek');
+  p.appendChild(el('p', 'hint',
+    'Het bord vult van linksboven naar rechts, en dan de volgende rij. ' +
+    'Verschuif een hoek naar voren om hem meer naar linksboven te zetten. ' +
+    'Hoeveel kolommen het bord neemt hangt af van het scherm; hieronder ' +
+    'staat hoe het op een breed digibord uitpakt.'));
+
+  /* het kaartje: dezelfde som als het bord zelf maakt */
+  var kolommen = KB.bordKolommen(1600, 760, opBord.length, 18);
+  var kaartje = el('div', 'bordkaartje');
+  kaartje.style.gridTemplateColumns = 'repeat(' + kolommen + ', 1fr)';
+  opBord.forEach(function (h, i) {
+    var vak = el('div', 'bordkaartje-vak' + (h.werkplaats ? ' werkplaats' : ''));
+    vak.style.borderColor = KB.hoekKleur(h, k.hoekLib.indexOf(h));
+    vak.appendChild(el('span', 'bordkaartje-nr', String(i + 1)));
+    vak.appendChild(el('span', 'bordkaartje-naam', h.naam));
+    kaartje.appendChild(vak);
+  });
+  p.appendChild(kaartje);
+
+  var verschuif = function (van, naar) {
+    var lijst = b.hoekLibIds.slice();
+    var eruit = lijst.splice(van, 1)[0];
+    lijst.splice(naar, 0, eruit);
+    b.hoekLibIds = lijst;
+    bewaarOfKlaag(); teken();
+  };
+
+  opBord.forEach(function (h, i) {
+    var rij = el('div', 'rij');
+    var nr = el('span', 'volgnummer', String(i + 1));
+    rij.appendChild(nr);
+    var naam = el('div');
+    naam.style.flexGrow = '1';
+    var titel = el('div', 'rij-naam', h.naam);
+    if (h.werkplaats) titel.appendChild(el('span', 'merkje', 'werkplaats'));
+    naam.appendChild(titel);
+    naam.appendChild(el('div', 'rij-sub', plaatsZin(i, kolommen, opBord.length)));
+    rij.appendChild(naam);
+
+    var acties = el('div', 'rij-acties');
+    var terug = knop('\u2190 Naar voren', 'stil', function () { verschuif(i, i - 1); });
+    terug.disabled = i === 0;
+    acties.appendChild(terug);
+    var door = knop('Naar achteren \u2192', 'stil', function () { verschuif(i, i + 1); });
+    door.disabled = i === opBord.length - 1;
+    acties.appendChild(door);
+    if (i > 0) acties.appendChild(knop('Vooraan', 'stil', function () { verschuif(i, 0); }));
+    rij.appendChild(acties);
+    p.appendChild(rij);
+  });
+  return p;
+}
+
+/* "tweede rij, eerste van links" -- in gewone woorden waar hij komt. */
+function plaatsZin(i, kolommen, totaal){
+  var rij = Math.floor(i / kolommen) + 1;
+  var kolom = (i % kolommen) + 1;
+  var rijen = Math.ceil(totaal / kolommen);
+  var rijWoord = rijen === 1 ? '' :
+    (rij === 1 ? 'bovenste rij' : rij === rijen ? 'onderste rij' : rij + 'e rij') + ', ';
+  var kolomWoord = kolom === 1 ? 'links'
+                 : kolom === kolommen ? 'rechts'
+                 : kolom + 'e van links';
+  return rijWoord + kolomWoord;
+}
 
 /* Waar zit een gat? Per domein hoeveel hoeken op het bord er iets mee
    doen. Niet als oordeel -- niet alles hoort in een hoek -- maar zodat

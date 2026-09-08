@@ -701,6 +701,30 @@ function fkPasToe(kluis){
   return n;
 }
 
+/* ── de indeling van het bord ─────────────────────────────
+   Hoeveel kolommen krijgt een bord met zoveel hoeken? Het bord rekent dat
+   zelf uit op de maat van het scherm; het beheer wil hetzelfde antwoord om
+   te laten zien waar een hoek terechtkomt. Dus staat de som hier, op één
+   plek, in plaats van twee keer half. */
+function bordKolommen(breedte, hoogte, aantal, tussen){
+  tussen = tussen == null ? 18 : tussen;
+  if (!aantal) return 1;
+  var beste = 1, besteScore = -Infinity;
+  for (var kol = 1; kol <= aantal; kol++) {
+    var rijen = Math.ceil(aantal / kol);
+    var kb = (breedte - tussen * (kol - 1)) / kol;
+    var kh = (hoogte - tussen * (rijen - 1)) / rijen;
+    if (kb < 130 || kh < 110) continue;
+    var verhouding = kb / kh;
+    // een kaart die te smal of te breed wordt telt minder mee
+    var straf = verhouding < 0.95 ? Math.pow(verhouding / 0.95, 2)
+              : verhouding > 2.1  ? Math.pow(2.1 / verhouding, 2) : 1;
+    var score = Math.sqrt(kb * kh) * straf;
+    if (score > besteScore) { besteScore = score; beste = kol; }
+  }
+  return beste;
+}
+
 /* ── afbeeldingen verkleinen ─────────────────────────────── */
 /* Hoe groot een foto hoogstens wordt bewaard, in pixels op de langste
    zijde. De verhouding blijft altijd staan. Een foto van 4200x3200 uit een
@@ -1888,7 +1912,7 @@ global.KB = {
   doelenNeemOver: doelenNeemOver,
   doelenBewaar: doelenBewaar, klasNiveaus: klasNiveaus, doelenVanKlas: doelenVanKlas,
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
-  verklein: verklein,
+  verklein: verklein, bordKolommen: bordKolommen,
   beheerKlasId: beheerKlasId, zetBeheerKlas: zetBeheerKlas,
   laatsteBackup: laatsteBackup, dagenSindsBackup: dagenSindsBackup,
   maakBackup: maakBackup, zetBackupTerug: zetBackupTerug,
