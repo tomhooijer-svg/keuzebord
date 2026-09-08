@@ -34,6 +34,14 @@ const zeg = (n, ok, extra) => {
   await p.click('#verstuur');
   await p.waitForTimeout(4500);
 
+  /* Wachten tot het eerste ophalen klaar is. Niet tot de app de groep kent
+     -- dat is hij al voordat hij hem ophaalt -- maar tot er een afdruk
+     ligt: die legt de app pas aan als de groep binnen is. Richt je hem
+     daarvóór in, dan komt het ophalen er overheen en ben je je opzet
+     kwijt. Dat leek hier op een fout in de opmaak en was er geen. */
+  await p.waitForFunction(() => window.KBSYNC && KB.klas() && KBSYNC.afdrukVan(KB.klas().id),
+                          null, { timeout: 25000 });
+
   /* een groep met tekeningen én één echte foto */
   await p.evaluate(() => {
     const tekening = (kleur) => {
@@ -63,13 +71,32 @@ const zeg = (n, ok, extra) => {
     k.borden[0].plaatsingen = {
       h0: [{ leerlingId:'l0', startTijd:Date.now() }, { leerlingId:'lf', startTijd:Date.now() }],
       h1: [{ leerlingId:'l2', startTijd:Date.now() }] };
+    /* Het bord ruimt zichzelf op als het vandaag nog niet geopend was --
+       anders zou het de keuzes van gisteren laten staan. Dus zetten we dat
+       hier ook, anders veegt het bord onze opzet weg zodra we hem openen. */
     k.borden[0].aan = true; k.borden[0].dagOpen = true;
+    k.borden[0].laatstGeleegd = Date.now();
     KB.bewaar();
   });
 
-  await p.waitForTimeout(2600);        // eerst rustig naar de server
+  // en nu pas versturen, en wachten tot dat echt gebeurd is
+  await p.evaluate(() => KBV.stuurNu().catch(() => {}));
+  await p.waitForTimeout(700);
   await p.goto(APP + '/bord.html');
   await p.waitForTimeout(3200);
+
+  /* Staat de opzet er nog? Zo niet, dan is er iets misgegaan met opslaan of
+     ophalen en zeggen we dat -- anders lijkt het straks een fout in de
+     opmaak terwijl er gewoon niets te tekenen viel. */
+  const opzet = await p.evaluate(async () => {
+    const k = KB.klas(), b = KB.bord(k);
+    const opServer = await SB.lees('plaatsingen', { kies:'id' }).catch(() => null);
+    return { kaarten: document.querySelectorAll('.hoek').length,
+             bezet: document.querySelectorAll('.plek.bezet').length,
+             lokaal: Object.keys(b.plaatsingen || {}).map(h => h + ':' + b.plaatsingen[h].length),
+             opServer: opServer ? opServer.length : 'geen antwoord' };
+  });
+  zeg('de opzet staat op het bord', opzet.bezet === 3, JSON.stringify(opzet));
 
   const beeld = await p.evaluate(() => {
     const van = (n) => n ? getComputedStyle(n).backgroundSize : null;

@@ -34,6 +34,13 @@ async function apparaat(b){
 
   /* ── de laptop van de leerkracht ─────────────────────────────────── */
   const laptop = await apparaat(b);
+  /* Wachten tot het eerste ophalen klaar is. Niet tot de app de groep kent
+     -- dat is hij al voordat hij hem ophaalt -- maar tot er een afdruk
+     ligt: die legt de app pas aan als de groep binnen is. Richt je hem
+     daarvóór in, dan komt het ophalen er overheen en ben je je opzet
+     kwijt. Dat leek hier op een fout in de opmaak en was er geen. */
+  await laptop.waitForFunction(() => window.KBSYNC && KB.klas() && KBSYNC.afdrukVan(KB.klas().id),
+                               null, { timeout: 25000 });
   await laptop.evaluate(() => {
     const k = KB.klas();
     const namen = [['Huishoek',4],['Bouwhoek',4],['Leeshoek',3],
@@ -45,9 +52,11 @@ async function apparaat(b){
     k.hoekLib.forEach(h => { k.borden[0].plaatsingen[h.id] = []; });
     k.leerlingen = ['Sem','Noor'].map((n,i) => ({ id:'l'+i, naam:n, kleur:'#3b6ff0', lid:true }));
     k.borden[0].aan = true; k.borden[0].dagOpen = true;
+    k.borden[0].laatstGeleegd = Date.now();
     KB.bewaar();
   });
-  await laptop.waitForTimeout(2600);
+  await laptop.evaluate(() => KBV.stuurNu().catch(() => {}));
+  await laptop.waitForTimeout(700);
 
   await laptop.goto(APP + '/beheer.html');
   await laptop.waitForSelector('.zij-knop', { timeout: 20000 }).catch(()=>{});
@@ -82,7 +91,9 @@ async function apparaat(b){
   zeg('de werkplaats staat nu vooraan', na.kaartje[0] === 'Werkplaats', na.kaartje.join(', '));
   zeg('en dat staat ook zo in de groep', na.volgorde[0] === 'Werkplaats', na.volgorde.join(', '));
 
-  await laptop.waitForTimeout(2600);   // naar de server
+  // wachten tot het echt weg is, niet op een vaste tijd gokken
+  await laptop.evaluate(() => KBV.stuurNu().catch(() => {}));
+  await laptop.waitForTimeout(700);
 
   /* ── het bord op dit apparaat ────────────────────────────────────── */
   await laptop.goto(APP + '/bord.html');
