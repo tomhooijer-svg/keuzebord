@@ -50,6 +50,24 @@ const zeg = (n, ok, extra) => {
      bord veegt zichzelf leeg als het van een vorige dag is, en dan zou
      een opzet vanuit het beheer meteen weer verdwijnen. */
   await p.evaluate(() => { KB.plaats('l0','bouw'); KB.plaats('l1','bouw'); });
+
+  /* Vlak na het kiezen mag een kind het nog rechtzetten -- dat is de
+     speling die sinds kort in de app zit, voor wie per ongeluk de
+     verkeerde hoek raakt. Die telt hier even mee, want de rest van deze
+     proef gaat juist over een kind dat wél vastzit. */
+  const netGekozen = await p.evaluate(() => {
+    const pl = KB.bord().plaatsingen.bouw.filter(x => x.leerlingId === 'l0')[0];
+    return { speling: KB.afkoelRest(pl) > 0,
+             vast: KB.vergrendeldTot(pl, KB.hoekVan('bouw')) };
+  });
+  zeg('vlak na het kiezen mag een kind het nog rechtzetten',
+      netGekozen.speling === true && netGekozen.vast === 0, JSON.stringify(netGekozen));
+
+  /* En dan een halve minuut verder: de speling is om, de timer telt. */
+  await p.evaluate(() => {
+    KB.bord().plaatsingen.bouw.forEach(x => { x.startTijd = Date.now() - 30000; });
+    KB.bewaar();
+  });
   await p.reload();
   await p.waitForTimeout(2800);
 
@@ -202,7 +220,10 @@ const zeg = (n, ok, extra) => {
   await p.evaluate(() => {
     const k = KB.klas();
     k.settings.pinAan = true; k.settings.pincode = '2468';
-    KB.bord().plaatsingen.bouw = [{ leerlingId:'l0', startTijd: Date.now() }];
+    /* Een halve minuut geleden neergezet: de speling waarin een kind zijn
+       keus nog zelf mag rechtzetten is dan voorbij en de timer telt. Dit
+       stuk gaat namelijk over de timer, niet over die speling. */
+    KB.bord().plaatsingen.bouw = [{ leerlingId:'l0', startTijd: Date.now() - 30000 }];
     KB.bewaar();
   });
   await p.reload();

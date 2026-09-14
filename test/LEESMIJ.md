@@ -359,3 +359,63 @@ kinderen aangevinkt, "Niemand" vinkt ze uit, en bij een kind in
 Statistieken staat een knop die alleen dát kind aanvinkt. Afdrukken zelf
 gebeurt in een verborgen kader dat zichzelf daarna opruimt -- de proef
 kijkt of het blad erin staat en op A4 gezet is.
+
+## Wat er misgaat als het bord een tijd stilstaat
+
+`test/stilstand.test.js` speelt na wat er na het buitenspelen gebeurde.
+Elke halve minuut, en meteen zodra iemand terugkomt bij het bord, doet de
+app één ronde: eerst opsturen, dan ophalen. Zo'n ronde begint met een foto
+van de groep. Wie daarna koos stond niet op die foto, en aan het eind
+zette de ronde het vlaggetje "er staat hier nog iets klaar" uit -- ook al
+was het ondertussen door die keus weer aangezet. Het ophalen concludeerde
+dan "alles is weg" en schreef de server over die keus heen.
+
+Dat kostte kinderen van het bord: acht kleuters die tegelijk willen kiezen
+kiezen precies tijdens de ronde die het wekken van het bord in gang zet.
+De leerkracht zag er één blijven staan.
+
+Er zat een tweede, ergere vorm onder. De afdruk ("zo staat het nu op de
+server") werd pas vastgelegd nadat alle foto's waren binnengehaald -- op
+een schooldigibord seconden later. Wie in die seconden koos, kwam wél in
+die afdruk maar nooit op de server: de volgende ronde zag "niets
+veranderd" en stuurde hem nooit meer op. Het bord zei "bijgewerkt" en het
+kind was toch kwijt.
+
+De proef zet de server expres traag en doet allebei: kiezen tijdens het
+opsturen, kiezen tijdens het ophalen, een hoek verschuiven tijdens een
+ronde -- dat laatste is dezelfde bug en was wat de hoekindeling "vanzelf"
+liet veranderen -- en tot slot acht kleuters die vlak na elkaar kiezen.
+
+## Het bord bedienen met een vinger
+
+`test/aanraken.test.js` doet wat een muis niet kan. Het bord hangt op
+school aan een touchscreen, en een browser mag een vingerbeweging opeisen
+om mee te scrollen -- dan komt er van slepen niets terecht. Deze proef
+stuurt echte `touchstart`/`touchmove`/`touchend` via de browser zelf, op
+een venster dat zich voordoet als een digibord.
+
+Hij sleept een kind in een hoek, zet die keus meteen weer recht (de
+speling na het kiezen), en tikt de code van het bord in op de toetsen op
+het scherm -- want aan een digibord zit geen toetsenbord. Daarvoor kijkt
+hij elf dingen na die het bord van een browser vraagt: opslag, fotokluis,
+`fetch`, `padStart`, css grid, `touch-action` en de rest. Dezelfde lijst
+staat op `diagnose.html`, zodat je hem op het digibord zelf kunt openen.
+
+## Afsluiten, en de speling na het kiezen
+
+`test/afsluiten.test.js` gaat over de twee dingen die met de klok te maken
+hebben.
+
+De speling: een kleuter sleept zijn plaatje net naast de hoek die hij
+bedoelde. De eerste seconden mag hij dat zelf rechtzetten; daarna geldt de
+speeltijd van de hoek. De proef kijkt of het slot er in die seconden
+inderdaad af is, er daarna weer op zit, en of een groep die de speling
+uitzet meteen het oude gedrag terugkrijgt.
+
+Het afsluiten: handmatig via het menu, vanzelf op een tijdstip, en vanzelf
+na een tijdsduur. Wat er dan nog staat gaat het logboek in -- de
+statistiek van de week hoort te kloppen, ook als het bord dichtgaat
+terwijl de leerkracht al in de kring zit. Eén val zat erin en is
+afgevangen: opende de leerkracht het bord na de sluitingstijd weer, dan
+ging het meteen weer dicht. Daarom staat "welk tijdstip is al afgehandeld"
+los van "is hij nu dicht".

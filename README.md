@@ -25,6 +25,32 @@ met wie het daar zit, en welke hoeken blijven liggen. Dat staat bij
 **Statistieken**, en gaat mee in het **verslag** dat je per kind kunt
 afdrukken of als PDF bewaren voor een oudergesprek.
 
+## Op het digibord zelf
+
+Het bord kan draaien in de browser van het touchscreen -- die van Prowise
+bijvoorbeeld -- zodat de pc ernaast vrij blijft. Alles is met een vinger te
+doen: slepen, de code intikken, het bord afsluiten. Er zit een
+`manifest.json` bij, dus "toevoegen aan beginscherm" geeft een
+snelkoppeling die over het hele scherm opent, zonder adresbalk. Weet je
+niet of een bepaalde browser het aankan, open dan `diagnose.html` op dat
+apparaat: daar staat wat het bord vraagt en wat die browser ervan heeft.
+Kent de browser het, dan vraagt het bord ook of het scherm aan mag blijven
+tijdens een keuzemoment.
+
+## Afsluiten en speling
+
+Leegmaken en afsluiten zijn twee dingen. Leegmaken hoort bij een nieuw
+dagdeel: iedereen mag opnieuw kiezen. Afsluiten is het einde van de
+keuzemomenten -- wat er stond gaat het logboek in, het bord wordt blanco
+en er valt niets meer te kiezen tot de leerkracht hem weer opent; de
+volgende ochtend staat hij vanzelf open. Dat kan met de hand (Menu → Dag
+afsluiten) en vanzelf: op een vast tijdstip of na een tijdsduur, per groep
+in te stellen bij Functies.
+
+Daar staat ook de speling na het kiezen: een kleuter die per ongeluk de
+verkeerde hoek raakte mag dat de eerste seconden zelf rechtzetten, in
+plaats van er een speeltijd lang aan vast te zitten.
+
 ## Gegevens
 
 Alles staat in Supabase, achter een login, gescheiden per school en per

@@ -112,6 +112,39 @@ async function apparaat(b){
   zeg('en op het digibord in de klas staat hij er ook vooraan',
       daar.length === 6 && daar[0] === 'Werkplaats', daar.join(', '));
 
+  /* ── en de volgorde houdt stand als er aan een hoek gesleuteld wordt ──
+     De server geeft rijen terug in de volgorde waarin ze op schijf staan,
+     en die verspringt zodra er iets aan een rij verandert. Werd er niet
+     gesorteerd, dan stond de hoekenlijst na zo'n wijziging in een andere
+     volgorde -- met andere kleuren erbij -- en stuurde dit apparaat die
+     nieuwe volgorde ook nog eens door naar de rest. Dat is de indeling
+     die "vanzelf" veranderde. */
+  await laptop.goto(APP + '/bord.html');
+  await laptop.waitForTimeout(3000);
+  const lijstVoor = await laptop.evaluate(() => KB.klas().hoekLib.map(h => h.naam));
+  await laptop.evaluate(async () => {
+    const k = KB.klas();
+    // aan een paar hoeken sleutelen, in een andere volgorde dan ze staan
+    [4, 1, 5, 0].forEach(i => { if (k.hoekLib[i]) k.hoekLib[i].maxKinderen =
+      (k.hoekLib[i].maxKinderen || 4) === 5 ? 3 : 5; });
+    KB.bewaar();
+    await KBV.stuurNu().catch(() => {});
+  });
+  await laptop.waitForTimeout(1200);
+
+  const naSleutelen = await digibord.evaluate(async () => {
+    await KBV.haalOp().catch(() => {});
+    await new Promise(r => setTimeout(r, 600));
+    const k = KB.klas();
+    return { lijst: k.hoekLib.map(h => h.naam),
+             bord: KB.bord(k).hoekLibIds.map(id => (KB.hoekVan(id, k) || {}).naam) };
+  });
+  zeg('de hoekenlijst blijft in dezelfde volgorde staan',
+      naSleutelen.lijst.join(',') === lijstVoor.join(','),
+      naSleutelen.lijst.join(', ') + '  (was: ' + lijstVoor.join(', ') + ')');
+  zeg('en de werkplaats staat nog steeds linksbovenin',
+      naSleutelen.bord[0] === 'Werkplaats', naSleutelen.bord.join(', '));
+
   const mis = uit.filter(r => r.indexOf('FOUT') >= 0).length;
   console.log(mis ? ('\n' + mis + ' van de ' + uit.length + ' fout') : '\nALLES GOED (' + uit.length + ')');
   await b.close();

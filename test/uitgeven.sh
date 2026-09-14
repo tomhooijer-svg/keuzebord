@@ -48,7 +48,10 @@ bouw(){
   D="$UIT/$app"
   mkdir -p "$D/src" "$D/data" "$D/supabase"
 
-  for f in $paginas robots.txt _headers .nojekyll .gitignore; do
+  # manifest.json en de pictogrammen: daarmee kan het bord op een digibord
+  # als app worden geopend, over het hele scherm en zonder adresbalk.
+  for f in $paginas robots.txt _headers .nojekyll .gitignore \
+           manifest.json keuzebord.svg keuzebord-192.png keuzebord-512.png; do
     [ -e "$R/$f" ] && cp "$R/$f" "$D/"
   done
   for f in $KERN $schermen; do cp "$R/src/$f" "$D/src/"; done
@@ -100,6 +103,18 @@ EOF
     sed -i "s|<title>[^<]*</title>|<title>$naam</title>|" "$D/index.html"
     if [ "$app" != "keuzebord" ]; then
       sed -i 's|bord\.html|beheer.html|g; s|ga naar het keuzebord|ga naar het planbord|' "$D/index.html"
+    fi
+  fi
+
+  # Hetzelfde voor de app-omschrijving: Planbord heeft geen bord om mee
+  # te beginnen, dus daar opent de snelkoppeling het beheer.
+  if [ -f "$D/manifest.json" ]; then
+    sed -i "s|\"Keuzebord\"|\"$naam\"|g" "$D/manifest.json"
+    if [ "$app" != "keuzebord" ]; then
+      # Planbord is geen digibord: dat hoort gewoon een venster te zijn,
+      # met de knoppen van de browser erbij.
+      sed -i 's|"start_url": "bord.html"|"start_url": "beheer.html"|; s|"orientation": "landscape",||; s|"display": "fullscreen"|"display": "standalone"|; s|\["fullscreen", "standalone"\]|["standalone"]|' "$D/manifest.json"
+      sed -i 's|Het digitale keuzebord voor de kleutergroep.|Weekplan, thema'"'"'s en doelen voor de kleutergroep.|' "$D/manifest.json"
     fi
   fi
 
