@@ -141,13 +141,25 @@ const zeg = (n, ok, extra) => {
   zeg('weer openen kan meteen', weerOpen === false, String(weerOpen));
 
   /* ── 3. vanzelf, op een tijdstip ───────────────────────────────────── */
-  await opzet({ sluitenSoort: 'tijd' });
+  /* Hier zat een val, en hij ging pas af in de middag. Deze opzet zette
+     "sluit op een tijdstip" aan terwijl de tijd nog op de standaard 14:30
+     stond. Draaide de ronde 's ochtends, dan gebeurde er niets en slaagde
+     de proef. Draaide hij na half drie, dan zag het bord in de 2,5 seconde
+     die hierna volgt zelf dat het al over tijd was, sloot zichzelf af, en
+     daarna klopte de rest van dit stuk niet meer -- een afgesloten bord
+     sluit niet nog een keer.
+
+     Dus zetten we de manier van sluiten pas aan op het moment dat we ook
+     een tijd meegeven. Dan is er geen tel waarin er een tijdstip geldt
+     dat deze proef niet zelf heeft gekozen. */
+  await opzet({ sluitenSoort: 'nooit' });
   await p.waitForTimeout(2500);
   const opTijd = await p.evaluate(() => {
     const k = KB.klas();
     const straks = new Date(Date.now() + 60 * 60000);
     k.settings.sluitenTijd = String(straks.getHours()).padStart(2, '0') + ':' +
                              String(straks.getMinutes()).padStart(2, '0');
+    k.settings.sluitenSoort = 'tijd';
     KB.bewaar();
     const nogNiet = KB.moetSluiten();
     const net = new Date(Date.now() - 60000);
