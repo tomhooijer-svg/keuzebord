@@ -140,6 +140,77 @@ const midden = async (p, kiezer) => {
     }
   }
 
+  /* ── 3b. blijft het kind precies onder je vinger? ──────────────────── */
+  /* Dit is de controle waar het om draait en die er niet was. Het plaatje
+     dat je sleept hing aan `left` en `top` met een overgang van .16s
+     erop: het liep dus een zesde seconde achter je vinger aan, en het
+     sprong bij het oppakken met zijn middelpunt naar je vinger toe. Je
+     ziet dat niet op een plaatje -- je voelt het, en een proef die alleen
+     kijkt of het kind áánkomt merkt er niets van.
+
+     Dus meten we het: pak een kind aan zijn linkerrand beet, sleep, en
+     kijk onderweg of de plek waar je hem beetpakte nog onder de vinger
+     ligt. */
+  await p.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await p.waitForTimeout(700);
+  const doos = await p.locator('.strook .picto[data-leerling-id="l1"] .picto-rond').boundingBox();
+  const meting = { pak: null, afstanden: [] };
+  if (doos) {
+    // met opzet niet in het midden: linksboven in de bol
+    const pakX = doos.x + 8, pakY = doos.y + 9;
+    const punt = (x, y) => [{ x, y, radiusX: 12, radiusY: 12, force: 1, id: 1 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: punt(pakX, pakY) });
+    await p.waitForTimeout(40);
+    meting.pak = await p.evaluate(() => {
+      const bol = document.querySelector('.sleep-geest .sleep-bol');
+      if (!bol) return null;
+      const st = getComputedStyle(bol);
+      return { x: parseFloat(st.getPropertyValue('--pak-x')),
+               y: parseFloat(st.getPropertyValue('--pak-y')),
+               maat: bol.firstChild.getBoundingClientRect().width };
+    });
+    for (let i = 1; i <= 5; i++) {
+      const x = pakX + i * 60, y = pakY - i * 30;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: punt(x, y) });
+      await p.waitForTimeout(60);
+      const waar = await p.evaluate(() => {
+        const g = document.querySelector('.sleep-geest');
+        if (!g) return null;
+        const m = new DOMMatrixReadOnly(getComputedStyle(g).transform);
+        return { x: m.m41, y: m.m42 };
+      });
+      if (waar) meting.afstanden.push(Math.round(Math.hypot(waar.x - x, waar.y - y)));
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await p.waitForTimeout(900);
+  }
+  zeg('het kind blijft tijdens het slepen onder de vinger',
+      meting.afstanden.length === 5 && meting.afstanden.every(d => d <= 1),
+      'afwijking in pixels: ' + meting.afstanden.join(', '));
+  zeg('en het springt bij het oppakken niet met zijn midden naar je toe',
+      !!meting.pak && meting.pak.x < meting.pak.maat / 3 && meting.pak.y < meting.pak.maat / 3,
+      JSON.stringify(meting.pak));
+
+  /* ── 3c. een venster komt uit de knop waarop je drukte ─────────────── */
+  await p.evaluate(() => { KB.klas().settings.pinAan = false; KB.bewaar(); });
+  await p.waitForTimeout(400);
+  const knopDoos = await p.locator('#knop-menu').boundingBox();
+  await p.tap('#knop-menu');
+  await p.waitForTimeout(500);
+  const herkomst = await p.evaluate(() => {
+    const blad = document.getElementById('blad');
+    const d = blad.getBoundingClientRect();
+    const st = getComputedStyle(blad).transformOrigin.split(' ');
+    return { x: d.left + parseFloat(st[0]), y: d.top + parseFloat(st[1]) };
+  });
+  zeg('het venster groeit uit de knop waarop je drukte',
+      !!knopDoos && Math.abs(herkomst.x - (knopDoos.x + knopDoos.width / 2)) < 40 &&
+      Math.abs(herkomst.y - (knopDoos.y + knopDoos.height / 2)) < 40,
+      JSON.stringify({ knop: knopDoos && Math.round(knopDoos.x), uit: Math.round(herkomst.x) }));
+  // Escape sluit het venster; sluitBlad zelf zit binnen het bestand opgesloten.
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(500);
+
   /* ── 4. de code van het bord met vingers intikken ──────────────────── */
   /* Op een digibord is er geen toetsenbord. Alles wat de leerkracht daar
      doet moet dus met de knoppen op het scherm kunnen. */

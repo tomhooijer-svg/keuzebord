@@ -46,7 +46,15 @@ body.bord{
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
   background: rgba(255,255,255,.72);
   border-radius: 999px;
-  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
+  /* De inzet bovenin is licht dat op de rand van het glas valt. Zonder
+     dat ligt een doorzichtig vlak plat op de achtergrond; mét die lijn
+     krijgt het een bovenkant en dus dikte.
+
+     En de schaduw hoort bij de maat van het vlak: dit is het grootste
+     zwevende ding op het scherm, dus staat hij verder van de ondergrond
+     af dan het kleine wachtmerkje in een hoek. */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8),
+              0 1px 2px rgba(20,28,44,.05), 0 10px 30px rgba(20,28,44,.08);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
@@ -60,7 +68,7 @@ body.bord{
   background: var(--inkt-4); flex: none;
 }
 .datum{
-  font-size: 1.02rem; font-weight: 450; color: var(--inkt-2);
+  font-size: 1.02rem; font-weight: 500; color: var(--inkt-2);
   letter-spacing: -.01em; line-height: 1; white-space: nowrap;
 }
 .balk-rechts{ display: flex; align-items: center; gap: 14px; flex: none; }
@@ -330,14 +338,25 @@ body.bord{
 }
 .wacht-merk.beurt{ color: var(--hoekkleur); }
 
+/* De strook was doorzichtig maar geen materiaal: de achtergrond schemerde
+   er scherp doorheen, en dan is het geen glas maar een vlek. Met dezelfde
+   vervaging als de balk hoort hij bij de rest, en de kinderen die erop
+   staan komen ervan los. */
 .strook{
   flex: none; margin: 16px 26px 20px; padding: 14px 22px;
   display: flex; align-items: center; gap: 26px; min-height: 0;
   background: rgba(255,255,255,.72); border-radius: var(--rond-l);
-  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8),
+              0 1px 2px rgba(20,28,44,.04), 0 8px 26px rgba(20,28,44,.07);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.strook-kop{ font-size: .96rem; font-weight: 550; color: var(--inkt-3); white-space: nowrap;
-             flex: none; letter-spacing: -.012em; }
+/* Op een doorzichtig vlak is het lichtste grijs te licht: daarachter
+   schuift een achtergrond langs die soms donker en soms licht is. Dus een
+   tint donkerder en een haartje zwaarder -- dan blijft het staan, wat er
+   ook achter gebeurt. */
+.strook-kop{ font-size: .96rem; font-weight: 600; color: var(--inkt-2); white-space: nowrap;
+             flex: none; }
 /* De ruimte boven is er voor de gloed die om een kind verschijnt als je
    erover gaat: die steekt elf pixels boven de bol uit (drie van het
    optillen, twee van het vergroten, zes van de ring).
@@ -416,24 +435,52 @@ body.bord{
 
 /* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
    die meegroeit. Dat leest als oppakken in plaats van als slepen. */
+/* ── het kind dat je in je hand hebt ─────────────────────────────────
+   Twee lagen, met opzet.
+
+   De buitenste laag is de plek: die zet het bord elke beeldwisseling zelf
+   neer, precies waar de vinger is. Daar staat dus géén overgang op. Er
+   stond hier eerst `transition: left .16s, top .16s`, en dat was een
+   bewuste verzachting die precies het verkeerde deed: het plaatje liep
+   een zesde seconde achter je vinger aan. Dat voelt als stroop, en het is
+   het verschil tussen "ik sleep dit" en "ik stuur iets aan dat daarna
+   volgt". Bovendien schoven we `left` en `top` op, en dat zijn maten waar
+   de browser de bladspiegel voor opnieuw moet uitrekenen -- zestig keer
+   per seconde, voor elk kind dat sleept. Nu is het `transform`, en dat
+   gaat buiten de bladspiegel om.
+
+   De binnenste laag is hoe het kind eruitziet terwijl je het vasthoudt:
+   opgetild, iets groter, een graadje gedraaid. Dat is een toestand en
+   geen gebaar -- je vinger bestuurt het niet -- dus mag dat gewoon een
+   overgang zijn.
+
+   --pak-x en --pak-y zijn de plek waar je het kind beetpakte, binnen de
+   bol. Daarmee blijft het punt waar je het oppakte onder je vinger
+   liggen, in plaats van dat de bol naar je vinger toe springt. En de
+   groei gaat om dat punt heen, zodat het kind onder je vinger uit
+   opkomt. */
 .sleep-geest{
-  position: fixed; z-index: 500; pointer-events: none;
-  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none;
+  will-change: transform;
+}
+.sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)));
+  transform-origin: var(--pak-x, 50%) var(--pak-y, 50%);
   filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
-  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
+  transition: transform .2s var(--veer), filter .2s ease, opacity .18s ease;
 }
-.sleep-geest.opgetild{
-  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+.sleep-geest.opgetild .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(1.22) rotate(-4deg);
   filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
-  transition: transform .18s var(--veer), filter .18s ease;
 }
-.sleep-geest.landt{
-  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+.sleep-geest.landt .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(.92) rotate(0deg);
   filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
-  opacity: .7;
 }
-.sleep-geest.valt-terug{
-  transform: translate(-50%, -50%) scale(.8);
+.sleep-geest.valt-terug .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%))) scale(.8);
   opacity: 0;
 }
 .picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
@@ -446,6 +493,28 @@ body.bord{
 }
 .gereserveerd .picto-rond{ opacity: .45; box-shadow: none; }
 .beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
+
+/* Minder doorzichtigheid: het glas op het bord wordt matglas. De vorm
+   verandert niet, dus er verschuift niets -- alleen is er niets meer
+   doorheen te zien, en dat is precies wat er gevraagd wordt. */
+@media (prefers-reduced-transparency: reduce){
+  .balk, .strook, .nogniets, .wacht-merk, .pauzekaart{
+    background: var(--vlak) !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  }
+  .pauzevlak{ background: rgba(251,248,244,.92); }
+}
+
+/* Meer contrast: volle vlakken met een rand, zodat je van achter in de
+   klas ziet waar de balk ophoudt en het bord begint. */
+@media (prefers-contrast: more){
+  .balk, .strook, .nogniets, .pauzekaart{
+    background: #fff !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--inkt-3);
+  }
+  .hoek{ border: 1px solid var(--inkt-3); }
+}
 
 @media (max-width: 760px){
   .balk{ height: 52px; margin: 10px 12px 0; padding: 0 6px 0 16px; }
