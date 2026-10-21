@@ -1094,6 +1094,57 @@ begin
   return aantal;
 end $$;
 
+/* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
+   iemand te laten zien hoe het werkt.
+
+   Dit is de enige functie waarmee de platformbeheerder inhoud maakt, en
+   dat kan alleen omdat hij hier onder de rechtenregels door gaat. Dat is
+   te verdedigen omdat er niets wordt gelezen -- er wordt alleen een
+   nieuwe school gevuld met namen die niet bestaan. Zet hier nooit een
+   bestaande school in. */
+create or replace function public.voorbeeldschool_aanmaken(schoolnaam text default 'Voorbeeldschool')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare nieuwe   uuid;
+        groep    uuid;
+        bord     uuid;
+        hoek     uuid;
+        codes    text[] := array['1A','1B','2A'];
+        kinderen text[] := array['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne',
+                                 'Joep','Nora','Timo','Wies','Levi','Roos','Cas','Maud'];
+        hoeken   text[] := array['Bouwhoek','Huishoek','Zandtafel','Knutselhoek','Leeshoek'];
+        plekken  int[]  := array[4,3,4,4,3];
+        i int; j int; k int;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder maakt een voorbeeldschool aan.';
+  end if;
+
+  insert into public.scholen (naam) values (trim(schoolnaam)) returning id into nieuwe;
+
+  for i in 1 .. array_length(codes, 1) loop
+    insert into public.groepen (school_id, naam, volgorde)
+    values (nieuwe, 'Groep ' || codes[i], i) returning id into groep;
+
+    insert into public.borden (groep_id, naam, actief)
+    values (groep, 'Keuzebord', true) returning id into bord;
+
+    for j in 1 .. array_length(hoeken, 1) loop
+      insert into public.hoeken (school_id, groep_id, naam, max_kinderen)
+      values (nieuwe, groep, hoeken[j], plekken[j]) returning id into hoek;
+      insert into public.bord_hoeken (bord_id, hoek_id, volgorde) values (bord, hoek, j);
+    end loop;
+
+    -- vijf kinderen per groep, steeds de volgende uit de lijst
+    for k in 1 .. 5 loop
+      insert into public.leerlingen (groep_id, naam, volgorde)
+      values (groep, kinderen[((i - 1) * 5 + k - 1) % array_length(kinderen, 1) + 1], k);
+    end loop;
+  end loop;
+
+  perform public.noteer('voorbeeldschool aangemaakt', nieuwe, trim(schoolnaam));
+  return jsonb_build_object('school_id', nieuwe, 'naam', trim(schoolnaam));
+end $$;
+
 /* Getallen per school, en verder niets.
 
    Dit is de enige plek die langs de rechtenregels heen kijkt, en daarom

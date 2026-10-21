@@ -227,8 +227,17 @@ const server = http.createServer(async (req, res) => {
       const kolommen = kies === '*' ? '*' : kies.split(',').map(k => `"${k.trim()}"`).join(',');
       const waarden = [];
       const waar = bouwWaar(u.searchParams, waarden);
+      /* PostgREST schrijft de richting achter de kolom: order=tijd.desc.
+         Zonder dit stuk werd dat één kolomnaam "tijd.desc" en viel de
+         vraag om. */
       const orde = u.searchParams.get('order') ? ' order by ' +
-        u.searchParams.get('order').split(',').map(k => `"${k.trim()}"`).join(',') : '';
+        u.searchParams.get('order').split(',').map(k => {
+          const d = k.trim().split('.');
+          const kol = `"${d[0]}"`;
+          if (d[1] === 'desc') return kol + ' desc';
+          if (d[1] === 'asc')  return kol + ' asc';
+          return kol;
+        }).join(',') : '';
       const limiet = u.searchParams.get('limit') ? ' limit ' + Number(u.searchParams.get('limit')) : '';
 
       if (req.method === 'GET') {

@@ -153,10 +153,12 @@ body.inlog{
   }
 
   function verder(){
-    // Waar hoort deze persoon heen? Wie nog geen school heeft moet er
-    // eerst een beginnen; een schoolbeheerder gaat naar het schoolbeheer,
-    // een leerkracht naar haar eigen groep.
+    // Waar hoort deze persoon heen? De platformbeheerder hoort bij geen
+    // school en gaat naar het platformbeheer; wie nog geen school heeft
+    // moet er eerst een beginnen; een schoolbeheerder gaat naar het
+    // schoolbeheer, een leerkracht naar haar eigen groep.
     return SB.wieBenIk().then(function (ik) {
+      if (ik.profiel && ik.profiel.rol === 'platformbeheerder') { location.href = 'platform.html'; return; }
       if (!ik.profiel || !ik.profiel.school_id) { location.href = 'school.html?nieuw=1'; return; }
       if (ik.profiel.rol === 'schoolbeheerder') { location.href = 'school.html'; return; }
       location.href = 'beheer.html';

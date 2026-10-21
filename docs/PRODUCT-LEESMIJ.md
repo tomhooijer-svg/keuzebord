@@ -19,6 +19,7 @@ veranderen heeft niets meer nodig dan een teksteditor.
 | `bord.html` | het bord zelf, voor op het digibord |
 | `beheer.html` | wat een leerkracht met haar eigen groep doet |
 | `school.html` | wat een schoolbeheerder met de hele school doet |
+| `platform.html` | scholen aanmaken en de aantallen bekijken |
 | `inloggen.html` | inloggen en een school beginnen |
 | `src/` | de code: bord, beheer, gegevens, synchronisatie |
 | `supabase/schema.sql` | de database, de rechten en de functies |

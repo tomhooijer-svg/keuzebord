@@ -268,3 +268,25 @@ tweede school erop veel duurder zou worden.
 Blijft gelden voor dít project. Komt er ooit een tweede, dan is Ierland
 of Frankfurt de enige goede keuze.
 
+## 2026-10-21 · Een platformscherm dat alleen getallen laat zien
+
+`platform.html`: de scholen met hun aantallen, een knop om een school
+aan te maken, een knop voor een voorbeeldschool, en het logboek. Verder
+niets, en dat is de hele opzet — op dit scherm staat geen enkele
+kindernaam, want er is geen enkele manier om er een op te halen.
+
+Er staat een blokje tekst op dat uitlegt waarom je hier geen kinderen
+ziet. Dat is geen decoratie: wie dit scherm voor het eerst opent denkt
+anders dat er iets stuk is.
+
+De voorbeeldschool is één functie in de database die een school vult met
+drie groepen, vijftien verzonnen kinderen en vijf hoeken per groep. Dat
+moest wel langs de rechtenregels heen, want de platformbeheerder mag
+geen inhoud schrijven — en dat is precies goed. De functie leest nooit
+iets; ze vult alleen een nieuwe school met namen die niet bestaan.
+
+Niet gebouwd: meekijken bij een school. De deur en het logboek staan er,
+het scherm nog niet. Dat hoort bij mijlpaal 7 en vraagt eerst een
+antwoord op de botsing tussen een bord dat offline doorwerkt en een
+beheerder die op afstand iets verschuift.
+
