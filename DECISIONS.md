@@ -310,3 +310,38 @@ niet kan vergissen en ook niet kan liegen.
 
 Daarmee is mijlpaal 2 af.
 
+## 2026-10-21 · Een hoek uit de databank wordt gekopieerd, niet gevolgd
+
+Een leerkracht kiest een hoek uit de databank en krijgt een kopie in
+haar groep: naam, plekken en foto worden overgenomen en zijn daarna van
+haar. Pas jij de databank daarna aan, dan verandert er niets in die
+klas.
+
+Dat is de belangrijkste keuze van deze mijlpaal, en hij gaat tegen de
+reflex in — een verwijzing is netter en scheelt opslag. Maar dan
+verandert het bord in een klas doordat iemand anders iets bijwerkt,
+terwijl de kleuters ernaar kijken. Dat mag niet kunnen. Er staat een
+proef op die precies dat controleert.
+
+De foto gaat mee als kopie naar de opslagmap van de school, zodat een
+groep ook niets merkt als een databankhoek wordt weggehaald. Dat kost
+wat opslag; bij 30 kB per foto is dat te overzien.
+
+Wat de kopie wél onthoudt is waar hij vandaan komt (`uit_databank`).
+Daarmee zie je in het platformbeheer hoe vaak een hoek gebruikt wordt
+zonder dat er ergens apart geteld hoeft te worden.
+
+## 2026-10-21 · De databank is een hoek zonder school
+
+Hetzelfde patroon als de landelijke doelenlijst die er al was: staat er
+geen school in de rij, dan is het van de databank. Elke school mag hem
+lezen, alleen de platformbeheerder mag hem aanpassen.
+
+De foto's liggen in de map `basis` in plaats van in een schoolmap. Een
+school-id is een uuid, dus het woord `basis` kan nooit per ongeluk de
+map van een school zijn.
+
+Dit is de enige inhoud die de platformbeheerder wél mag schrijven, en
+dat klopt met `ROLLEN.md`: het is zijn eigen materiaal, geen gegeven van
+een school of een kind.
+

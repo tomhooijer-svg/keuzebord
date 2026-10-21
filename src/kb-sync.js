@@ -90,7 +90,11 @@ function naarRijen(k){
                       foto_pad:pad(h.fotoId),
                       timer_minuten:h.timerMinuten || null,
                       werkplaats:!!h.werkplaats, volgorde:i,
-                      leerlijnen:KB.hoekLeerlijnen(h) });
+                      leerlijnen:KB.hoekLeerlijnen(h),
+                      /* Uit welke databankhoek deze kopie komt. Dit is al
+                         een server-id, dus het gaat ongewijzigd mee -- het
+                         heeft geen lokale tegenhanger. */
+                      uit_databank:h.uitDatabank || null });
   });
 
   (k.borden || []).forEach(function (b, i) {
@@ -268,6 +272,7 @@ function naarKlas(rijen, bestaande){
     return { id:lok(r.id), naam:r.naam, maxKinderen:r.max_kinderen, kleur:r.kleur,
              icoon:r.icoon, timerMinuten:r.timer_minuten, werkplaats:r.werkplaats,
              leerlijnen:r.leerlijnen || [],
+             uitDatabank:r.uit_databank || null,
              fotoId:oud ? oud.fotoId : null };
   });
 

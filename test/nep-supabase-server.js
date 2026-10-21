@@ -82,11 +82,16 @@ function lijfLezen(req){
 function ruwLezen(req){
   return new Promise(r => { const s = []; req.on('data', c => s.push(c)); req.on('end', () => r(Buffer.concat(s))); });
 }
-async function magBijPad(uid, pad){
-  const school = (pad || '').split('/')[0];
-  if (!uid || !school) return false;
-  const r = await metRol(uid, c => c.query('select public.mijn_school()::text as s'));
-  return r.rows[0].s === school;
+/* Zelfde regel als op storage.objects in het schema: de eerste map is het
+   id van een school, behalve 'basis' -- dat is de hoeken-databank, die
+   elke school mag lezen en die alleen de platformbeheerder vult. */
+async function magBijPad(uid, pad, schrijven){
+  const map = (pad || '').split('/')[0];
+  if (!uid || !map) return false;
+  const r = await metRol(uid, c => c.query(
+    'select public.mijn_school()::text as s, public.ben_platformbeheerder() as p'));
+  if (map === 'basis') return schrijven ? r.rows[0].p === true : true;
+  return r.rows[0].s === map;
 }
 
 /* Wat voor soort kolom is dit? PostgREST weet dat en gedraagt zich ernaar:
@@ -137,7 +142,7 @@ const server = http.createServer(async (req, res) => {
         return stuur(200, { signedURL: '/object/kb-media/' + encodeURI(pad2) + '?token=proef' });
       }
       if (req.method === 'POST' || req.method === 'PUT') {
-        if (!await magBijPad(uid2, pad2)) return stuur(403, { message:'geen toegang' });
+        if (!await magBijPad(uid2, pad2, true)) return stuur(403, { message:'geen toegang' });
         bestanden.set(pad2, { bytes: await ruwLezen(req),
                               type: req.headers['content-type'] || 'application/octet-stream' });
         return stuur(200, { Key: 'kb-media/' + pad2 });

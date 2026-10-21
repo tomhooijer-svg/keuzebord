@@ -355,6 +355,26 @@ alter table public.taak_toewijzing add column if not exists notitie text not nul
 -- hoeken en doelen dezelfde taal en zie je of je aanbod in balans is.
 alter table public.hoeken add column if not exists leerlijnen text[] not null default '{}';
 
+-- ── de hoeken-databank ────────────────────────────────────────────────
+/* Een hoek zonder school is van de databank: die ziet elke school, en
+   alleen de platformbeheerder kan hem aanpassen. Hetzelfde patroon als
+   de landelijke doelenlijst hierboven. Een school kopieert eruit naar
+   haar eigen groep; die kopie is daarna van haar.
+
+   categorie   waar hij in de databank onder staat (bijv. 'Winter')
+   uit_databank  uit welke databankhoek deze kopie komt. Daarmee weet je
+                 hoe vaak een hoek gebruikt wordt zonder dat je ergens
+                 apart hoeft te tellen. */
+alter table public.hoeken alter column school_id drop not null;
+alter table public.media  alter column school_id drop not null;
+alter table public.hoeken add column if not exists categorie text not null default '';
+alter table public.hoeken add column if not exists uit_databank uuid
+  references public.hoeken(id) on delete set null;
+create index if not exists hoeken_databank on public.hoeken (categorie)
+  where school_id is null;
+create index if not exists hoeken_herkomst on public.hoeken (uit_databank)
+  where uit_databank is not null;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check
@@ -898,10 +918,15 @@ begin
 end $$;
 
 -- ── de gedeelde bibliotheek ────────────────────────────────────────────
--- Staat groep_id leeg, dan is het van de hele school: iedereen op school
--- mag het zien en gebruiken. Weghalen of aanpassen mag alleen de
--- schoolbeheerder, zodat niemand per ongeluk de sinterklaashoek van een
--- collega wist.
+/* Drie lagen, van breed naar smal:
+
+   school_id leeg   de databank. Elke school ziet hem, alleen de
+                    platformbeheerder onderhoudt hem.
+   groep_id leeg    van deze hele school. Iedereen op school mag hem zien
+                    en gebruiken; weghalen of aanpassen doet de
+                    schoolbeheerder, zodat niemand per ongeluk de
+                    sinterklaashoek van een collega wist.
+   allebei gevuld   van één groep. */
 
 do $$
 declare
@@ -910,24 +935,35 @@ begin
   foreach tabel in array array['media','hoeken','themas'] loop
     execute format($f$
       create policy "lezen" on public.%I for select
-        using (public.van_mijn_school(school_id)
-               and (groep_id is null or public.mag_bij_groep(groep_id)))$f$, tabel);
+        using (school_id is null
+               or (public.van_mijn_school(school_id)
+                   and (groep_id is null or public.mag_bij_groep(groep_id))))$f$, tabel);
     execute format($f$
       create policy "toevoegen" on public.%I for insert
-        with check (public.van_mijn_school(school_id)
-                    and (case when groep_id is null then public.ben_schoolbeheerder()
-                              else public.mag_bij_groep(groep_id) end))$f$, tabel);
+        with check (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)$f$, tabel);
     execute format($f$
       create policy "wijzigen" on public.%I for update
-        using (public.van_mijn_school(school_id)
-               and (case when groep_id is null then public.ben_schoolbeheerder()
-                         else public.mag_bij_groep(groep_id) end))
-        with check (public.van_mijn_school(school_id))$f$, tabel);
+        using (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)
+        with check (school_id is null and public.ben_platformbeheerder()
+                    or public.van_mijn_school(school_id))$f$, tabel);
     execute format($f$
       create policy "verwijderen" on public.%I for delete
-        using (public.van_mijn_school(school_id)
-               and (case when groep_id is null then public.ben_schoolbeheerder()
-                         else public.mag_bij_groep(groep_id) end))$f$, tabel);
+        using (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)$f$, tabel);
   end loop;
 end $$;
 
@@ -1278,6 +1314,26 @@ begin
   return aantal;
 end $$;
 
+/* Wat er in de databank staat en hoe vaak het gebruikt wordt.
+
+   Het aantal kopieën volgt uit uit_databank, dus er wordt nergens apart
+   geteld. De omvang komt uit de mediatabel; dat is wat een hoek in de
+   opslag kost, en daar betaal je voor. */
+create or replace function public.databankcijfers()
+returns table (id uuid, naam text, categorie text, max_kinderen int,
+               foto_pad text, bytes bigint, scholen int, groepen int)
+language sql stable security definer set search_path = public as $$
+  select h.id, h.naam, h.categorie, h.max_kinderen, h.foto_pad,
+         coalesce((select m.bytes from public.media m where m.pad = h.foto_pad), 0)::bigint,
+         (select count(distinct k.school_id)::int from public.hoeken k
+           where k.uit_databank = h.id),
+         (select count(*)::int from public.hoeken k where k.uit_databank = h.id)
+    from public.hoeken h
+   where h.school_id is null
+     and public.ben_platformbeheerder()
+   order by h.categorie, h.naam;
+$$;
+
 /* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
    iemand te laten zien hoe het werkt.
 
@@ -1364,18 +1420,29 @@ drop policy if exists "kb media toevoegen"  on storage.objects;
 drop policy if exists "kb media vervangen"  on storage.objects;
 drop policy if exists "kb media verwijderen" on storage.objects;
 
+/* De bestanden liggen in mappen: de eerste map is het id van de school.
+   Op één map na -- 'basis' is de databank, die elke school mag lezen en
+   die alleen de platformbeheerder vult. Een school-id is een uuid, dus
+   het woord 'basis' kan nooit per ongeluk de map van een school zijn. */
 create policy "kb media lezen" on storage.objects for select
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and ((storage.foldername(name))[1] = 'basis'
+              or (storage.foldername(name))[1] = public.mijn_school()::text));
 
 create policy "kb media toevoegen" on storage.objects for insert
   with check (bucket_id = 'kb-media'
-              and (storage.foldername(name))[1] = public.mijn_school()::text);
+              and (case when (storage.foldername(name))[1] = 'basis'
+                        then public.ben_platformbeheerder()
+                        else (storage.foldername(name))[1] = public.mijn_school()::text end));
 
 create policy "kb media vervangen" on storage.objects for update
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and (case when (storage.foldername(name))[1] = 'basis'
+                   then public.ben_platformbeheerder()
+                   else (storage.foldername(name))[1] = public.mijn_school()::text end));
 
 create policy "kb media verwijderen" on storage.objects for delete
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and (case when (storage.foldername(name))[1] = 'basis'
+                   then public.ben_platformbeheerder()
+                   else (storage.foldername(name))[1] = public.mijn_school()::text end));
