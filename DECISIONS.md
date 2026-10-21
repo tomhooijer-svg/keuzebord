@@ -176,3 +176,65 @@ Gevolg voor mijlpaal 2: alleen ophalen wat veranderd is in plaats van de
 hele groep, en langzamer ophalen als er niemand aan het bord staat. Niet
 nu bouwen, wel nu weten.
 
+## 2026-10-21 · Toch inloggen met een e-mailadres
+
+Je wilde inloggen met gebruikersnaam en wachtwoord, zonder e-mail. Je
+vroeg mijn advies en dat gaat de andere kant op: doe het met een
+e-mailadres. Twee redenen, en de eerste is de zwaarste.
+
+**Zonder e-mail bestaat wachtwoordherstel niet meer.** Elk vergeten
+wachtwoord wordt dan door een mens teruggezet, meestal telefonisch of in
+de gang. Dat is precies het gat waar social engineering doorheen loopt:
+"hoi, ik ben de nieuwe juf van 1B, ik ben mijn wachtwoord kwijt." Bij één
+school is dat te overzien. Bij vijftig scholen is het de makkelijkste
+manier om binnen te komen, en het is een gat dat jij niet kunt zien
+dichtzitten. Met een adres gaat herstel via een link naar een postvak dat
+de school zelf beheert.
+
+**Zonder e-mail kan er later geen tweede stap bij.** Inloggen in twee
+stappen voor beheerders is waar het Normenkader IBP naartoe gaat. Met een
+adres is dat straks een schakelaar; zonder is het een verbouwing.
+
+De AVG pleit niet tegen. Een werkadres van een leerkracht heeft de school
+toch al; het gaat over een volwassene met een arbeidsrelatie, niet over
+een kind. En een gebruikersnaam is net zo goed een persoonsgegeven —
+"geen e-mail" haalt je niet buiten de AVG, het haalt alleen het
+herstelmechanisme weg.
+
+Wat je oorspronkelijke wens oploste, lossen we anders op: niemand hoeft
+elke ochtend een lang adres in te typen, want het bord blijft ingelogd en
+de pincode houdt kinderhanden uit het beheer. Dat werkt nu al zo.
+
+Niet dichtgetimmerd: Supabase controleert niet of een adres bestaat. Een
+school waar leerkrachten echt geen werkadres hebben kan verzonnen
+adressen krijgen die de schoolbeheerder zelf beheert. Dan vervalt herstel
+per mail voor die accounts. Een uitzondering, niet de standaard.
+
+## 2026-10-21 · Geen subdomeinen en geen hostingkeuze, nog niet
+
+Er is nog geen school in beeld. Mijlpaal 2 draait daarom op één adres;
+welke school je bent volgt uit de login, zoals het datamodel toch al
+voorschrijft. De app leest het subdomein wel alvast, zodat aanzetten
+later een DNS-regel is en geen verbouwing.
+
+De keuze tussen Cloudflare, Netlify en Vercel wacht tot er een school
+tekent. De doorrekening staat in `docs/HOSTING-PRODUCT.md` en blijft
+geldig; er is geen reden om nu iets te kopen.
+
+## 2026-10-21 · Mijlpaal 2 in twee stappen
+
+`DATAMODEL.md` stelt voor om `school_id` als eigen kolom aan elke
+inhoudstabel toe te voegen. Dat blijft staan, maar het gaat niet als
+eerste.
+
+Reden: de scheiding tussen scholen werkt vandaag al — `mag_bij_groep()`
+kijkt naar `k.school_id = mijn_school()`, dus twee scholen kunnen elkaar
+niet zien. De kolom is verharding en leesbaarheid, geen gat dat dicht
+moet. Wat er wél ontbrak was de platformbeheerder, het aanmaken van een
+tweede school, de ondersteuningsdeur en het logboek. Dat is stap 2a en
+die is nu klaar.
+
+Stap 2b is de kolommigratie, met een eigen proef. Die raakt ook de
+synchronisatie in de app, en dat is werk dat je apart wilt kunnen
+nakijken.
+

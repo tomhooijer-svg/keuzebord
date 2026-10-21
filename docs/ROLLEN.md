@@ -97,6 +97,24 @@ werkt alles meteen — maar dan loopt het buiten alle rechtenregels om en
 is één fout in de app genoeg om alles van alle scholen te openen. De
 ondersteuningstoegang loopt dus via precies dezelfde weg als iedereen.
 
+## Hoe je er een wordt
+
+Niet via een scherm. Er is er één, en die benoem je met de hand in de
+database:
+
+    begin;
+    select set_config('kb.systeem','aan',true);
+    update public.profielen set rol = 'platformbeheerder', school_id = null
+     where lower(email) = 'jij@voorbeeld.nl';
+    commit;
+
+Die eerste regel moet erbij: er zit een trekker op `profielen` die
+niemand zomaar een rol laat veranderen, ook de eigenaar van de database
+niet. Let op `school_id = null` — zonder school levert `mijn_school()`
+niets op, en dan is er geen inhoudstabel die ook maar één rij teruggeeft.
+De afscherming is dus niet een regel die het verbiedt, maar het ontbreken
+van een school om bij te horen.
+
 ## Ondersteuning: de school zet de deur open
 
 Als een school belt met "er klopt iets niet", moet je kunnen kijken. Dat
