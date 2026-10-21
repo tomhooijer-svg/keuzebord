@@ -437,3 +437,34 @@ hoeken, plekken en kinderen als ervoor.
 Heeft de leerkracht bij een hoek zelf een kleur gekozen, dan wint die
 altijd -- ook als het thema wisselt. Haar keuze is geen suggestie.
 
+## 2026-10-21 · Twee handleidingen, allebei als webpagina
+
+`demo.html` is de korte: wat het is, vier dingen om meteen te proberen,
+acht functies in één regel elk, en wat er gebeurt als de wifi wegvalt.
+Bedoeld om iemand enthousiast te maken in twee minuten.
+
+`handleiding.html` is de hele, voor scholen die het afnemen: inloggen,
+de kinderen, de hoeken, het bord in de klas, wat je kunt aanzetten,
+statistieken, thema's, school en thuis, wat er gebeurt zonder wifi, het
+schoolbeheer, wat we van kinderen bewaren, en wat te doen als er iets
+vastloopt. Bereikbaar vanuit het menu van de leerkracht.
+
+Allebei webpagina's en geen pdf. Een pdf raakt verouderd op het moment
+dat je hem verstuurt, en je kunt er niet naartoe linken vanuit het
+scherm waar iemand vastloopt.
+
+## 2026-10-21 · Een picto landt op zijn plek, niet op het midden
+
+Het ging zo: je liet los boven een hoek, het picto vloog naar het midden
+van de kaart, en daarna sprong het naar zijn plekje. Die sprong gebeurt
+precies op het moment dat een kleuter kijkt of het gelukt is.
+
+Nu vliegt hij meteen naar de plek waar hij echt komt te staan, en laat
+die plek even zien dat er iemand is geland: het picto zet zich op zijn
+plaats en er gaat één ring open die meteen weer vervaagt. Kort en zacht
+-- het moet zeggen "hier zit hij nu", niet de aandacht opeisen.
+
+De maat van die ring wordt gemeten, niet geraden: de cirkel is op elk
+bord een andere grootte. Met `offsetWidth`, want een lopende
+schaalanimatie telt anders mee in de maat.
+

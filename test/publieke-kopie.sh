@@ -11,7 +11,7 @@ rm -rf "$UIT"; mkdir -p "$UIT"
 cd "$R"
 
 # alles wat de site nodig heeft
-for f in index.html bord.html beheer.html school.html platform.html demo.html inloggen.html testbord.html \
+for f in index.html bord.html beheer.html school.html platform.html demo.html handleiding.html inloggen.html testbord.html \
          robots.txt _headers .nojekyll README.md .gitignore package.json; do
   [ -e "$f" ] && cp "$f" "$UIT/"
 done

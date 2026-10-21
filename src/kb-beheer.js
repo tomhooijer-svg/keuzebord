@@ -273,6 +273,18 @@ function tekenMenu(){
     over.appendChild(el('span', null, 'Naar ' + ander.naam));
     menu.appendChild(over);
   }
+  /* De handleiding. Onderin bij de andere links, want je zoekt hem als
+     je ergens niet uitkomt -- niet terwijl je aan het werk bent. */
+  var hulp = el('a', 'zij-knop zij-over');
+  hulp.href = 'handleiding.html';
+  hulp.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+    'aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>' +
+    '<path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.4"></path>' +
+    '<path d="M12 16.6h.01"></path></svg>';
+  hulp.appendChild(el('span', null, 'Handleiding'));
+  menu.appendChild(hulp);
+
   /* De weg naar het bord onderin. In Keuzebord ligt dat hiernaast; in
      Planbord staat het in de andere app en moet de groep mee. Stond hier
      een vast bord.html, en dan kwam je in Planbord op de 404 van GitHub
