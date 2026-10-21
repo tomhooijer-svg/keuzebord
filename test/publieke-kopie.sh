@@ -1,8 +1,8 @@
 #!/bin/sh
 # Maakt een schone kopie van de app om publiek te hosten: alleen wat er
 # nodig is om de site te draaien, zonder geschiedenis. Dat laatste is het
-# punt -- in de geschiedenis van deze repo zit nog een oud bestand met
-# echte voornamen en foto's van kinderen, en dat mag nooit publiek worden.
+# punt -- de geschiedenis van de werkplaatsrepo kan niet openbaar, dus een
+# publieke kopie krijgt er geen.
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
 UIT=${1:-/tmp/keuzebord-publiek}

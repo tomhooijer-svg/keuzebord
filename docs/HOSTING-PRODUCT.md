@@ -119,11 +119,14 @@ kleuters merken het niet, de leerkracht ziet een lampje. Maar in je
 afspraken met een school moet je geen uptime beloven die je niet zelf in
 de hand hebt.
 
-**De regio.** Dit valt of staat bij een EU-regio. Kijk in Supabase onder
-Project Settings → General welke regio er staat. Staat er iets anders
-dan Europa, dan is verhuizen het eerste wat er moet gebeuren, vóór er
-een tweede school op komt — daarna is het een migratie met data van
-andere mensen erin.
+**De regio: in orde.** Nagekeken op 21 oktober 2026 — het project draait
+in `eu-west-1`, Ierland. Dat is EU, dus de verhuizing die hier als eerste
+risico stond is niet nodig. Dat scheelt het vervelendste werk op het
+slechtste moment: een migratie met gegevens van andere scholen erin.
+
+Wel iets om vast te houden: dit geldt voor dít project. Maak je er ooit
+een tweede aan, dan staat de regiokeuze weer open en is Ierland of
+Frankfurt de enige goede.
 
 **Commercieel gebruik op een gratis plan.** Bij Vercel staat zwart op
 wit dat Hobby niet commercieel mag. Bij Cloudflare heb ik geen verbod

@@ -157,9 +157,8 @@ bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html 404.html" false
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
-# In de geschiedenis van de werkplaats zit een oud bestand met echte
-# voornamen en foto's van kinderen. Dat mag nooit publiek worden, en de
-# uitgaven krijgen daarom geen geschiedenis mee -- alleen bestanden.
+# De geschiedenis van de werkplaats kan niet openbaar. De uitgaven
+# krijgen er daarom geen mee -- alleen bestanden.
 for d in "$UIT"/keuzebord "$UIT"/planbord; do
   rm -f "$d/oud.html" "$d/keuzebord-preview.html"
   rm -rf "$d/docs"

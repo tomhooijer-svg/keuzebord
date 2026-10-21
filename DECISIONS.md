@@ -48,13 +48,17 @@ niets omdat de knip tussen bord en planbord al in `test/uitgeven.sh` zit.
 
 ## 2026-10-21 · Het product krijgt een verse repo
 
-In de geschiedenis van `tomhooijer-svg/keuzebord` staan voornamen en
-foto's van echte kleuters. Zolang dat zo is mag die repo nooit openbaar
-worden of gedeeld met een meebouwer of koper — ook niet als de huidige
-bestanden schoon zijn, want oude commits blijven bestaan.
+De werkplaatsrepo heeft een geschiedenis die niet gedeeld kan worden.
+Die repo mag dus nooit openbaar worden of naar een meebouwer of koper —
+ook niet nu de huidige bestanden schoon zijn, want oude commits blijven
+bestaan.
 
-Het product begint daarom in een nieuwe repo zonder die geschiedenis.
-Deze blijft bestaan als Toms eigen werkplaats.
+*Bijgewerkt op 2026-10-21: hier stond eerst precies wát er in die
+geschiedenis zit. Dat hoort niet in een document dat met een meebouwer
+gedeeld wordt — het is een wegwijzer, geen reden.*
+
+Het product begint daarom in een nieuwe repo zonder die geschiedenis:
+`tomhooijer-svg/keuzebord-product`. De werkplaats blijft bestaan.
 
 Overwogen en niet gekozen: de geschiedenis van deze repo herschrijven.
 Dat kan, maar het is één keer goed opletten en kopieën die elders al
@@ -237,4 +241,30 @@ die is nu klaar.
 Stap 2b is de kolommigratie, met een eigen proef. Die raakt ook de
 synchronisatie in de app, en dat is werk dat je apart wilt kunnen
 nakijken.
+
+## 2026-10-21 · De productrepo heet keuzebord-product
+
+`tomhooijer-svg/keuzebord-product`, één schone commit, geen geschiedenis
+van de werkplaats. `test/product-kopie.sh` zet de inhoud klaar en
+controleert meteen of er geen wegwijzer naar de oude gegevens in is
+geglipt.
+
+Wat er niet in gaat: `oud.html` (de v1 van één school), `design/`
+(schetsen uit een eerdere ronde), `docs/PLAN.md` en `docs/HOSTING.md`
+(die beschrijven hoe de werkplaats is ontstaan, inclusief wat er in die
+geschiedenis zit) en `docs/ADVIES-AGENDA-EN-KOPPELING.md` (gaat over het
+planbord). Niets daarvan wordt weggegooid; het blijft in de werkplaats.
+
+Voorlopig blijft de werkplaats de plek waar gebouwd wordt en is de
+productrepo de uitkomst. Dat kan later omdraaien, maar niet midden in
+een mijlpaal.
+
+## 2026-10-21 · De Supabase-regio is eu-west-1, en dat is goed
+
+Ierland. EU, dus de verhuizing die als eerste risico in het
+hostingvoorstel stond hoeft niet. Dat was het enige punt dat met een
+tweede school erop veel duurder zou worden.
+
+Blijft gelden voor dít project. Komt er ooit een tweede, dan is Ierland
+of Frankfurt de enige goede keuze.
 
