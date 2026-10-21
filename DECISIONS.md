@@ -290,3 +290,23 @@ het scherm nog niet. Dat hoort bij mijlpaal 7 en vraagt eerst een
 antwoord op de botsing tussen een bord dat offline doorwerkt en een
 beheerder die op afstand iets verschuift.
 
+## 2026-10-21 · De school staat nu in elke rij (stap 2b)
+
+Zestien tabellen hebben `school_id` gekregen, en de tabellen die
+onderaan een ketting hingen ook `groep_id`. De rechtenregel is overal
+dezelfde korte vergelijking geworden; de kettingen van drie tabellen
+diep zijn weg.
+
+Het voorstel in `DATAMODEL.md` was op één punt te kort: daar stond dat
+de regel `school_id = mijn_school()` zou worden. Dan ziet een leerkracht
+alles van haar school in plaats van alleen haar eigen groepen. De school
+is de ene grens, de groep de andere, en allebei moeten ze erin staan.
+
+Aan de app veranderde niets. De synchronisatie bouwt haar rijen uit een
+vaste lijst kolommen en vergelijkt alleen haar eigen momentopnamen, dus
+de nieuwe kolommen komen er niet in voor. Een trekker vult ze vanuit de
+ouderrij — en overschrijft wat de app zou meesturen, zodat de app zich
+niet kan vergissen en ook niet kan liegen.
+
+Daarmee is mijlpaal 2 af.
+

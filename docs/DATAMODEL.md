@@ -29,28 +29,49 @@ fout, en die fout was alleen zichtbaar doordat een proef omviel.
 nergens in de rij van een plaatsing. Hij is af te leiden, maar afleiden is
 iets anders dan vastleggen.
 
-## Voorstel: de school staat in elke rij
+## De school staat in elke rij — gebouwd
 
-Elke tabel die bij een school hoort, krijgt `school_id` als eigen kolom —
-ook waar die nu via de groep loopt: `leerlingen`, `borden`, `bord_hoeken`,
-`plaatsingen`, `wachtrij`, `gebeurtenissen`.
+Elke tabel die bij een school hoort heeft `school_id` als eigen kolom
+gekregen, ook waar die via de groep liep: `leerlingen`, `borden`,
+`groep_doelen`, `taken`, `weekplannen`, `observaties`, `gebeurtenissen`,
+`bord_hoeken`, `plaatsingen`, `wachtrij`, `thema_hoeken`, `thema_doelen`,
+`taak_doelen`, `week_doelen`, `weekplan_taken` en `taak_toewijzing`. De
+tabellen die onderaan een ketting hingen kregen er `groep_id` bij, zodat
+ook de groep in de rij zelf staat.
 
-Dat is dubbelop, en dat is de bedoeling. De regel wordt overal dezelfde
-korte vergelijking:
+Dat is dubbelop, en dat is de bedoeling.
 
-    school_id = mijn_school()
+**Eén ding klopte niet aan het voorstel hierboven.** Er stond dat de
+regel overal `school_id = mijn_school()` zou worden. Dat is te kort: dan
+ziet een leerkracht alles van haar school in plaats van alleen haar eigen
+groepen. De school is de ene grens, de groep is de andere, en allebei
+moeten ze in de regel staan. Het zijn dus twee vormen geworden:
 
-Eén regel, geen ketting, voor elke tabel hetzelfde. Een fout erin valt op
-omdat hij afwijkt van alle andere. En hij is sneller, want de database
-hoeft niet drie tabellen langs om te weten of jij deze rij mag zien.
+    van_mijn_school(school_id) and mag_bij_groep(groep_id)
 
-De rol binnen de school (leerkracht of schoolbeheerder) blijft bepalen
-wélke groepen je ziet. Dat is een tweede vraag en die blijft lopen zoals
-hij loopt.
+en voor wat van de hele school mag zijn — een thema dat aan geen groep
+hangt:
+
+    van_mijn_school(school_id)
+      and (groep_id is null or mag_bij_groep(groep_id))
+
+Geen ketting meer, geen tabel die zijn eigen regel heeft, en allebei de
+kolommen staan in de rij zelf. Wijkt er één regel af van de andere, dan
+zie je dat nu meteen.
+
+Dat de twee helften elkaar overlappen — `mag_bij_groep()` kijkt zelf ook
+naar de school — is met opzet. Klopt de school in een rij niet met de
+groep, dan valt die rij buiten allebei en wordt hij onzichtbaar in plaats
+van zichtbaar voor de verkeerde. Dat is de goede kant om fout te gaan.
 
 **De app hoeft `school_id` niet mee te sturen.** Een trigger in de
 database vult hem bij het opslaan vanuit de ouderrij. Zo kan de app zich
-niet vergissen, en ook niet liegen.
+niet vergissen, en ook niet liegen — stuurt ze er toch een mee, dan
+overschrijft de trigger hem. Daar staat een proef op.
+
+Daardoor hoefde er aan de synchronisatie niets te veranderen: die bouwt
+haar rijen uit een vaste lijst kolommen en vergelijkt alleen haar eigen
+momentopnamen, dus de nieuwe kolommen komen er niet in voor.
 
 ## Het subdomein
 
@@ -76,14 +97,18 @@ uitstaat, en kun je later pakketten maken zonder de code te splitsen.
 
 ## Wat dit met de bestaande gegevens doet
 
-Een migratie in drie stappen, zonder verlies en terug te draaien:
+De migratie staat in `supabase/schema.sql` zelf en doet drie dingen,
+in deze volgorde: de kolom toevoegen (leeg toegestaan), vullen vanuit de
+ouderrij, en dan per tabel apart verplicht maken. Dat laatste per tabel,
+zodat één achtergebleven rij één tabel tegenhoudt en niet het hele
+bestand; blijft er iets over, dan zegt het script welke tabel.
 
-1. de kolom toevoegen, leeg toegestaan;
-2. vullen vanuit de ouderrij (`update ... from ...`);
-3. verplicht maken en de regels omzetten.
-
-Pas daarna gaan de oude kettingregels weg. Tussen stap 2 en 3 gelden ze
-allebei, dus er is geen moment waarop er niets staat.
+Het mag zo vaak draaien als je wilt. `test/verhuizing.test.js` doet
+precies dat: een school vullen, de kolommen weer leeghalen zoals ze vóór
+de verhuizing waren, het schema opnieuw draaien, en nakijken of er daarna
+precies hetzelfde staat. Die proef controleert ook het geval dat het erg
+maakt — met lege kolommen ziet de beheerder níéts meer, en dat is voor
+een leerkracht niet te onderscheiden van gegevens die kwijt zijn.
 
 ## Het minimum dat we van kinderen bewaren
 

@@ -422,6 +422,176 @@ exception when others then
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
+--  De school in elke rij
+-- ═══════════════════════════════════════════════════════════════════════
+/* Tot nu toe hing de scheiding tussen scholen aan een ketting: een
+   plaatsing hoort bij een bord, een bord bij een groep, een groep bij een
+   school. Dat werkt, maar je kunt het niet in één oogopslag nalopen, en
+   één verkeerd geschreven regel zet de gegevens van twee scholen bij
+   elkaar.
+
+   Daarom staat de school nu in elke rij, en de groep erbij. Dat is
+   dubbelop en dat is de bedoeling: de rechtenregel wordt overal dezelfde
+   korte vergelijking, en een rij waarvan de school niet klopt wordt
+   onzichtbaar in plaats van zichtbaar voor de verkeerde.
+
+   De app stuurt deze kolommen niet mee. Een trekker vult ze bij het
+   opslaan vanuit de ouderrij, zodat de app zich niet kan vergissen en
+   ook niet kan liegen. Zie docs/DATAMODEL.md. */
+
+-- ── de kolommen ───────────────────────────────────────────────────────
+do $$
+declare t text;
+begin
+  -- deze hebben groep_id al; alleen de school komt erbij
+  foreach t in array array['leerlingen','borden','groep_doelen','taken',
+                           'weekplannen','observaties','gebeurtenissen'] loop
+    execute format('alter table public.%I add column if not exists school_id uuid
+                    references public.scholen(id) on delete cascade', t);
+  end loop;
+
+  -- deze hebben geen van beide: ze hangen aan een bord, thema, taak of weekplan
+  foreach t in array array['bord_hoeken','plaatsingen','wachtrij','thema_hoeken',
+                           'thema_doelen','taak_doelen','week_doelen',
+                           'weekplan_taken','taak_toewijzing'] loop
+    execute format('alter table public.%I add column if not exists school_id uuid
+                    references public.scholen(id) on delete cascade', t);
+    execute format('alter table public.%I add column if not exists groep_id uuid
+                    references public.groepen(id) on delete cascade', t);
+  end loop;
+end $$;
+
+-- ── de trekker die ze vult ────────────────────────────────────────────
+/* Eén functie voor alle tabellen. Welke ouder erbij hoort staat bij de
+   trekker zelf: de tabel en de kolom waarin het id van de ouder staat.
+   Een groep is zijn eigen groep, vandaar de uitzondering. */
+create or replace function public.vul_school_en_groep()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare oudertabel text := TG_ARGV[0];
+        ouderkolom text := TG_ARGV[1];
+        ouder_id   uuid;
+        s uuid;
+        g uuid;
+begin
+  execute format('select ($1).%I', ouderkolom) into ouder_id using new;
+  if ouder_id is null then return new; end if;
+
+  if oudertabel = 'groepen' then
+    select k.school_id, k.id into s, g from public.groepen k where k.id = ouder_id;
+  else
+    execute format('select school_id, groep_id from public.%I where id = $1', oudertabel)
+      into s, g using ouder_id;
+  end if;
+
+  new.school_id := s;
+  /* Niet elke tabel heeft een groep: een thema van de hele school hangt
+     aan geen enkele groep. to_jsonb kijkt of de kolom bestaat zonder dat
+     we hier per tabel een lijstje hoeven bij te houden. */
+  if (to_jsonb(new) ? 'groep_id') and oudertabel <> 'groepen' then
+    new.groep_id := g;
+  end if;
+  return new;
+end $$;
+
+do $$
+declare paren text[][] := array[
+    ['leerlingen','groepen','groep_id'],
+    ['borden','groepen','groep_id'],
+    ['groep_doelen','groepen','groep_id'],
+    ['taken','groepen','groep_id'],
+    ['weekplannen','groepen','groep_id'],
+    ['observaties','groepen','groep_id'],
+    ['gebeurtenissen','groepen','groep_id'],
+    ['bord_hoeken','borden','bord_id'],
+    ['plaatsingen','borden','bord_id'],
+    ['wachtrij','borden','bord_id'],
+    ['thema_hoeken','themas','thema_id'],
+    ['thema_doelen','themas','thema_id'],
+    ['taak_doelen','taken','taak_id'],
+    ['week_doelen','weekplannen','weekplan_id'],
+    ['weekplan_taken','weekplannen','weekplan_id'],
+    ['taak_toewijzing','weekplan_taken','weekplan_taak_id']];
+  i int;
+begin
+  for i in 1 .. array_length(paren, 1) loop
+    execute format('drop trigger if exists school_erbij on public.%I', paren[i][1]);
+    execute format('create trigger school_erbij before insert or update on public.%I
+                    for each row execute function public.vul_school_en_groep(%L, %L)',
+                   paren[i][1], paren[i][2], paren[i][3]);
+  end loop;
+end $$;
+
+-- ── vullen wat er al stond ────────────────────────────────────────────
+/* In dezelfde volgorde als de ketting liep: eerst wat aan een groep
+   hangt, dan wat aan een bord, thema, taak of weekplan hangt, en als
+   laatste de toewijzingen. Dit mag zo vaak draaien als je wilt. */
+do $$
+declare paren text[][] := array[
+    ['leerlingen','groepen','groep_id'],
+    ['borden','groepen','groep_id'],
+    ['groep_doelen','groepen','groep_id'],
+    ['taken','groepen','groep_id'],
+    ['weekplannen','groepen','groep_id'],
+    ['observaties','groepen','groep_id'],
+    ['gebeurtenissen','groepen','groep_id'],
+    ['bord_hoeken','borden','bord_id'],
+    ['plaatsingen','borden','bord_id'],
+    ['wachtrij','borden','bord_id'],
+    ['thema_hoeken','themas','thema_id'],
+    ['thema_doelen','themas','thema_id'],
+    ['taak_doelen','taken','taak_id'],
+    ['week_doelen','weekplannen','weekplan_id'],
+    ['weekplan_taken','weekplannen','weekplan_id'],
+    ['taak_toewijzing','weekplan_taken','weekplan_taak_id']];
+  i int; tabel text; ouder text; kolom text; open_nog int;
+begin
+  for i in 1 .. array_length(paren, 1) loop
+    tabel := paren[i][1]; ouder := paren[i][2]; kolom := paren[i][3];
+    if ouder = 'groepen' then
+      execute format('update public.%I t set school_id = k.school_id
+                        from public.groepen k
+                       where k.id = t.%I and t.school_id is distinct from k.school_id',
+                     tabel, kolom);
+    else
+      execute format('update public.%I t set school_id = o.school_id, groep_id = o.groep_id
+                        from public.%I o
+                       where o.id = t.%I
+                         and (t.school_id is distinct from o.school_id
+                              or t.groep_id is distinct from o.groep_id)',
+                     tabel, ouder, kolom);
+    end if;
+    execute format('select count(*) from public.%I where school_id is null', tabel)
+      into open_nog;
+    if open_nog > 0 then
+      raise notice 'LET OP: % rijen in % hebben nog geen school', open_nog, tabel;
+    end if;
+  end loop;
+end $$;
+
+-- ── en ze verplicht maken ─────────────────────────────────────────────
+/* Pas hierna, en per tabel apart: blijft er ergens een rij zonder school
+   staan, dan hoort dat één tabel tegen te houden en niet het hele
+   bestand. De melding hierboven zegt welke. */
+do $$
+declare t text;
+begin
+  foreach t in array array['leerlingen','borden','groep_doelen','taken','weekplannen',
+                           'observaties','gebeurtenissen','bord_hoeken','plaatsingen',
+                           'wachtrij','thema_hoeken','thema_doelen','taak_doelen',
+                           'week_doelen','weekplan_taken','taak_toewijzing'] loop
+    begin
+      execute format('alter table public.%I alter column school_id set not null', t);
+    exception when others then
+      raise notice 'school_id in % nog niet verplicht gemaakt: %', t, sqlerrm;
+    end;
+  end loop;
+end $$;
+
+create index if not exists leerlingen_per_school     on public.leerlingen (school_id);
+create index if not exists plaatsingen_per_school    on public.plaatsingen (school_id);
+create index if not exists gebeurtenissen_per_school on public.gebeurtenissen (school_id);
+
+-- ═══════════════════════════════════════════════════════════════════════
 --  Ondersteuning en het handelingenlogboek
 -- ═══════════════════════════════════════════════════════════════════════
 
@@ -516,6 +686,15 @@ returns boolean language sql stable security definer set search_path = public as
        and o.ingetrokken is null
        and now() >= o.gestart and now() < o.tot
   );
+$$;
+
+/* Is deze rij van mijn school -- of van een school die op dit moment de
+   deur voor mij heeft opengezet? Dit is de halve rechtenregel die onder
+   elke inhoudstabel staat. De andere helft is mag_bij_groep(). */
+create or replace function public.van_mijn_school(s uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select s is not null
+     and (s = public.mijn_school() or public.ondersteuning_actief(s));
 $$;
 
 -- Een schoolbeheerder mag bij elke groep van haar eigen school. Een
@@ -674,34 +853,40 @@ create policy "eigen verzoek intrekken" on public.groep_verzoeken
   for delete using (profiel_id = auth.uid() and behandeld is null);
 
 -- ── alles wat bij één groep hoort ──────────────────────────────────────
--- Voor deze tabellen is de regel telkens hetzelfde: je mag erbij als je
--- bij de groep mag. Alleen de weg naar die groep verschilt per tabel, dus
--- die schrijven we één keer op en laten we hieronder rondgaan.
+/* Voor deze tabellen is de regel overal dezelfde korte vergelijking: is
+   dit van mijn school, en mag ik bij die groep. Allebei de kolommen staan
+   in de rij zelf, dus er hoeft geen enkele andere tabel aan te pas te
+   komen.
+
+   Hier stond eerder een ketting per tabel: een plaatsing opzoeken bij een
+   bord, het bord bij een groep, de groep bij een school. Dat werkte, maar
+   elke tabel had zijn eigen regel en dus zijn eigen kans op een fout.
+   Wijkt er nu een regel af van de andere, dan zie je dat meteen.
+
+   Dat van_mijn_school() en mag_bij_groep() elkaar overlappen is met opzet:
+   klopt de school in de rij niet met de groep, dan valt de rij buiten
+   allebei en is hij onzichtbaar. Dat is de goede kant om fout te gaan. */
 
 do $$
 declare
-  regels text[][] := array[
-    ['leerlingen',      'public.mag_bij_groep(groep_id)'],
-    ['groep_doelen',    'public.mag_bij_groep(groep_id)'],
-    ['borden',          'public.mag_bij_groep(groep_id)'],
-    ['taken',           'public.mag_bij_groep(groep_id)'],
-    ['weekplannen',     'public.mag_bij_groep(groep_id)'],
-    ['observaties',     'public.mag_bij_groep(groep_id)'],
-    ['gebeurtenissen',  'public.mag_bij_groep(groep_id)'],
-    ['bord_hoeken',     'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['plaatsingen',     'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['wachtrij',        'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['thema_hoeken',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
-    ['thema_doelen',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
-    ['taak_doelen',     'exists (select 1 from public.taken t where t.id = taak_id and public.mag_bij_groep(t.groep_id))'],
-    ['week_doelen',     'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],
-    ['weekplan_taken',  'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],
-    ['taak_toewijzing', 'exists (select 1 from public.weekplan_taken wt join public.weekplannen w on w.id = wt.weekplan_id where wt.id = weekplan_taak_id and public.mag_bij_groep(w.groep_id))']
-  ];
+  vanGroep  text := 'public.van_mijn_school(school_id) and public.mag_bij_groep(groep_id)';
+  -- een thema kan van de hele school zijn; dan hangt het aan geen groep
+  vanSchool text := 'public.van_mijn_school(school_id) and (groep_id is null or public.mag_bij_groep(groep_id))';
+  regels text[][];
   i int;
   tabel text;
   voorwaarde text;
 begin
+  regels := array[
+    ['leerlingen',      vanGroep],  ['groep_doelen',   vanGroep],
+    ['borden',          vanGroep],  ['taken',          vanGroep],
+    ['weekplannen',     vanGroep],  ['observaties',    vanGroep],
+    ['gebeurtenissen',  vanGroep],  ['bord_hoeken',    vanGroep],
+    ['plaatsingen',     vanGroep],  ['wachtrij',       vanGroep],
+    ['taak_doelen',     vanGroep],  ['week_doelen',    vanGroep],
+    ['weekplan_taken',  vanGroep],  ['taak_toewijzing',vanGroep],
+    ['thema_hoeken',    vanSchool], ['thema_doelen',   vanSchool]
+  ];
   for i in 1 .. array_length(regels, 1) loop
     tabel      := regels[i][1];
     voorwaarde := regels[i][2];
@@ -725,23 +910,22 @@ begin
   foreach tabel in array array['media','hoeken','themas'] loop
     execute format($f$
       create policy "lezen" on public.%I for select
-        using ((school_id = public.mijn_school()
-                and (groep_id is null or public.mag_bij_groep(groep_id)))
-               or public.ondersteuning_actief(school_id))$f$, tabel);
+        using (public.van_mijn_school(school_id)
+               and (groep_id is null or public.mag_bij_groep(groep_id)))$f$, tabel);
     execute format($f$
       create policy "toevoegen" on public.%I for insert
-        with check (school_id = public.mijn_school()
+        with check (public.van_mijn_school(school_id)
                     and (case when groep_id is null then public.ben_schoolbeheerder()
                               else public.mag_bij_groep(groep_id) end))$f$, tabel);
     execute format($f$
       create policy "wijzigen" on public.%I for update
-        using (school_id = public.mijn_school()
+        using (public.van_mijn_school(school_id)
                and (case when groep_id is null then public.ben_schoolbeheerder()
                          else public.mag_bij_groep(groep_id) end))
-        with check (school_id = public.mijn_school())$f$, tabel);
+        with check (public.van_mijn_school(school_id))$f$, tabel);
     execute format($f$
       create policy "verwijderen" on public.%I for delete
-        using (school_id = public.mijn_school()
+        using (public.van_mijn_school(school_id)
                and (case when groep_id is null then public.ben_schoolbeheerder()
                          else public.mag_bij_groep(groep_id) end))$f$, tabel);
   end loop;
@@ -753,7 +937,7 @@ end $$;
 -- dat alleen van die school.
 
 create policy "doelen lezen" on public.doelen
-  for select using (school_id is null or school_id = public.mijn_school());
+  for select using (school_id is null or public.van_mijn_school(school_id));
 create policy "eigen doel toevoegen" on public.doelen
   for insert with check (school_id = public.mijn_school());
 create policy "eigen doel wijzigen" on public.doelen
