@@ -61,7 +61,7 @@ const zeg = (n, ok, extra) => {
 
   const bordMenu = bord.beeld.menu.filter(x => !/^Naar /.test(x));
   zeg('Keuzebord heeft het bordmenu',
-      ['Statistieken','Leerlingen',"Picto's",'Hoeken','Uiterlijk','Groep','Functies']
+      ['Vandaag','Statistieken','Leerlingen',"Picto's",'Hoeken','Uiterlijk','Groep','Functies']
         .every(n => bordMenu.indexOf(n) >= 0), bordMenu.join(', '));
   zeg('en geen planwerk',
       !['Weekplan',"Thema's",'Taken','Doelen','Observaties','Overzicht']
@@ -71,10 +71,30 @@ const zeg = (n, ok, extra) => {
       bord.beeld.panelen.join(','));
   zeg('Keuzebord opent op een scherm dat hij heeft', bord.beeld.inhoud > 40,
       bord.beeld.inhoud + ' tekens');
-  zeg('en wijst de weg naar Planbord',
-      bord.beeld.over.length === 1 && /planbord/.test(bord.beeld.over[0]),
-      bord.beeld.over.join(' '));
-  zeg('met de groep in het adres', /groep=/.test(bord.beeld.over[0] || ''), bord.beeld.over[0]);
+  /* Het keuzebord als product kent het planbord niet. Een menu-item dat
+     verwijst naar een app die een school niet heeft gekocht is het meest
+     zichtbare planbord dat er is, dus dat hoort hier weg te zijn. */
+  zeg('en wijst juist niet naar Planbord', bord.beeld.over.length === 0,
+      bord.beeld.over.join(' ') || 'geen enkele verwijzing');
+
+  /* De drie functies die hun gegevens uit het weekplan halen. Zonder
+     planbord beloven ze iets wat niet gebeurt. */
+  await bord.p.evaluate(() => BH.ga('functies'));
+  await bord.p.waitForTimeout(500);
+  const functies = await bord.p.evaluate(() => document.querySelector('.inhoud').textContent);
+  zeg('en toont geen werkplaatsfuncties',
+      !/Werkplaats klaarzetten|Twee werkmomenten|Signalering/.test(functies),
+      ['Werkplaats klaarzetten','Twee werkmomenten','Signalering']
+        .filter(n => functies.indexOf(n) >= 0).join(', ') || 'geen van drieën');
+  zeg('maar wel de stuurregel die er wel bij hoort',
+      /Niet steeds dezelfde hoek/.test(functies), 'aanwezig');
+
+  await bord.p.evaluate(() => BH.ga('vandaag'));
+  await bord.p.waitForTimeout(500);
+  const vandaag = await bord.p.evaluate(() => document.querySelector('.inhoud').textContent);
+  zeg('Vandaag gaat over het bord en niet over de week',
+      /Wie staat waar|Moet nog kiezen|Zet eerst een paar hoeken/.test(vandaag)
+      && !/week \d/.test(vandaag), vandaag.replace(/\s+/g,' ').slice(0, 70));
 
   /* het bord zelf moet het ook nog doen */
   await bord.p.goto(BORD + '/bord.html');

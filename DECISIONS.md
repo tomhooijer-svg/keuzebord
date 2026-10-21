@@ -367,3 +367,50 @@ bezoek aan de demo de groep overschrijven van een leerkracht die in
 dezelfde browser is ingelogd. Daar staat een proef op die van begin tot
 eind controleert dat haar gegevens niet veranderen.
 
+## 2026-10-21 · Het planbord gaat uit het product, niet uit de code
+
+Eerder stond hier dat het planbord achter een schakelaar per school zou
+gaan. Dat wordt scherper: het product is alleen het keuzebord. Weekplan,
+thema's, taken, doelen en observaties zijn onzichtbaar, en de drie
+functies die hun gegevens uit het weekplan halen — werkplaats
+klaarzetten, twee werkmomenten, signalering — zijn dat ook. Die beloofden
+iets wat zonder planbord niet kán: een werkplaats die altijd leeg blijft.
+
+Ook weg: het menu-item "Naar Planbord". Een verwijzing naar een app die
+een school niet heeft gekocht is het meest zichtbare planbord dat er is.
+
+Niets is weggegooid. De stand van vóór deze stap staat als tak
+`archief/planbord-v1` in allebei de repo's, en de code zelf staat er nog
+gewoon; `KB_APP.planbord` bepaalt of hij meedoet. Wil je er later een
+tweede product van maken, dan zet je die schakelaar om.
+
+Reden om dit nú te doen: de werkplaats zoals hij is gebouwd volgt de
+methodiek van Toms eigen school. Dat is geen basis voor een product dat
+aan andere scholen wordt verkocht.
+
+## 2026-10-21 · "Vandaag" gaat over het bord, niet over de week
+
+De keuzebord-app opende bij de leerkracht op Statistieken, want het
+bestaande "Vandaag" is een weekplanscherm. Je begon dus elke ochtend met
+een terugblik.
+
+Er is nu een tweede Vandaag, voor wie geen planbord heeft: staat het bord
+open, wie staat in welke hoek, wie moet nog kiezen, en een knop om de dag
+af te sluiten. Hetzelfde menu-item, andere inhoud — welke je krijgt hangt
+af van `KB_APP.planbord`.
+
+## 2026-10-21 · Niet steeds dezelfde hoek — als schakelaar, standaard uit
+
+Uit het onderzoek naar Digikeuzebord: daar moet een kind dat een hoek al
+vaak heeft gekozen eerst iets anders kiezen. Dat is een stuurregel op het
+bord zelf, niet alleen een cijfer achteraf.
+
+Overgenomen, met twee randvoorwaarden. **Standaard uit**, want of een
+kleuter zeven keer in de bouwhoek mag is een pedagogische keuze en niet
+iets wat de software hoort te vinden. En **geen foutmelding**: het kind
+ziet zijn eigen plaatje, hoort hoe vaak het er al was, en kiest wat
+anders. Een kleuter heeft niets verkeerd gedaan.
+
+Geteld wordt vanaf maandag, uit het logboek dat er toch al is. Na het
+weekend begint iedereen blanco.
+

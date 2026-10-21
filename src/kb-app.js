@@ -29,6 +29,15 @@ window.KB_APP = {
      werkplaats, waar de proeven overheen lopen. */
   panelen: null,
 
+  /* Hoort het planbord bij deze uitgave? Het keuzebord als product is
+     alleen kiezen: weekplan, taken, doelen en observaties zitten er niet
+     in, en dus ook niet de schakelaars die daarvan afhangen. Die beloven
+     anders iets wat niet kán -- een werkplaats die altijd leeg blijft.
+
+     De code blijft staan; zie de tak archief/planbord-v1 en DECISIONS.md.
+     In de werkplaats staat dit aan, want de proeven lopen over alles. */
+  planbord: true,
+
   /* Heeft deze uitgave het bord zelf? Planbord niet: daar staat wel een
      knop "Bord openen", maar het bord ligt in de andere app. Zonder dit
      wees die knop naar een bestand dat er niet is, en dan krijg je de

@@ -34,6 +34,7 @@ function standaardInstellingen(){
            werkmomentenAan:false, werkmomenten:standaardWerkmomenten(),
            bordLegen:'dag', dagdeelUur:12,
            afkoelAan:true, afkoelSeconden:20,
+           herhaalAan:false, herhaalMax:3,
            sluitenSoort:'nooit', sluitenTijd:'14:30', sluitenNaMinuten:45,
            pinAan:false, pincode:'1234', kolommen:3 };
 }
@@ -513,6 +514,18 @@ function plaats(leerlingId, hoekId){
   }
   if (isVol(hoek, b)) return { ok:false, reden:'vol', hoek:hoek };
 
+  /* Een kind dat deze week al vaak in deze hoek zat, kiest eerst eens
+     wat anders. Dit staat standaard uit: het is een pedagogische keuze
+     en niet aan de software. Staat het aan, dan telt alleen deze week --
+     maandag begint iedereen weer blanco. */
+  if (instelling('herhaalAan', k)) {
+    var max = Math.max(1, instelling('herhaalMax', k) || 3);
+    var al = kerenDezeWeek(leerlingId, hoekId, k);
+    if (al >= max) {
+      return { ok:false, reden:'te-vaak', hoek:hoek, aantal:al, grens:max };
+    }
+  }
+
   Object.keys(b.plaatsingen).forEach(function (hid) {
     b.plaatsingen[hid] = (b.plaatsingen[hid] || []).filter(function (p) {
       return p.leerlingId !== leerlingId;
@@ -607,6 +620,23 @@ function schuifWachtrijDoor(hoekId){
   uitWachtrij(eerste.leerlingId, k);
   bewaar();
   return eerste.leerlingId;   // het scherm mag dit vieren
+}
+
+/* Hoe vaak koos dit kind deze hoek sinds maandag. Uit het logboek, want
+   dat is de enige plek waar het echt staat -- het bord zelf weet alleen
+   hoe het nú is. */
+function kerenDezeWeek(leerlingId, hoekId, k){
+  k = k || klas();
+  var ma = new Date();
+  ma.setHours(0, 0, 0, 0);
+  ma.setDate(ma.getDate() - ((ma.getDay() + 6) % 7));
+  var vanaf = ma.getTime();
+  var n = 0;
+  (k.gebeurtenissen || []).forEach(function (e) {
+    if (e.soort === 'gekozen' && e.leerlingId === leerlingId &&
+        e.hoekId === hoekId && e.tijd >= vanaf) n++;
+  });
+  return n;
 }
 
 /* ── logboek (basis voor statistieken later) ─────────────── */
@@ -2010,6 +2040,7 @@ global.KB = {
   get G(){ return G; },
   laad: laad, bewaar: bewaar, opBewaard: opBewaard, opslagKrap: opslagKrap, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
+  kerenDezeWeek: kerenDezeWeek,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
   VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres,

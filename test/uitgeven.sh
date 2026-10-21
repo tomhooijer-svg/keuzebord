@@ -44,7 +44,7 @@ PLAN_SCHERMEN="kb-school.js kb-doelzoeker.js kb-verslag.js kb-plan.js kb-thema.j
 
 bouw(){
   app=$1; naam=$2; ander=$3; anderNaam=$4; anderPad=$5; panelen=$6
-  schermen=$7; paginas=$8; heeftBord=$9
+  schermen=$7; paginas=$8; heeftBord=$9; heeftPlan=${10}
   D="$UIT/$app"
   mkdir -p "$D/src" "$D/data" "$D/supabase"
 
@@ -85,6 +85,7 @@ window.KB_APP = {
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: $heeftBord,
   panelen: [$panelen],
+  planbord: $heeftPlan,
   /* Waar beide uitgaven staan. Volledige adressen, met de mapnaam er los
      bij als terugval voor een testserver of een ander domein. Dit is de
      enige plek waar die adressen staan. */
@@ -149,12 +150,12 @@ EOF
 
 echo "── uitgeven ($V) ──"
 bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
-  "'statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
-  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html platform.html demo.html diagnose.html 404.html" true
+  "'vandaag','statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
+  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html platform.html demo.html diagnose.html 404.html" true false
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
-  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html 404.html" false
+  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html 404.html" false true
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
 # De geschiedenis van de werkplaats kan niet openbaar. De uitgaven
