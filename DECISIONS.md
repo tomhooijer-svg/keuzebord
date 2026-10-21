@@ -132,3 +132,47 @@ variant precies genoeg.
 Namen en e-mailadressen van leerkrachten blijven wel zichtbaar — zonder
 dat kun je geen account aanmaken. Volwassenen met een arbeidsrelatie,
 geen kleuters.
+
+## 2026-10-21 · Cloudflare Workers voor de frontend, niet Pages
+
+Het plan was wildcard-DNS naar Cloudflare Pages. Dat kan niet: in de
+documentatie van Cloudflare staat dat Pages geen wildcard custom domains
+ondersteunt. Elk subdomein met de hand toevoegen is bij vijftig scholen
+geen optie.
+
+Workers met statische bestanden kan het wel, via de routes
+`domein.nl/*` en `*.domein.nl/*`, en verzoeken om een bestaand bestand
+zijn daar gratis en onbeperkt. Het is bovendien de weg waar Cloudflare
+Pages zelf naartoe migreert.
+
+Niet gekozen: Netlify (wildcard alleen op een betaald plan) en Vercel
+(het gratis plan mag niet commercieel). GitHub Pages valt af omdat er
+geen subdomein per school op kan.
+
+## 2026-10-21 · Eén gedeelde Supabase-organisatie, Pro zodra er betaald wordt
+
+Supabase rekent per organisatie af, niet per project: $25 per maand,
+of er nu één school op zit of vijftig. Dat maakt de gedeelde installatie
+met `school_id` ook financieel de juiste keuze — een project per school
+zou vanaf de tweede school geld gaan kosten.
+
+Zolang alleen Toms eigen school erop staat blijft het gratis plan
+genoeg. Op de dag dat de eerste school tekent gaat het naar Pro, want
+het gratis plan pauzeert na zeven dagen stilte en heeft geen back-ups.
+Dat is de enige vaste kostenpost die vóór de eerste euro omzet moet
+worden gemaakt.
+
+Doorgerekend komt het uit op ±$26 per maand bij één school, ±$36 bij
+tien en ±$85 bij vijftig. Bij vijftig scholen is dat $1,70 per school.
+
+## 2026-10-21 · Het ophaalritme is de kostenknop, niet het aantal scholen
+
+Uitgerekend bij het hostingvoorstel: het uitgaand verkeer wordt bepaald
+door hoe vaak een bord zijn groep ophaalt. Elke 10 seconden is bij
+vijftig scholen 175 GB per maand — net binnen de 250 GB van Pro. Elke 5
+seconden is 350 GB en kost $9 per maand extra.
+
+Gevolg voor mijlpaal 2: alleen ophalen wat veranderd is in plaats van de
+hele groep, en langzamer ophalen als er niemand aan het bord staat. Niet
+nu bouwen, wel nu weten.
+

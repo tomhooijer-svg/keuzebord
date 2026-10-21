@@ -1,5 +1,8 @@
 # De app online zetten
 
+> Dit gaat over jouw eigen school op GitHub Pages, zoals het nu draait.
+> Voor het product met meerdere scholen: `HOSTING-PRODUCT.md`.
+
 ## Kan het gratis via GitHub?
 
 Ja, maar met één belangrijke voorwaarde: **GitHub Pages is alleen gratis
