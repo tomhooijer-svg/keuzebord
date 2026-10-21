@@ -51,7 +51,7 @@ else echo "  geen wegwijzer naar de oude gegevens"; fi
 
 echo "  echte e-mailadressen:"
 grep -rIoh "[a-zA-Z0-9._%-]*@[a-zA-Z0-9.-]*\.\(nl\|com\|org\)" "$UIT" 2>/dev/null \
-  | grep -v "school-a.nl\|school-b.nl\|mijnschool.nl\|school.nl\|voorbeeld.nl\|tweede.nl\|platform.nl\|anthropic.com\|noreply@" \
+  | grep -v "school-a.nl\|school-b.nl\|mijnschool.nl\|school.nl\|voorbeeld.nl\|tweede.nl\|platform.nl\|deregenboog.nl\|anthropic.com\|noreply@" \
   | sort -u | sed 's/^/    /'
 echo
 echo "grootte: $(du -sh "$UIT" | cut -f1), $(find "$UIT" -type f | wc -l) bestanden"
