@@ -470,8 +470,17 @@
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
+<script>
+/* De demo-schakelaar, vóór alles. Staat hij aan, dan praat deze pagina
+   met geen enkele server en bewaart hij onder eigen sleutels -- zie
+   src/kb-demo.js. Dit moet hier staan en niet in een bestand, want
+   kb-data.js leest hem al op het moment dat hij wordt ingeladen. */
+window.KB_DEMO = false;
+try { window.KB_DEMO = localStorage.getItem('kb_demo') === 'aan'; } catch (e) {}
+</script>
 <script src="src/kb-app.js"></script>
 <script src="src/kb-data.js"></script>
+<script src="src/kb-demo.js"></script>
 <script src="src/kb-supabase.js"></script>
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>

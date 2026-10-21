@@ -9,9 +9,15 @@
 (function (global) {
 'use strict';
 
-var SLEUTEL      = 'kb_v5';
-var DOELEN_KEY   = 'kb_doelen';
-var FK_DB        = 'kb_fotokluis', FK_STORE = 'fotos', FK_KEY = 'alles';
+/* De demo bewaart alles onder eigen sleutels. Zonder dat zou een bezoek
+   aan de demo de groep van een leerkracht overschrijven die in dezelfde
+   browser is ingelogd -- en dat is precies wat je bij een demo nooit wilt
+   laten gebeuren. */
+var DEMO         = !!global.KB_DEMO;
+var SLEUTEL      = DEMO ? 'kb_demo_v5'      : 'kb_v5';
+var DOELEN_KEY   = DEMO ? 'kb_demo_doelen'  : 'kb_doelen';
+var FK_DB        = DEMO ? 'kb_demo_fotokluis' : 'kb_fotokluis';
+var FK_STORE = 'fotos', FK_KEY = 'alles';
 
 var KIND_KLEUREN = ['#3b6ff0','#d94f4f','#2e9e6b','#c8820a','#7c5cbf','#b8436d','#c06428','#1a9aad'];
 
@@ -391,7 +397,7 @@ function opslagKrap(){
 
 /* Welke groep dit apparaat beheert. Een leerkracht ziet alleen die groep;
    het schoolbeheer kan hem omzetten. */
-var BEHEER_KLAS = 'kb_beheer_klas';
+var BEHEER_KLAS = DEMO ? 'kb_demo_beheer_klas' : 'kb_beheer_klas';
 function beheerKlasId(){
   try {
     var id = localStorage.getItem(BEHEER_KLAS);

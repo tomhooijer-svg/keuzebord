@@ -345,3 +345,25 @@ Dit is de enige inhoud die de platformbeheerder wél mag schrijven, en
 dat klopt met `ROLLEN.md`: het is zijn eigen materiaal, geen gegeven van
 een school of een kind.
 
+## 2026-10-21 · De meekijk-omgeving draait zonder server
+
+Een geïnteresseerde opent `demo.html` en speelt meteen: een groep met
+zestien verzonnen kinderen en zes hoeken, zonder account en zonder
+inloggen.
+
+Dat kon zonder iets te bouwen aan de serverkant, omdat het bord van
+zichzelf al local-first is. De demo haalt de serverlaag juist wég: in
+demomodus worden `kb-supabase.js`, `kb-sync.js` en `kb-verbinding.js`
+helemaal niet uitgevoerd. Niet uitgeschakeld maar afwezig — zo kan geen
+enkele regel per ongeluk alsnog iets naar een echte school sturen.
+
+Overwogen en niet gekozen: een demo-school in de database met een
+gedeeld inlogaccount. Dan slingeren er inloggegevens rond, loopt die
+school vol met andermans gerommel, en moet iemand hem opruimen. Nu
+krijgt elke bezoeker zijn eigen speeltuin in zijn eigen browser.
+
+De demo bewaart onder eigen sleutels (`kb_demo_*`). Zonder dat zou een
+bezoek aan de demo de groep overschrijven van een leerkracht die in
+dezelfde browser is ingelogd. Daar staat een proef op die van begin tot
+eind controleert dat haar gegevens niet veranderen.
+
