@@ -31,6 +31,19 @@ function toonBlad(bouw){
   bouw(blad);
   $('overlay').classList.add('open');
 }
+/* De cursor in het eerste veld zetten, maar alleen als er nog niemand
+   zelf ergens op heeft geklikt. Het wachten is voor de animatie van het
+   blad; wie binnen die tijd al begint te typen zou anders zijn eerste
+   tekens in het verkeerde vak zien belanden. Dat is zeldzaam voor een
+   mens en gegarandeerd voor een proef, en het is allebei fout. */
+function zetCursor(veld, blad){
+  setTimeout(function () {
+    var nu = document.activeElement;
+    if (nu && nu !== document.body && blad && blad.contains(nu)) return;
+    veld.focus();
+  }, 60);
+}
+
 function sluitBlad(){ $('overlay').classList.remove('open'); }
 $('overlay').addEventListener('click', function (e) { if (e.target.id === 'overlay') sluitBlad(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluitBlad(); });
@@ -241,7 +254,7 @@ function bewerkHoek(h){
                       bestand:bestand.files && bestand.files[0] });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { naam.focus(); }, 60);
+    zetCursor(naam, blad);
   });
 }
 
@@ -417,7 +430,7 @@ function toonNieuweSchool(){
         }, function (err) { meld('Dat lukte niet: ' + (err && err.message)); });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { naam.focus(); }, 60);
+    zetCursor(naam, blad);
   });
 }
 
@@ -465,7 +478,8 @@ function toonVoorbeeld(){
         }, function (err) { meld('Dat lukte niet: ' + (err && err.message)); });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { naam.focus(); naam.select(); }, 60);
+    zetCursor(naam, blad);
+    setTimeout(function () { if (document.activeElement === naam) naam.select(); }, 70);
   });
 }
 

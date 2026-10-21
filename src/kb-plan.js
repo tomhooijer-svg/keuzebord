@@ -7,6 +7,7 @@
 'use strict';
 
 var el = BH.el, knop = BH.knop, paneel = BH.paneel, meld = BH.meld;
+var zetCursor = BH.zetCursor;
 
 /* Helemaal weg met alle open dialogen — als je naar een ander scherm springt. */
 function bladLeeg(){ while (document.getElementById('overlay').classList.contains('open')) BH.sluitBlad(); }
@@ -597,7 +598,7 @@ function bewerkTaak(t){
         });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { invoer.focus(); }, 60);
+    zetCursor(invoer, blad);
   });
 }
 

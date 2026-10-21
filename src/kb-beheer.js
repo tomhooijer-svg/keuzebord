@@ -52,6 +52,19 @@ function toonBlad(bouw, breed){
   bladStapel.push({ bouw: bouw, breed: breed });
   tekenBlad();
 }
+/* De cursor in het eerste veld zetten, maar alleen als er nog niemand
+   zelf ergens op heeft geklikt. Het wachten is voor de animatie van het
+   blad; wie binnen die tijd al begint te typen zou anders zijn eerste
+   tekens in het verkeerde vak zien belanden. Dat is zeldzaam voor een
+   mens en gegarandeerd voor een proef, en het is allebei fout. */
+function zetCursor(veld, blad){
+  setTimeout(function () {
+    var nu = document.activeElement;
+    if (nu && nu !== document.body && blad && blad.contains(nu)) return;
+    veld.focus();
+  }, 60);
+}
+
 function sluitBlad(){ bladStapel.pop(); tekenBlad(); }
 
 function vraagBevestiging(titel, uitleg, knoptekst, doen){
@@ -871,7 +884,7 @@ function plakLijst(){
     }));
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
     blad.appendChild(rij);
-    setTimeout(function () { vak.focus(); }, 60);
+    zetCursor(vak, blad);
   });
 }
 
@@ -1132,7 +1145,7 @@ function bewerkLeerling(l){
       });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { invoer.focus(); }, 60);
+    zetCursor(invoer, blad);
   });
 }
 
@@ -2263,7 +2276,7 @@ function downloadBackup(){
     }));
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
     blad.appendChild(rij);
-    setTimeout(function () { invoer.focus(); }, 60);
+    zetCursor(invoer, blad);
   });
 }
 
@@ -2297,7 +2310,7 @@ function vraagWachtwoord(){
       }));
       rij.appendChild(knop('Annuleren', 'stil', function () { sluitBlad(); res(''); }));
       blad.appendChild(rij);
-      setTimeout(function () { invoer.focus(); }, 60);
+      zetCursor(invoer, blad);
     });
   });
 }
@@ -2431,6 +2444,7 @@ global.BH = {
   zetAccountknop: zetAccountknop,
   $:$, el:el, leeg:leeg, meld:meld, bewaarOfKlaag:bewaarOfKlaag,
   toonBlad:toonBlad, sluitBlad:sluitBlad, vraagBevestiging:vraagBevestiging, bladTitel:bladTitel,
+  zetCursor:zetCursor,
   paneel:paneel, knop:knop, schakelaar:schakelaar, teller:teller,
   pictoBol:pictoBol, kindKaart:kindKaart, kopregel:kopregel, leegBericht:leegBericht,
   bestandKnop:bestandKnop,

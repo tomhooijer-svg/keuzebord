@@ -677,7 +677,7 @@ function nieuwThemaBlad(t){
         });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { inv.focus(); }, 30);
+    BH.zetCursor(inv, blad);
   });
 }
 

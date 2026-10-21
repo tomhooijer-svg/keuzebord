@@ -85,16 +85,24 @@ function naarRijen(k){
   });
 
   (k.hoekLib || []).forEach(function (h, i) {
-    uit.hoeken.push({ _id:h.id, naam:h.naam, max_kinderen:h.maxKinderen || 4,
-                      kleur:h.kleur || null, icoon:h.icoon || null,
-                      foto_pad:pad(h.fotoId),
-                      timer_minuten:h.timerMinuten || null,
-                      werkplaats:!!h.werkplaats, volgorde:i,
-                      leerlijnen:KB.hoekLeerlijnen(h),
-                      /* Uit welke databankhoek deze kopie komt. Dit is al
-                         een server-id, dus het gaat ongewijzigd mee -- het
-                         heeft geen lokale tegenhanger. */
-                      uit_databank:h.uitDatabank || null });
+    var rij = { _id:h.id, naam:h.naam, max_kinderen:h.maxKinderen || 4,
+                kleur:h.kleur || null, icoon:h.icoon || null,
+                foto_pad:pad(h.fotoId),
+                timer_minuten:h.timerMinuten || null,
+                werkplaats:!!h.werkplaats, volgorde:i,
+                leerlijnen:KB.hoekLeerlijnen(h) };
+    /* Uit welke databankhoek deze kopie komt. Dit is al een server-id,
+       dus het gaat ongewijzigd mee -- het heeft geen lokale tegenhanger.
+
+       Alleen meesturen als er iets in staat, en dat is geen netheid.
+       Een server die dit schema nog niet heeft gedraaid kent de kolom
+       niet en weigert dan de hele rij -- dan slaat het bord niets meer
+       op terwijl de klas ernaar kijkt. Zo blijft een gewone hoek precies
+       zoals hij was, en draagt alleen een kopie uit de databank het
+       nieuwe veld. Die kan toch pas bestaan nadat het schema is
+       bijgewerkt. */
+    if (h.uitDatabank) rij.uit_databank = h.uitDatabank;
+    uit.hoeken.push(rij);
   });
 
   (k.borden || []).forEach(function (b, i) {
