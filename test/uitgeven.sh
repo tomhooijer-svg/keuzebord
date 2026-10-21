@@ -155,7 +155,7 @@ bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
-  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html diagnose.html 404.html" false true
+  "$PLAN_SCHERMEN" "index.html inloggen.html school.html beheer.html handleiding.html diagnose.html 404.html" false true
 
 # ── wat er nooit in mag ──────────────────────────────────────────────
 # De geschiedenis van de werkplaats kan niet openbaar. De uitgaven

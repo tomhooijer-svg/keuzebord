@@ -275,8 +275,13 @@ function tekenMenu(){
   }
   /* De handleiding. Onderin bij de andere links, want je zoekt hem als
      je ergens niet uitkomt -- niet terwijl je aan het werk bent. */
-  var hulp = el('a', 'zij-knop zij-over');
+  /* Een eigen klasse: zij-over betekent "naar de andere app", en dat is
+     dit niet. In een nieuw tabblad, zodat je je scherm niet kwijtraakt
+     omdat je even iets wilde opzoeken. */
+  var hulp = el('a', 'zij-knop zij-hulp');
   hulp.href = 'handleiding.html';
+  hulp.target = '_blank';
+  hulp.rel = 'noopener';
   hulp.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" ' +
     'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
     'aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>' +
