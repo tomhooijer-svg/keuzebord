@@ -468,3 +468,23 @@ De maat van die ring wordt gemeten, niet geraden: de cirkel is op elk
 bord een andere grootte. Met `offsetWidth`, want een lopende
 schaalanimatie telt anders mee in de maat.
 
+## 2026-10-21 · Mijlpaal 6: het blad voor het oudergesprek
+
+De statistieken stonden er al: wat opvalt, hoe vaak elke hoek wordt
+gekozen, wie met wie speelt, en per kind. Wat ontbrak was waar je brief
+om vroeg — het moet bruikbaar zijn in een oudergesprek.
+
+Dat is nu één blad per kind: de samenvatting in één zin, waar het kind
+speelt, **waar het niet kwam**, en met wie. Dat derde punt staat er
+bewust bij, want dat is vaak waar het gesprek over gaat.
+
+Het print vanuit het scherm zelf: bij het printen blijft alleen dat blad
+staan, zonder zijbalk, knoppen of demobalk. Zo hoeft er geen tweede
+pagina te bestaan die dezelfde cijfers nog eens uitrekent, en loopt het
+nooit uit de pas met wat op het scherm staat.
+
+Onderaan staat een regel die zegt wat het níét is: "dit gaat alleen over
+wat dit kind op het bord heeft gekozen — niet over wat het kan of heeft
+geleerd." Een lijstje met hoeken en percentages ziet eruit als een
+beoordeling, en dat is het niet.
+
