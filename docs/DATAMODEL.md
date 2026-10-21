@@ -105,7 +105,7 @@ De foto is optioneel. Een gekleurde cirkel met de beginletter werkt ook,
 en dat is de veiligste stand voor een school die daar nog niets over heeft
 afgesproken.
 
-**Nog te beslissen:** hoe lang het speelgedrag bewaard blijft. Een
-schooljaar is genoeg voor een oudergesprek; daarna zijn totalen per kind
-per hoek voldoende en kunnen de losse momenten weg. Dat scheelt opslag én
-het is wat de AVG bedoelt met niet langer bewaren dan nodig.
+**Besloten:** het speelgedrag blijft één schooljaar bewaard. Dat is
+genoeg voor een oudergesprek in juni; daarna blijven alleen de totalen
+per kind per hoek staan en gaan de losse momenten weg. Dat scheelt opslag
+én het is wat de AVG bedoelt met niet langer bewaren dan nodig.

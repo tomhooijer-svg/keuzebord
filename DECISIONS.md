@@ -79,6 +79,9 @@ terugzetten gewoon in de app kunnen — en zodat elke handeling in het
 auditlog komt. Buiten de app om is er geen auditlog, en dan weet je bij
 een vraag van een school niet wat er gebeurd is.
 
+*Bijgesteld op 2026-10-21: de rol blijft, maar zonder inhoud. Zie
+hieronder.*
+
 ## 2026-10-21 · Speelgedrag blijft één schooljaar bewaard
 
 De losse momenten (welk kind, welke hoek, wanneer) gaan na een schooljaar
@@ -97,3 +100,35 @@ Dit volgt uit de keuze dat het bord zonder wifi doorwerkt: er is altijd
 een moment waarop twee kanten iets anders weten, en dan moet van tevoren
 vastliggen wie er wint. De andere kant op zou betekenen dat het plaatje
 van een kleuter zonder aanleiding verspringt terwijl het kind ernaar kijkt.
+
+## 2026-10-21 · De platformbeheerder ziet geen kinderen
+
+Eerst stond er dat de platformbeheerder alles van alle scholen kan zien.
+Dat is teruggebracht: hij beheert scholen, accounts, wachtwoorden en de
+basisdatabank, en ziet per school alleen getallen (aantal groepen,
+aantal leerlingen, opslag). Leerlingen, borden en statistieken niet.
+
+Reden: de school is verwerkingsverantwoordelijke, de leverancier is
+verwerker. Toegang van de leverancier hoort niet verder te gaan dan de
+dienst nodig heeft, en om een school aan te maken of een wachtwoord
+terug te zetten hoef je geen kind te zien. Een beheerdersknop die alles
+opent is bovendien het eerste waar een schoolbestuur naar vraagt als het
+de Model Verwerkersovereenkomst naast het product legt.
+
+Het is ook eigenbelang: wat je niet kunt zien, kan niet uitlekken en
+hoeft niet verdedigd te worden.
+
+Meekijken blijft mogelijk, maar de schoolbeheerder zet het zelf aan, het
+loopt na vier uur vanzelf af, het is zichtbaar zolang het aanstaat en
+het komt in het auditlog dat de school zelf kan nakijken. In de
+rechtenregels betekent dit dat de rol `platformbeheerder` alleen de
+beheertabellen verruimt; op de inhoudstabellen telt uitsluitend of een
+school de deur heeft opengezet.
+
+Niet gekozen: helemaal geen toegang voor de leverancier. Dan kun je een
+school die belt met een kapot bord niet helpen, en belooft de tijdelijke
+variant precies genoeg.
+
+Namen en e-mailadressen van leerkrachten blijven wel zichtbaar — zonder
+dat kun je geen account aanmaken. Volwassenen met een arbeidsrelatie,
+geen kleuters.
