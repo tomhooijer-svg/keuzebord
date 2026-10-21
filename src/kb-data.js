@@ -1767,6 +1767,57 @@ var SFEREN = [
   { id:'rustig', naam:'Heel rustig', grond:'#f7f7f8', vlekken:[] }
 ];
 
+/* ── thema's ──────────────────────────────────────────────
+   Een thema is géén apart bord en geen plaatjesfeest. Het is een stel
+   kleuren: de achtergrond, de accentkleur, en het palet waarmee de
+   randjes boven de hoeken worden gekleurd. Dat is met opzet zo karig --
+   de vormgeving die we hebben gekozen zet kleur alleen waar hij iets
+   betekent, en een bord vol kerstballen leidt een kleuter af van waar
+   het om gaat.
+
+   Technisch zijn het dan ook alleen waarden; er wordt nergens een kopie
+   van het bord gemaakt. Een thema kiezen zet de achtergrond mee, maar de
+   leerkracht kan die daarna nog los veranderen. */
+var THEMAS = [
+  { id:'standaard', naam:'Standaard', sfeer:'warm', accent:'#3b6ff0',
+    hoeken:['#3b6ff0','#e2607f','#e79a1f','#8b6ad0','#17a9bd',
+            '#37ab74','#e8674f','#c9772f','#6b7fd7','#d4589b'] },
+  { id:'herfst', naam:'Herfst', sfeer:'herfst', accent:'#c9772f',
+    hoeken:['#c9772f','#a8552c','#8a6d2f','#b8823a','#9c6b45',
+            '#7d6a3c','#c05f36','#96703b'] },
+  { id:'sint', naam:'Sinterklaas', sfeer:'warm', accent:'#b8323c',
+    hoeken:['#b8323c','#8e2f3f','#c06a2c','#7a4a3a','#a8443f',
+            '#95552f','#b04a52','#8a3f35'] },
+  { id:'kerst', naam:'Kerst', sfeer:'winter', accent:'#2f7a4f',
+    hoeken:['#2f7a4f','#9c2f38','#3f6b58','#8a6a3c','#45705e',
+            '#7d3a40','#39725a','#6f5a3f'] },
+  { id:'winter', naam:'Winter', sfeer:'winter', accent:'#4a7fa8',
+    hoeken:['#4a7fa8','#5c7f9c','#6a7fa0','#4f8a96','#7089a8',
+            '#58738f','#6f8fa6','#4c6f8c'] },
+  { id:'lente', naam:'Lente', sfeer:'lente', accent:'#4f9a5e',
+    hoeken:['#4f9a5e','#8aa83f','#d08aa8','#5fa88a','#c9a83f',
+            '#7f9c56','#a8c45f','#5f9c9c'] },
+  { id:'pasen', naam:'Pasen', sfeer:'lente', accent:'#7fa85f',
+    hoeken:['#7fa85f','#d9a84f','#c98aa8','#6fa89c','#b89c5f',
+            '#8fb86f','#d4985f','#7f9cb8'] },
+  { id:'zomer', naam:'Zomer', sfeer:'koel', accent:'#1f93a8',
+    hoeken:['#1f93a8','#2f9c7a','#d4a02f','#e07a4f','#3f8fb8',
+            '#5fa85f','#c98a3f','#4f9ca8'] },
+  { id:'carnaval', naam:'Carnaval', sfeer:'warm', accent:'#c0479b',
+    hoeken:['#c0479b','#e0902f','#3f8fc0','#5fa84f','#d4574f',
+            '#8a5fc0','#e0b02f','#2f9c8a'] }
+];
+
+function themaVan(id){
+  return THEMAS.filter(function (t) { return t.id === id; })[0] || THEMAS[0];
+}
+
+/* Het thema van deze groep. Oude groepen hebben er geen; die krijgen
+   'standaard', en daarmee precies de kleuren die ze al hadden. */
+function themaNu(k){
+  return themaVan(uiterlijk(k).thema || 'standaard');
+}
+
 function sfeerVan(id){
   return SFEREN.filter(function (s) { return s.id === id; })[0] || SFEREN[0];
 }
@@ -1778,6 +1829,14 @@ function uiterlijk(k){
   return k.uiterlijk;
 }
 
+/* Welke kleurwaarden het thema aan de pagina meegeeft. Alleen waarden,
+   geen opmaak: de stijl staat in kb-stijl.css en blijft daar. */
+function themaVariabelen(k){
+  var t = themaNu(k);
+  return { '--accent': t.accent,
+           '--accent-zacht': mengMetWit(t.accent, 0.9) };
+}
+
 /* De css-achtergrond die bij de instelling hoort. */
 function achtergrondCss(k){
   var u = uiterlijk(k);
@@ -1787,7 +1846,7 @@ function achtergrondCss(k){
            'url(' + u.foto + ') center / cover no-repeat fixed';
   }
   if (u.soort === 'kleur') return u.kleur || '#f7f7f8';
-  var s = sfeerVan(u.sfeer);
+  var s = sfeerVan(u.sfeer || themaNu(k).sfeer);
   var delen = s.vlekken.map(function (v) {
     return 'radial-gradient(1000px 600px at ' + v[1] + ', ' + v[0] + ' 0%, transparent 60%)';
   });
@@ -2016,12 +2075,15 @@ function donkerder(hex, deel){
   return 'rgb(' + c.map(function (x) { return Math.round(x * (1 - deel)); }).join(',') + ')';
 }
 
-function hoekKleur(hoek, index){
+function hoekKleur(hoek, index, k){
+  /* Heeft de leerkracht zelf een kleur gekozen, dan wint die altijd --
+     ook als het thema wisselt. Haar keuze is geen suggestie. */
   if (hoek && hoek.kleur) return hoek.kleur;
-  return HOEKKLEUREN[(index || 0) % HOEKKLEUREN.length];
+  var palet = themaNu(k).hoeken || HOEKKLEUREN;
+  return palet[(index || 0) % palet.length];
 }
-function hoekTinten(hoek, index){
-  var kleur = hoekKleur(hoek, index);
+function hoekTinten(hoek, index, k){
+  var kleur = hoekKleur(hoek, index, k);
   return {
     kleur: kleur,
     tekst: donkerder(kleur, 0.28),
@@ -2066,6 +2128,8 @@ global.KB = {
   sluitBord: sluitBord, openBord: openBord,
   afkoelRest: afkoelRest,
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
+  THEMAS: THEMAS, themaVan: themaVan, themaNu: themaNu,
+  themaVariabelen: themaVariabelen,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,

@@ -414,3 +414,26 @@ anders. Een kleuter heeft niets verkeerd gedaan.
 Geteld wordt vanaf maandag, uit het logboek dat er toch al is. Na het
 weekend begint iedereen blanco.
 
+## 2026-10-21 · Een thema is een stel kleuren, geen tweede bord
+
+Negen thema's: Standaard, Herfst, Sinterklaas, Kerst, Winter, Lente,
+Pasen, Zomer en Carnaval. Elk thema zet drie dingen: de achtergrond, de
+accentkleur, en het palet waarmee de randjes boven de hoeken worden
+gekleurd. Verder niets.
+
+Geen plaatjes, geen kerstballen, geen pieten. Dat gaat tegen de
+verwachting in bij het woord "thema", en het is een bewuste keuze: de
+vormgeving die je koos zet kleur alleen waar hij iets betekent, en een
+bord vol versiering leidt een kleuter af van de hoek waar hij naar moet
+kijken. Als je er later toch iets decoratiefs bij wilt, is dat een eigen
+gesprek.
+
+Technisch zijn het dan ook alleen waarden: een paar hex-kleuren die als
+css-variabelen op de pagina worden gezet. Er wordt nergens een kopie van
+het bord gemaakt, en de opmaak blijft op één plek staan. De proef
+controleert dat ook echt: na het wisselen van thema staan er evenveel
+hoeken, plekken en kinderen als ervoor.
+
+Heeft de leerkracht bij een hoek zelf een kleur gekozen, dan wint die
+altijd -- ook als het thema wisselt. Haar keuze is geen suggestie.
+

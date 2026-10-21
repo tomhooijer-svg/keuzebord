@@ -183,6 +183,14 @@ function toonBord(){
 function pasUiterlijkToe(k){
   try { document.body.style.background = KB.achtergrondCss(k); }
   catch (e) { /* dan blijft de standaardachtergrond staan */ }
+  /* Het thema zet alleen kleurwaarden; alle opmaak blijft in de
+     stylesheet staan. Zo is er nergens een tweede versie van het bord. */
+  try {
+    var v = KB.themaVariabelen(k);
+    Object.keys(v).forEach(function (naam) {
+      document.documentElement.style.setProperty(naam, v[naam]);
+    });
+  } catch (e) {}
 }
 
 /* Nog geen hoeken? Dan staat er niets om te kiezen. In plaats van een

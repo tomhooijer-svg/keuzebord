@@ -1901,6 +1901,44 @@ panelen.uiterlijk = function (v){
   ververs();
   v.appendChild(voorbeeld);
 
+  /* thema kiezen -- de kleuren van het hele bord in één keer */
+  var themaP = paneel('Thema');
+  themaP.appendChild(el('p', 'hint',
+    'Een thema zet de kleuren van het bord: de achtergrond, de accentkleur ' +
+    'en de randjes boven de hoeken. Geen plaatjes \u2014 die leiden af van ' +
+    'waar een kleuter naar moet kijken. Heb je bij een hoek zelf een kleur ' +
+    'gekozen, dan blijft die staan.'));
+  var themaRooster = el('div', 'sfeerrooster');
+  KB.THEMAS.forEach(function (t) {
+    var aan = (u.thema || 'standaard') === t.id;
+    var knopje = el('button', 'sfeerknop' + (aan ? ' aan' : ''));
+    var vlak = el('div', 'sfeervlak');
+    /* Laat de kleuren zien waar het om gaat: de achtergrond met vier
+       randjes erop, zoals ze op het bord boven de hoeken staan. */
+    var sf = KB.SFEREN.filter(function (x) { return x.id === t.sfeer; })[0] || KB.SFEREN[0];
+    vlak.style.background = sf.grond;
+    var streepjes = el('div');
+    streepjes.style.cssText = 'display:flex;gap:4px;padding:8px;height:100%;align-items:flex-end';
+    t.hoeken.slice(0, 4).forEach(function (c) {
+      var st = el('div');
+      st.style.cssText = 'flex:1;height:22px;border-radius:4px 4px 2px 2px;background:' + c;
+      streepjes.appendChild(st);
+    });
+    vlak.appendChild(streepjes);
+    knopje.appendChild(vlak);
+    knopje.appendChild(el('span', null, t.naam));
+    knopje.addEventListener('click', function () {
+      u.thema = t.id;
+      /* De achtergrond gaat mee, want dat is wat je verwacht als je een
+         thema kiest. Daarna kun je hem hieronder nog los veranderen. */
+      u.soort = 'sfeer'; u.sfeer = t.sfeer;
+      bewaarOfKlaag(); teken();
+    });
+    themaRooster.appendChild(knopje);
+  });
+  themaP.appendChild(themaRooster);
+  v.appendChild(themaP);
+
   /* sfeer kiezen */
   var sfeerP = paneel('Sfeer');
   var rooster = el('div', 'sfeerrooster');
