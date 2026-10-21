@@ -37,11 +37,15 @@ cp "$R/docs/PRODUCT-LEESMIJ.md" "$UIT/README.md" 2>/dev/null || true
 echo "── klaar in $UIT ──"
 echo
 echo "controle: staat er nog iets persoonlijks in?"
-oud=$(grep -rIl "keuzebord""final" "$UIT" 2>/dev/null || true)
+# Dit script staat zelf ook in de kopie, en de patronen hieronder staan
+# erin. Zichzelf meetellen zou elke keer vals alarm geven.
+niet_zichzelf() { grep -v '/product-kopie\.sh$' || true; }
+
+oud=$(grep -rIl "keuzebord""final" "$UIT" 2>/dev/null | niet_zichzelf)
 if [ -n "$oud" ]; then echo "  LET OP, wegwijzer naar het oude bestand in: $oud"
 else echo "  geen spoor van het oude bestand"; fi
 
-wijs=$(grep -rIln "voornamen van kleuters\|pasfoto's met voornamen\|GROEP_1C_LL" "$UIT" 2>/dev/null || true)
+wijs=$(grep -rIln "voornamen van kleuters\|pasfoto's met voornamen\|GROEP_1C""_LL" "$UIT" 2>/dev/null | niet_zichzelf)
 if [ -n "$wijs" ]; then echo "  LET OP, wegwijzer naar de oude gegevens in: $wijs"
 else echo "  geen wegwijzer naar de oude gegevens"; fi
 
