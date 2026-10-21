@@ -186,7 +186,7 @@ function pasUiterlijkToe(k){
   /* Het thema zet alleen kleurwaarden; alle opmaak blijft in de
      stylesheet staan. Zo is er nergens een tweede versie van het bord. */
   try {
-    var v = KB.themaVariabelen(k);
+    var v = KB.bordthemaVariabelen(k);
     Object.keys(v).forEach(function (naam) {
       document.documentElement.style.setProperty(naam, v[naam]);
     });

@@ -1767,7 +1767,13 @@ var SFEREN = [
   { id:'rustig', naam:'Heel rustig', grond:'#f7f7f8', vlekken:[] }
 ];
 
-/* ── thema's ──────────────────────────────────────────────
+/* ── de thema's van het bord: kleuren ─────────────────────
+   Let op het verschil met de thema's hierboven -- die gaan over
+   thematisch werken (de vraag, de doelen, de weken). Deze gaan over hoe
+   het bord eruitziet. Twee keer hetzelfde woord voor twee verschillende
+   dingen; vandaar 'bordthema' in de namen hieronder, want één keer heeft
+   een functie themaVan() hier de andere overschreven.
+
    Een thema is géén apart bord en geen plaatjesfeest. Het is een stel
    kleuren: de achtergrond, de accentkleur, en het palet waarmee de
    randjes boven de hoeken worden gekleurd. Dat is met opzet zo karig --
@@ -1778,7 +1784,7 @@ var SFEREN = [
    Technisch zijn het dan ook alleen waarden; er wordt nergens een kopie
    van het bord gemaakt. Een thema kiezen zet de achtergrond mee, maar de
    leerkracht kan die daarna nog los veranderen. */
-var THEMAS = [
+var BORDTHEMAS = [
   { id:'standaard', naam:'Standaard', sfeer:'warm', accent:'#3b6ff0',
     hoeken:['#3b6ff0','#e2607f','#e79a1f','#8b6ad0','#17a9bd',
             '#37ab74','#e8674f','#c9772f','#6b7fd7','#d4589b'] },
@@ -1808,14 +1814,14 @@ var THEMAS = [
             '#8a5fc0','#e0b02f','#2f9c8a'] }
 ];
 
-function themaVan(id){
-  return THEMAS.filter(function (t) { return t.id === id; })[0] || THEMAS[0];
+function bordthemaVan(id){
+  return BORDTHEMAS.filter(function (t) { return t.id === id; })[0] || BORDTHEMAS[0];
 }
 
 /* Het thema van deze groep. Oude groepen hebben er geen; die krijgen
    'standaard', en daarmee precies de kleuren die ze al hadden. */
-function themaNu(k){
-  return themaVan(uiterlijk(k).thema || 'standaard');
+function bordthemaNu(k){
+  return bordthemaVan(uiterlijk(k).thema || 'standaard');
 }
 
 function sfeerVan(id){
@@ -1831,8 +1837,8 @@ function uiterlijk(k){
 
 /* Welke kleurwaarden het thema aan de pagina meegeeft. Alleen waarden,
    geen opmaak: de stijl staat in kb-stijl.css en blijft daar. */
-function themaVariabelen(k){
-  var t = themaNu(k);
+function bordthemaVariabelen(k){
+  var t = bordthemaNu(k);
   return { '--accent': t.accent,
            '--accent-zacht': mengMetWit(t.accent, 0.9) };
 }
@@ -1846,7 +1852,7 @@ function achtergrondCss(k){
            'url(' + u.foto + ') center / cover no-repeat fixed';
   }
   if (u.soort === 'kleur') return u.kleur || '#f7f7f8';
-  var s = sfeerVan(u.sfeer || themaNu(k).sfeer);
+  var s = sfeerVan(u.sfeer || bordthemaNu(k).sfeer);
   var delen = s.vlekken.map(function (v) {
     return 'radial-gradient(1000px 600px at ' + v[1] + ', ' + v[0] + ' 0%, transparent 60%)';
   });
@@ -2079,7 +2085,7 @@ function hoekKleur(hoek, index, k){
   /* Heeft de leerkracht zelf een kleur gekozen, dan wint die altijd --
      ook als het thema wisselt. Haar keuze is geen suggestie. */
   if (hoek && hoek.kleur) return hoek.kleur;
-  var palet = themaNu(k).hoeken || HOEKKLEUREN;
+  var palet = bordthemaNu(k).hoeken || HOEKKLEUREN;
   return palet[(index || 0) % palet.length];
 }
 function hoekTinten(hoek, index, k){
@@ -2128,8 +2134,8 @@ global.KB = {
   sluitBord: sluitBord, openBord: openBord,
   afkoelRest: afkoelRest,
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
-  THEMAS: THEMAS, themaVan: themaVan, themaNu: themaNu,
-  themaVariabelen: themaVariabelen,
+  BORDTHEMAS: BORDTHEMAS, bordthemaVan: bordthemaVan, bordthemaNu: bordthemaNu,
+  bordthemaVariabelen: bordthemaVariabelen,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,

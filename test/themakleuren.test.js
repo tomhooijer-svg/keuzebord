@@ -74,7 +74,7 @@ async function bordBeeld(p) {
       metEigen.randen[1] === kerst.randen[1], metEigen.randen[1]);
 
   // ── alle thema's leveren echte kleuren ──
-  const alle = await p.evaluate(() => KB.THEMAS.map(t => ({
+  const alle = await p.evaluate(() => KB.BORDTHEMAS.map(t => ({
     id: t.id, naam: t.naam, accent: t.accent, aantal: (t.hoeken || []).length,
     geldig: /^#[0-9a-f]{6}$/i.test(t.accent) && (t.hoeken || []).every(c => /^#[0-9a-f]{6}$/i.test(c))
   })));

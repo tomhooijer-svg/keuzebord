@@ -1909,7 +1909,7 @@ panelen.uiterlijk = function (v){
     'waar een kleuter naar moet kijken. Heb je bij een hoek zelf een kleur ' +
     'gekozen, dan blijft die staan.'));
   var themaRooster = el('div', 'sfeerrooster');
-  KB.THEMAS.forEach(function (t) {
+  KB.BORDTHEMAS.forEach(function (t) {
     var aan = (u.thema || 'standaard') === t.id;
     var knopje = el('button', 'sfeerknop' + (aan ? ' aan' : ''));
     var vlak = el('div', 'sfeervlak');
