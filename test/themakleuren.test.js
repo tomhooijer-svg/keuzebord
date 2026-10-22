@@ -36,8 +36,13 @@ async function bordBeeld(p) {
   await p.click('#start');
   await p.waitForSelector('.hoek', { timeout: 9000 });
   const standaard = await bordBeeld(p);
-  zeg('standaard staat het bord op de gewone kleuren',
-      standaard.accent === '#3b6ff0', standaard.accent);
+  /* Het standaardthema heet Pixelplein en staat op de inkt van het merk.
+     Hier stond eerst het blauw van voor de huisstijl (#3b6ff0); dat is
+     geen fout die is geslopen maar een afspraak die is veranderd, dus
+     verandert de proef mee. Wat hij bewaakt blijft hetzelfde: dat er
+     standaard één accentkleur is en dat een thema die omzet. */
+  zeg('standaard staat het bord op de kleuren van het merk',
+      standaard.accent === '#0e2a56', standaard.accent);
   zeg('en de hoeken hebben elk hun eigen randje',
       new Set(standaard.randen).size === standaard.randen.length,
       standaard.randen.length + ' hoeken, ' + new Set(standaard.randen).size + ' kleuren');

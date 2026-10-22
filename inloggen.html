@@ -34,10 +34,13 @@ body.inlog{
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
+/* Hier stond een verloop van vier kleuren. Dat hoorde bij de vorige
+   stijl; de huisstijl zegt: één accentkleur per scherm, en dat is hier
+   de knop. Een naam in vier kleuren is dan een tweede accent dat niets
+   betekent. Inkt dus, in de kopletter. */
 .merk{
   font-size: 1.9rem; font-weight: 650; letter-spacing: -.032em; margin: 0 0 4px;
-  background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-family: var(--letter-kop); color: var(--inkt);
 }
 .onder{ font-size: .95rem; color: var(--inkt-3); margin: 0 0 26px; }
 .veld{ margin-bottom: 14px; }
