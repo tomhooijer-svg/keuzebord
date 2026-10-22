@@ -523,6 +523,7 @@ function tekenSchool(v){
   v.appendChild(uitleg);
 
   if (metServer()) v.appendChild(ondersteuningPaneel());
+  if (metServer()) v.appendChild(uitdraaiPaneel());
   if (metServer()) v.appendChild(logboekPaneel());
 
   var opnieuw = el('div', 'paneel');
@@ -678,6 +679,46 @@ function toonDeurBlad(){
       if (!blad.contains(document.activeElement)) reden.focus();
     }, 60);
   });
+}
+
+/* ── alles meekrijgen ────────────────────────────────────────────────
+   Van de school, dus de school haalt hem zelf op. De leverancier kan er
+   niet bij en hoeft er ook niet bij: het is niet zijn bestand. */
+function uitdraaiPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Alles uitdraaien'));
+  if (!KBV.wie() || KBV.wie().profiel.rol !== 'schoolbeheerder') {
+    p.appendChild(el('p', 'hint', 'Alleen de schoolbeheerder kan dit.'));
+    return p;
+  }
+  p.appendChild(el('p', 'hint',
+    'Eén bestand met alles van deze school: de groepen, de kinderen, de hoeken, ' +
+    'de borden, wat er op het bord is gebeurd en het logboek. Handig als je ' +
+    'ergens anders naartoe gaat, of als iemand vraagt wat jullie bewaren.'));
+  p.appendChild(el('p', 'hint',
+    'Er staan voornamen van kinderen in. Bewaar het bestand zoals je een ' +
+    'klassenlijst bewaart.'));
+  var rij = el('div', 'knoprij-onder');
+  rij.appendChild(knop('Uitdraaien', 'stil', function () {
+    meld('Bezig met uitdraaien\u2026');
+    SB.roep('school_export', {}).then(function (pak) {
+      var tekst = JSON.stringify(pak, null, 1);
+      var naam = 'keuzebord-' +
+        ((pak && pak.school && pak.school.naam) || 'school')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') +
+        '-' + new Date().toISOString().slice(0, 10) + '.json';
+      var blob = new Blob([tekst], { type:'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = naam;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      meld('Klaar \u00b7 ' + Math.round(tekst.length / 1024) + ' kB');
+      haalDeur().then(teken, function () {});
+    }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+  }));
+  p.appendChild(rij);
+  return p;
 }
 
 function logboekPaneel(){

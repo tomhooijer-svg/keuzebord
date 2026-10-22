@@ -89,18 +89,21 @@ var cijfers  = [];
 var deuren   = [];
 var logboek  = [];
 var databank = [];
+var scholenRij = [];     // de scholen zelf, voor de modules
 
 function haalAlles(){
   return Promise.all([
     SB.roep('schoolcijfers', {}),
+    SB.lees('scholen', { kies:'id,naam,modules' }),
     SB.roep('databankcijfers', {}),
     SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:50 }),
     SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 })
   ]).then(function (uit) {
     cijfers  = uit[0] || [];
-    databank = uit[1] || [];
-    deuren   = uit[2] || [];
-    logboek  = uit[3] || [];
+    scholenRij = uit[1] || [];
+    databank = uit[2] || [];
+    deuren   = uit[3] || [];
+    logboek  = uit[4] || [];
   });
 }
 
@@ -382,11 +385,32 @@ function tekenScholen(v){
     /* Meekijken kan alleen zolang de school de deur openzet. Staat hij
        dicht, dan staat er geen grijze knop die niets doet -- dan staat
        er niets, want er valt niets te kiezen. */
-    if (deur) {
-      var mk = el('div', 'knoprij');
-      mk.appendChild(knop('Meekijken', 'stil', function () { kiesGroep(c, deur); }));
-      kaart.appendChild(mk);
-    }
+    /* Welke onderdelen deze school heeft. Nu alleen het planbord; het
+       keuzebord zit er altijd in, dat is wat ze kopen. */
+    var rij0 = scholenRij.filter(function (s) { return s.id === c.school_id; })[0];
+    var mods = (rij0 && rij0.modules) || {};
+    var modrij = el('div', 'knoprij');
+    var aan = mods.planbord === true;
+    var mk2 = el('button', 'chip' + (aan ? ' aan' : ''), 'Planbord');
+    mk2.title = aan ? 'Deze school heeft het planbord' : 'Deze school heeft alleen het keuzebord';
+    mk2.addEventListener('click', function () {
+      var nieuw = Object.assign({}, mods, { planbord: !aan });
+      SB.wijzig('scholen', { modules: nieuw }, { id:'eq.' + c.school_id })
+        .then(function () {
+          return SB.roep('noteer', { wat: (!aan ? 'planbord aangezet' : 'planbord uitgezet'),
+                                     school: c.school_id, waarover: c.naam }).catch(function () {});
+        })
+        .then(function () { return haalAlles(); })
+        .then(function () { teken(); meld(!aan ? 'Planbord aan' : 'Planbord uit'); },
+              function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    });
+    modrij.appendChild(mk2);
+    kaart.appendChild(modrij);
+
+    var acties = el('div', 'knoprij');
+    if (deur) acties.appendChild(knop('Meekijken', 'stil', function () { kiesGroep(c, deur); }));
+    acties.appendChild(knop('Opheffen', 'stil', function () { verwijderSchool(c); }));
+    kaart.appendChild(acties);
     rooster.appendChild(kaart);
   });
   v.appendChild(rooster);
@@ -648,6 +672,56 @@ function toonCode(email, code){
     var rij = el('div', 'knoprij-onder');
     rij.appendChild(knop('Klaar', 'primair', sluitBlad));
     blad.appendChild(rij);
+  });
+}
+
+/* ── een school opheffen ─────────────────────────────────────────────
+   Niet terug te draaien, dus de naam moet worden overgetypt. Een
+   bevestigingsknop is te makkelijk aan te klikken, en dit is precies de
+   handeling waarvan je niet wilt dat iemand hem per ongeluk doet.
+
+   Het logboek blijft staan: dat hangt met 'set null' aan de school. Het
+   opheffen van een school hoort niet ook het bewijs te wissen van wat er
+   bij die school is gebeurd. */
+function verwijderSchool(c){
+  var getypt = '';
+  toonBlad(function (blad) {
+    var t = el('div', null, c.naam + ' opheffen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Alles van deze school gaat weg: ' + c.groepen +
+      (c.groepen === 1 ? ' groep, ' : ' groepen, ') + c.leerlingen +
+      (c.leerlingen === 1 ? ' kind, ' : ' kinderen, ') + c.leerkrachten +
+      (c.leerkrachten === 1 ? ' account' : ' accounts') +
+      ', en alles wat er op hun borden is gebeurd. Dit kan niet terug.'));
+    blad.appendChild(el('p', 'hint',
+      'Vraag ze eerst om bij "De school" op Uitdraaien te drukken \u2014 ' +
+      'daarna kunnen ze er zelf niet meer bij.'));
+
+    var r = el('div', 'veldrij');
+    r.appendChild(el('label', 'veldlabel', 'Typ de naam van de school over'));
+    var invoer = el('input', 'invoer');
+    invoer.type = 'text'; invoer.id = 'schoolnaamcontrole';
+    invoer.placeholder = c.naam;
+    invoer.addEventListener('input', function () { getypt = invoer.value; });
+    r.appendChild(invoer);
+    blad.appendChild(r);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Opheffen', 'gevaar', function () {
+      SB.roep('school_verwijderen', { school: c.school_id, naam_ter_controle: getypt })
+        .then(function (uit) {
+          sluitBlad();
+          return haalAlles().then(function () {
+            teken();
+            meld((uit && uit.naam ? uit.naam : 'De school') + ' is opgeheven');
+          });
+        }, function (e) { meld((e && e.message) || 'Dat lukte niet'); });
+    }));
+    blad.appendChild(rij);
+    zetCursor(invoer, blad);
   });
 }
 

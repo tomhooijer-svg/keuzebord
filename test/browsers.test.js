@@ -15,6 +15,11 @@ const APP = process.env.APP || 'http://localhost:8899';
   const p = await b.newPage({ viewport:{width:1280,height:900} });
   const fouten = [];
   p.on('pageerror', e => fouten.push(e.message));
+  /* Via de demo, want zonder account stuurt het bord je sinds kort naar
+     het inlogscherm. Voor deze proef maakt dat niets uit: het gaat om
+     wat de browser kan, niet om wiens bord het is. */
+  await p.goto(APP + '/demo.html');
+  await p.evaluate(() => { try { localStorage.setItem('kb_demo', 'aan'); } catch (e) {} });
   await p.goto(APP + '/bord.html');
   await p.waitForTimeout(1200);
 

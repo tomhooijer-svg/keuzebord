@@ -547,3 +547,59 @@ Een logboek dat iedereen kan volschrijven is net zo waardeloos als een
 logboek dat iedereen kan wissen — dat tweede hadden we al dichtgezet,
 dit was de andere kant.
 
+## 2026-10-22 · Mijlpaal 8: weggaan hoort bij het product
+
+Een school die stopt moet twee dingen kunnen, en allebei horen ze in de
+software en niet in een mailtje aan de leverancier.
+
+**Uitdraaien doet de school zelf.** Bij "De school" staat Alles
+uitdraaien: één bestand met de groepen, de kinderen, de hoeken, de
+borden, wat er op het bord is gebeurd en het logboek. De leverancier kan
+er niet bij en hoeft er ook niet bij — het is niet zijn bestand. Een
+leerkracht kan het ook niet; dit is iets van de schoolbeheerder.
+
+**Opheffen doet de platformbeheerder.** Dat is het opheffen van een
+school, en dat is beheerwerk waarvoor je de inhoud niet hoeft te zien.
+De naam moet worden overgetypt: een bevestigingsknop is te makkelijk aan
+te klikken, en dit is precies de handeling waarvan je niet wilt dat
+iemand hem per ongeluk doet. Het scherm raadt aan de school eerst te
+laten uitdraaien.
+
+**Het logboek blijft staan.** `handelingen` hangt met `on delete set
+null` aan de school, dus de regels blijven bestaan zonder school erbij.
+Het opheffen van een school hoort niet ook het bewijs te wissen van wat
+er bij die school is gebeurd — dat is precies het verkeerde moment om
+dat kwijt te raken. In de regel staat erbij hoeveel groepen, kinderen en
+accounts er weggingen.
+
+## 2026-10-22 · Geen account meer, geen bord
+
+Er was een modus waarin je zonder in te loggen kon werken. Dan stond
+alles in één browser op één apparaat, en was het weg zodra je op een
+andere computer ging zitten. Dat is een restant uit de tijd dat er nog
+geen database was, en het is precies wat "het draait lokaal" betekende.
+
+Wie niet is ingelogd komt nu op het inlogscherm. De demo is de
+uitzondering: die heeft met opzet geen server en geen account.
+
+Let op het verschil met offline, want dat blijft precies zoals het was:
+wie ís ingelogd en geen netwerk heeft, werkt gewoon door. De sessie
+staat in die browser, het bord draait verder, en het gaat later alsnog
+naar de server. Alleen wie nooit heeft ingelogd komt er niet in.
+
+## 2026-10-22 · Modules per school: twee sloten
+
+`scholen.modules` bepaalt welke onderdelen een school heeft. Leeg
+betekent alleen het keuzebord, en dat is wat een school koopt.
+
+Het planbord zit nu achter twee sloten die allebei open moeten. Het
+buitenste zit in de uitgave: het keuzebord als product levert die
+schermen helemaal niet mee. Het binnenste zit bij de school. Zo kan er
+later een duurder pakket van gemaakt worden zonder dat er een tweede
+versie van de code hoeft te bestaan.
+
+Een schoolbeheerder kan die modules niet zelf aanzetten — dat is wat ze
+koopt. Dat kon een rechtenregel niet afdwingen (die ziet alleen de
+nieuwe waarde), dus er zit een trekker op, net als bij profielen.rol.
+Haar eigen schoolnaam aanpassen kan wel.
+
