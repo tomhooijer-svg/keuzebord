@@ -24,7 +24,7 @@ UIT=${1:-/tmp/keuzebord-uitgaven}
 # letter in één bestand, dan verandert de stempel; verandert er niets,
 # dan blijft hij staan en hoeft er ook niets opnieuw geladen te worden.
 DATUM=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | tr -cd 'A-Za-z0-9')
-VINGER=$(cat "$R"/src/*.js "$R"/src/*.css "$R"/*.html 2>/dev/null | sha1sum | cut -c1-8)
+VINGER=$(cat "$R"/src/*.js "$R"/src/*.css "$R"/stijl/css/*.css "$R"/*.html 2>/dev/null | sha1sum | cut -c1-8)
 V="$DATUM-$VINGER"
 
 # Waar de twee uitgaven publiek staan. Eén plek; het uitgeefscript schrijft
@@ -56,6 +56,12 @@ bouw(){
   done
   for f in $KERN $schermen; do cp "$R/src/$f" "$D/src/"; done
   cp "$R/src/kb-stijl.css" "$D/src/"
+  # De huisstijl: de letters, de kleurwaarden en de logo's. Die staan los
+  # van src/ omdat ze niet van de app zijn maar van het merk -- dezelfde
+  # map gaat ook naar de website. Zonder deze map valt elke pagina terug
+  # op de systeemletters en de reservekleuren in kb-stijl.css: het werkt
+  # dan nog, maar het is het product niet meer.
+  cp -r "$R/stijl" "$D/"
   cp -r "$R/data/." "$D/data/"
   # De hele supabase-map gaat mee: zonder inrichten.sql en de leesmij
   # daar kun je geen verse database opzetten, en dat is precies wat
@@ -131,7 +137,7 @@ EOF
   if [ -n "$V" ]; then
     for f in "$D"/*.html; do
       [ -e "$f" ] || continue
-      sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
+      sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g; s|\(href=\"stijl/css/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
     done
   fi
 
@@ -141,6 +147,13 @@ EOF
     [ -e "$f" ] || continue
     for s in $(sed -n 's|.*src="src/\([a-z-]*\.js\).*|\1|p' "$f"); do
       [ -f "$D/src/$s" ] || { echo "  ONTBREEKT in $app: $s (gevraagd door $(basename "$f"))"; mis=1; }
+    done
+    # Hetzelfde voor de stijlbladen. Dit is hoe je erachter komt dat de
+    # huisstijl niet is meegekomen vóórdat de uitgave live staat -- een
+    # ontbrekend stijlblad geeft geen foutmelding in het scherm, alleen
+    # een app die er ineens anders uitziet.
+    for s in $(sed -n 's|.*href="\(src/[a-z-]*\.css\|stijl/css/[a-z-]*\.css\).*|\1|p' "$f"); do
+      [ -f "$D/$s" ] || { echo "  ONTBREEKT in $app: $s (gevraagd door $(basename "$f"))"; mis=1; }
     done
   done
   [ $mis -eq 0 ] || exit 1

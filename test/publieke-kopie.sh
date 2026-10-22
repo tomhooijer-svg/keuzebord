@@ -16,6 +16,7 @@ for f in index.html bord.html beheer.html school.html platform.html demo.html ha
   [ -e "$f" ] && cp "$f" "$UIT/"
 done
 cp -r src  "$UIT/"
+cp -r stijl "$UIT/"
 cp -r data "$UIT/"
 cp -r supabase "$UIT/"
 cp -r test "$UIT/"
@@ -38,7 +39,7 @@ V=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | 
 if [ -n "$V" ]; then
   for f in "$UIT"/*.html; do
     [ -e "$f" ] || continue
-    sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
+    sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g; s|\(href=\"stijl/css/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
   done
   echo "versie in de adressen gestempeld: $V"
 fi

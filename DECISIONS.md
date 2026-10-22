@@ -603,3 +603,50 @@ koopt. Dat kon een rechtenregel niet afdwingen (die ziet alleen de
 nieuwe waarde), dus er zit een trekker op, net als bij profielen.rol.
 Haar eigen schoolnaam aanpassen kan wel.
 
+
+## 2026-10-22 · De stijl van Pixelplein, met drie knoppen voor de school
+
+De app staat nu in de huisstijl van Pixelplein. Het stijlpakket zit als
+`stijl/` in de repo: de letters (Figtree voor alles wat je leest en
+aantikt, Fraunces voor de koppen), de kleurwaarden als `--pp-*`, en de
+logo's. Zelf gehost, dus geen Google Fonts en geen adres van een kind
+dat naar een andere server gaat. De licenties (SIL OFL) staan erbij;
+commercieel gebruik mag.
+
+`src/kb-stijl.css` is niet overgeschreven maar aangesloten: de eigen
+variabelen van de app (`--inkt`, `--vlak`, `--accent`, `--knop`) nemen
+hun waarde nu uit de `--pp-*` ernaast, met de oude waarde als terugval.
+Komt de stijlmap ooit niet mee, dan valt de app terug op systeemletters
+en de reservekleuren — het werkt dan nog, het is alleen het product
+niet meer. Daar zit een controle op in `test/uitgeven.sh`: een uitgave
+die naar een stijlblad verwijst dat niet is meegekomen, komt er niet
+doorheen. Dat is nodig omdat een ontbrekend stijlblad geen foutmelding
+geeft, alleen een app die er ineens anders uitziet.
+
+**Drie kleuren, niet alles.** `scholen.huisstijl` houdt per school drie
+waarden vast: inkt (tekst en menu), grond (de ondergrond) en knop
+(waar je op drukt). Al het andere wordt daaruit gerekend — de gedimde
+tekst is de inkt met wit erdoor, de ingedrukte knop is de knop met
+zwart erdoor. Met een volledige kleurenkiezer kan een school eindigen
+met lichtgrijze tekst op wit, en dan is het onze fout dat het product
+niet leesbaar is. Met deze drie kan dat niet.
+
+Botergeel zit er met opzet niet bij. Dat betekent op het bord "gekozen"
+of "aan de beurt" — een afspraak met de kinderen, geen smaakkwestie.
+
+**Wie eraan mag draaien.** De schoolbeheerder, en alleen zij. Let op
+het verschil met `modules`: die koopt een school, en daar zit een
+trekker op die haar tegenhoudt. Haar kleuren zijn gewoon van haar, dus
+die trekker laat `huisstijl` met rust.
+
+**Twee keer zetten.** De kleuren gaan meteen bij het openen op de
+pagina, uit wat deze browser nog wist, en nog eens zodra de school van
+de server binnen is. Zonder die eerste zie je bij elke paginaopening
+eerst Pixelplein en dan pas de school. Bij uitloggen wordt het geheugen
+gewist: wie daarna op hetzelfde apparaat inlogt hoort niet eerst de
+kleuren van de vorige school te zien.
+
+**Het merk staat er zacht in.** Het p'tje naast de groepsnaam in de
+zijbalk en in de bordbalk, het woordmerk onderin het menu en op de
+demo. Op het bord zelf — waar kleuters naar kijken — staat alleen het
+p'tje. De app heet nog steeds Keuzebord; Pixelplein is wie hem maakt.
