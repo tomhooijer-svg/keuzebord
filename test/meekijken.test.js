@@ -70,8 +70,20 @@ async function inloggen(p, email){
   const baas = (await roep('/auth/v1/token?grant_type=password', { method:'POST',
     lijf:{ email:'beheerder@mijnschool.nl', password:'proefproef' } })).lijf.access_token;
   const groepen = (await roep('/rest/v1/groepen?select=id,naam&order=volgorde', { token:baas })).lijf;
-  await roep('/rest/v1/leerlingen', { method:'POST', token:baas,
-    lijf:[{ groep_id: groepen[0].id, naam:'Fien' }] });
+  const school = (await roep('/rest/v1/scholen?select=id', { token:baas })).lijf[0].id;
+  const kids = (await roep('/rest/v1/leerlingen', { method:'POST', token:baas,
+    lijf:[{ groep_id: groepen[0].id, naam:'Fien' }] })).lijf;
+  /* Een echt bord: zonder hoeken valt er bij het meekijken niets te zien,
+     en dan toetst de proef alleen het lege geval. */
+  const hoeken = (await roep('/rest/v1/hoeken', { method:'POST', token:baas,
+    lijf:[{ school_id: school, groep_id: groepen[0].id, naam:'Bouwhoek', max_kinderen:4 },
+          { school_id: school, groep_id: groepen[0].id, naam:'Huishoek', max_kinderen:3 }] })).lijf;
+  const borden = (await roep('/rest/v1/borden?select=id,groep_id', { token:baas })).lijf;
+  const bord = borden.filter(x => x.groep_id === groepen[0].id)[0];
+  await roep('/rest/v1/bord_hoeken', { method:'POST', token:baas,
+    lijf: hoeken.map((h, i) => ({ bord_id: bord.id, hoek_id: h.id, volgorde: i })) });
+  await roep('/rest/v1/plaatsingen', { method:'POST', token:baas,
+    lijf:[{ bord_id: bord.id, hoek_id: hoeken[0].id, leerling_id: kids[0].id }] });
 
   const dichtVoor = (await roep('/rest/v1/leerlingen', { token:tom })).lijf;
   zeg('voordat de deur opengaat ziet de leverancier niets',
@@ -136,6 +148,49 @@ async function inloggen(p, email){
   zeg('en dat klopt ook echt', nogSteeds === '1',
       nogSteeds + ' regel, status ' + onherschrijfbaar.status);
 
+  // ── en zo ziet dat eruit bij de leverancier ──
+  const tp = await apparaat(b);
+  tp.on('pageerror', e => uitFouten.push(e.message));
+  await inloggen(tp, 'tom@platform.nl');
+  await tp.waitForURL(/platform\.html/, { timeout: 9000 });
+  await tp.waitForSelector('.schoolkaart', { timeout: 9000 });
+  zeg('bij een school met een open deur staat een knop Meekijken',
+      await tp.isVisible('button:has-text("Meekijken")'), 'knop staat er');
+
+  await tp.click('button:has-text("Meekijken")');
+  await tp.waitForSelector('.blad .logrij', { timeout: 6000 });
+  const groepenInBlad = await tp.$$eval('.blad .logwat', ns => ns.map(n => n.textContent));
+  zeg('hij kan kiezen uit de groepen van die school',
+      groepenInBlad.indexOf('Groep 1A') >= 0, groepenInBlad.slice(0, 3).join(', '));
+
+  await tp.click('.blad button:has-text("Openen")');
+  await tp.waitForSelector('#meekijkbalk', { timeout: 9000 });
+  const balk = (await tp.textContent('#meekijkbalk')).replace(/\s+/g, ' ');
+  zeg('er staat een balk die zegt waar hij meekijkt',
+      /Je kijkt mee.*Groep 1A van Mijn school/.test(balk), balk.slice(0, 50));
+  const balkWeg = await tp.evaluate(() => {
+    const el = document.getElementById('meekijkbalk');
+    /* Een klik ernaast mag hem niet wegkrijgen; alleen Stoppen. */
+    el.click();
+    return !document.getElementById('meekijkbalk');
+  });
+  zeg('en die balk is niet weg te klikken', balkWeg === false, 'blijft staan');
+
+  await tp.waitForSelector('text=Wie staat waar', { timeout: 9000 });
+  const bordTekst = (await tp.textContent('.inhoud')).replace(/\s+/g, ' ');
+  zeg('hij ziet wie er in welke hoek staat',
+      /Bouwhoek\s*Fien/.test(bordTekst), (bordTekst.match(/Bouwhoek[^0-9]{0,20}/) || ['—'])[0]);
+  zeg('en dat hij alleen kijkt, niet bedient',
+      /Bedienen zit hier nog niet in/.test(bordTekst), 'staat erbij');
+
+  const gekeken = psql("select count(*) from public.handelingen where wat = 'meegekeken'");
+  zeg('dat hij heeft gekeken staat in het logboek van de school',
+      gekeken === '1', gekeken + ' regel');
+
+  await tp.click('#meekijkbalk button:has-text("Stoppen")');
+  await tp.waitForSelector('#meekijkbalk', { state: 'detached', timeout: 9000 });
+  zeg('met Stoppen gaat de balk weg', true, 'weg');
+
   // ── weer dicht ──
   await p.click('button:has-text("Nu dichtdoen")');
   /* Wachten tot de melding wég is, niet tot de knop er is: "Deur
@@ -153,6 +208,11 @@ async function inloggen(p, email){
                         .then(() => true, () => false);
   zeg('en ook het dichtdoen staat in het logboek', gelogd,
       gelogd ? 'regel staat er' : 'niet verschenen binnen 9 seconden');
+
+  await tp.reload();
+  await tp.waitForSelector('.schoolkaart', { timeout: 9000 });
+  zeg('met de deur dicht is er ook geen knop Meekijken meer',
+      !(await tp.isVisible('button:has-text("Meekijken")')), 'knop weg');
 
   zeg('geen enkele fout in de pagina', uitFouten.length === 0,
       uitFouten.slice(0, 2).join(' | ') || 'geen');

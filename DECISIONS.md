@@ -508,3 +508,42 @@ is wat de school later terugleest in het logboek.
 Een leerkracht krijgt de knop niet te zien, alleen de uitleg waarom hij
 er niet is.
 
+## 2026-10-22 · Mijlpaal 7b: meekijken is kijken, nog niet bedienen
+
+Staat de deur van een school open, dan verschijnt bij die school in het
+platformbeheer een knop **Meekijken**. Je kiest een groep en ziet wie er
+in welke hoek staat. Verder niets.
+
+Bovenaan staat een balk over de volle breedte: "Je kijkt mee bij Groep
+1A van Mijn school". Die is niet weg te klikken — alleen de knop Stoppen
+haalt hem weg, en een ander menu-item aanklikken stopt het meekijken
+ook. Dat is de belangrijkste regel van het hele scherm: zonder die balk
+denk je op een avond dat je in je eigen bord zit.
+
+De balk is bruin en niet blauw. Dat is geen smaak: elk ander scherm in
+deze app is blauw, en dit is het enige moment waarop je in andermans
+gegevens kijkt.
+
+**Bedienen zit er bewust nog niet in,** en dat staat ook op het scherm
+zelf. Dat vraagt eerst een antwoord op de botsing die hierboven al is
+vastgelegd: jij verplaatst op afstand een kind terwijl het bord in de
+klas offline hetzelfde kind al heeft verplaatst. Daar wint het digibord
+— daar staat het kind echt — maar "de beheerder krijgt te zien dat zijn
+handeling is ingehaald" is nog niet gebouwd. Tot die tijd kijk je en
+bel je.
+
+Het openen van een groep komt in het logboek van de school, ook als je
+alleen kijkt. Dat is wat een school van je mag verwachten als ze vragen
+wie er in hun gegevens heeft gekeken.
+
+## 2026-10-22 · Het logboek kan niet meer worden volgeschreven
+
+`noteer()` had geen enkele controle: iedereen die kon inloggen kon een
+willekeurige regel in het logboek van een willekeurige school zetten.
+Nu mag je alleen schrijven over je eigen school, of over elke school als
+je platformbeheerder bent.
+
+Een logboek dat iedereen kan volschrijven is net zo waardeloos als een
+logboek dat iedereen kan wissen — dat tweede hadden we al dichtgezet,
+dit was de andere kant.
+

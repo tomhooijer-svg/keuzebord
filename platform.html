@@ -48,6 +48,24 @@ body{ background: var(--vlak-2); }
 .codetekst{ font-size:2rem; font-weight:650; letter-spacing:.22em;
             font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             color:var(--accent); }
+
+/* De meekijkbalk. Bovenaan, over de volle breedte, en niet weg te
+   klikken -- alleen de knop Stoppen haalt hem weg. De pagina schuift er
+   netjes onder vandaan in plaats van eronder te verdwijnen. */
+#meekijkbalk{ position:fixed; top:0; left:0; right:0; height:46px; z-index:9999;
+              display:flex; align-items:center; justify-content:center; gap:12px;
+              padding:0 16px; background:#8a4b12; color:#fff;
+              font:500 .86rem/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+              box-shadow:0 1px 0 rgba(20,28,44,.2); }
+#meekijkbalk b{ font-weight:650; letter-spacing:-.01em; }
+#meekijkbalk span{ opacity:.82; }
+#meekijkbalk button{ font:inherit; font-weight:600; color:#fff; cursor:pointer;
+                     background:rgba(255,255,255,.18); border:0; border-radius:999px;
+                     padding:6px 13px; white-space:nowrap; }
+#meekijkbalk button:hover{ background:rgba(255,255,255,.3); }
+body.metbalk{ padding-top:46px; box-sizing:border-box; }
+body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
+@media (max-width:640px){ #meekijkbalk span{ display:none; } }
 </style>
 </head>
 <body>

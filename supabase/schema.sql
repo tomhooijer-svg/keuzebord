@@ -1234,6 +1234,19 @@ create or replace function public.noteer(wat text, school uuid,
                                          gegevens jsonb default '{}'::jsonb)
 returns void language plpgsql security definer set search_path = public as $$
 begin
+  if auth.uid() is null then
+    raise exception 'Je moet ingelogd zijn.';
+  end if;
+  /* Alleen schrijven over een school waar je iets te zoeken hebt. Zonder
+     deze regel kan iedereen die kan inloggen willekeurige regels in het
+     logboek van een willekeurige school zetten -- en een logboek dat
+     iedereen kan volschrijven is net zo waardeloos als een logboek dat
+     iedereen kan wissen. */
+  if school is not null
+     and not (school = public.mijn_school()
+              or public.ben_platformbeheerder()) then
+    raise exception 'Dat is niet jouw school.';
+  end if;
   insert into public.handelingen (wie, school_id, wat, waarover, gegevens)
   values (auth.uid(), school, wat, waarover, gegevens);
 end $$;
