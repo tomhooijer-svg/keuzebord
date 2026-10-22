@@ -488,3 +488,23 @@ wat dit kind op het bord heeft gekozen — niet over wat het kan of heeft
 geleerd." Een lijstje met hoeken en percentages ziet eruit als een
 beoordeling, en dat is het niet.
 
+## 2026-10-22 · Mijlpaal 7a: de school zet de deur zelf open
+
+In het schoolbeheer, onder "De school", staat nu "Hulp van de
+leverancier". De schoolbeheerder vult in waar het over gaat, kiest een
+uur, vier uur of een werkdag, en zet de deur open. Zolang hij openstaat
+staat dat er met zoveel woorden, met het tijdstip waarop hij dichtgaat
+en de reden erbij. Hij kan hem ook meteen weer dichtdoen.
+
+Daaronder staat het logboek van de school zelf: wie er wanneer bij hun
+gegevens is geweest, met de regel erbij dat niemand die regels kan
+wijzigen of wissen -- ook de leverancier niet. De proef controleert dat
+niet alleen de tekst klopt maar ook de werkelijkheid: een poging om een
+logregel te herschrijven verandert niets.
+
+Zonder reden gaat de deur niet open. Dat is geen formaliteit: die reden
+is wat de school later terugleest in het logboek.
+
+Een leerkracht krijgt de knop niet te zien, alleen de uitleg waarom hij
+er niet is.
+
