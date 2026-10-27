@@ -867,6 +867,37 @@ create table if not exists public.handelingen (
 create index if not exists handelingen_per_school
   on public.handelingen (school_id, tijd desc);
 
+/* ── wat een leerkracht ons laat weten ────────────────────────────────
+   Eén knop in de app: er klopt iets niet, ik heb een idee, ik snap iets
+   niet. Wat er automatisch bij gaat is wat een melding bruikbaar maakt
+   zonder dat iemand het hoeft op te schrijven: welk scherm, welke
+   uitgave, wat voor apparaat.
+
+   Wat er met opzet NIET bij gaat: geen schermafdruk en geen enkel
+   gegeven van een kind. Een schermafdruk van een bord is een foto van
+   een klas met namen erop, en die hoort niet bij de leverancier terecht
+   te komen omdat iemand meldt dat een knop niet werkt.
+
+   De notitie is van de platformbeheerder en wordt door niemand anders
+   gelezen; vandaar dat deze tabel alleen voor hem leesbaar is. */
+create table if not exists public.feedback (
+  id         uuid primary key default gen_random_uuid(),
+  school_id  uuid references public.scholen(id) on delete set null,
+  wie        uuid references public.profielen(id) on delete set null,
+  soort      text not null default 'probleem'
+               check (soort in ('probleem','idee','vraag','compliment')),
+  tekst      text not null,
+  contact    text not null default '',
+  scherm     text not null default '',
+  versie     text not null default '',
+  apparaat   text not null default '',
+  stand      text not null default 'nieuw'
+               check (stand in ('nieuw','opgepakt','afgehandeld','afgewezen')),
+  notitie    text not null default '',
+  tijd       timestamptz not null default now()
+);
+create index if not exists feedback_op_tijd on public.feedback (tijd desc);
+
 -- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat
 -- ═══════════════════════════════════════════════════════════════════════
@@ -961,7 +992,7 @@ begin
     'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
     'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
-    'ondersteuning','handelingen']
+    'ondersteuning','handelingen','feedback']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('alter table public.%I force row level security', t);
@@ -1248,6 +1279,20 @@ create policy "logboek lezen" on public.handelingen
                     or public.ben_platformbeheerder());
 create policy "logboek bijschrijven" on public.handelingen
   for insert with check (wie = auth.uid());
+
+/* Iedereen die is ingelogd mag iets sturen, op zijn eigen naam. Lezen
+   doet alleen de platformbeheerder: er staat een notitie in die van hem
+   is, en een melding kan over een collega gaan. Een schoolbeheerder die
+   meeleest zou maken dat niemand meer iets durft te sturen. */
+create policy "feedback sturen" on public.feedback
+  for insert with check (wie = auth.uid());
+create policy "feedback lezen" on public.feedback
+  for select using (public.ben_platformbeheerder());
+create policy "feedback behandelen" on public.feedback
+  for update using (public.ben_platformbeheerder())
+  with check (public.ben_platformbeheerder());
+create policy "feedback opruimen" on public.feedback
+  for delete using (public.ben_platformbeheerder());
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Nieuwe accounts
@@ -1929,6 +1974,74 @@ language sql stable security definer set search_path = public as $$
    where public.ben_platformbeheerder()
    order by s.naam;
 $$;
+
+/* ── feedback sturen ─────────────────────────────────────────────────
+   Via een functie en niet rechtstreeks, om twee redenen. De app kan zo
+   niet zelf bepalen wie de afzender is of bij welke school het hoort --
+   dat vult de database in. En de tekst wordt hier afgekapt op iets wat
+   een mens nog leest; een melding van een megabyte is geen melding.
+
+   Wat hier bewust niet gebeurt: er gaat geen mail uit. Dat kan later met
+   een Edge Function, maar een mailserver die stilletjes stukgaat is een
+   postbus waarvan niemand merkt dat hij vol zit. Nu staat alles in één
+   tabel die je zelf nakijkt. Zie DECISIONS.md. */
+create or replace function public.feedback_sturen(soort text, tekst text,
+                                                  contact  text default '',
+                                                  scherm   text default '',
+                                                  versie   text default '',
+                                                  apparaat text default '')
+returns uuid language plpgsql security definer set search_path = public as $$
+declare nieuw uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Je moet ingelogd zijn.';
+  end if;
+  if coalesce(trim(tekst), '') = '' then
+    raise exception 'Schrijf even op wat er aan de hand is.';
+  end if;
+  if soort not in ('probleem','idee','vraag','compliment') then
+    soort := 'probleem';
+  end if;
+
+  insert into public.feedback (school_id, wie, soort, tekst, contact,
+                               scherm, versie, apparaat)
+  values (public.mijn_school(), auth.uid(), soort,
+          left(trim(tekst), 4000), left(trim(coalesce(contact, '')), 200),
+          left(coalesce(scherm, ''), 120), left(coalesce(versie, ''), 80),
+          left(coalesce(apparaat, ''), 200))
+  returning id into nieuw;
+  return nieuw;
+end $$;
+
+/* Een melding afhandelen: de stand verzetten en er een notitie bij
+   schrijven. Alleen de platformbeheerder, en het gaat door een functie
+   zodat de notitie en de stand in één stap gaan -- een stand die op
+   'afgehandeld' staat zonder dat erbij staat wat je hebt gedaan, is
+   over een maand niets meer waard. */
+create or replace function public.feedback_behandelen(welke uuid,
+                                                      nieuwe_stand text,
+                                                      nieuwe_notitie text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder behandelt meldingen.';
+  end if;
+  if nieuwe_stand not in ('nieuw','opgepakt','afgehandeld','afgewezen') then
+    raise exception 'Die stand bestaat niet.';
+  end if;
+  update public.feedback
+     set stand = nieuwe_stand,
+         notitie = coalesce(left(nieuwe_notitie, 2000), notitie)
+   where id = welke;
+  if not found then
+    raise exception 'Die melding bestaat niet.';
+  end if;
+end $$;
+
+revoke execute on function public.feedback_sturen(text, text, text, text, text, text) from public;
+revoke execute on function public.feedback_behandelen(uuid, text, text)               from public;
+grant  execute on function public.feedback_sturen(text, text, text, text, text, text) to authenticated;
+grant  execute on function public.feedback_behandelen(uuid, text, text)               to authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('kb-media', 'kb-media', false)

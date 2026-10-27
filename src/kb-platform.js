@@ -81,6 +81,8 @@ var ONDERDELEN = [
     icoon:'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5' },
   { id:'accounts', naam:'Accounts',
     icoon:'M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.3a3.5 3.5 0 0 1 0 6.4' },
+  { id:'feedback', naam:'Feedback',
+    icoon:'M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5z' },
   { id:'databank', naam:'Hoeken-databank',
     icoon:'M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6' },
   { id:'logboek', naam:'Logboek',
@@ -94,6 +96,7 @@ var logboek  = [];
 var databank = [];
 var scholenRij = [];     // de scholen zelf, voor de modules
 var mensen   = [];       // alle accounts, over alle scholen heen
+var feedback = [];       // wat de scholen ons hebben laten weten
 
 /* Waar de accountslijst op dit moment op staat. Dit blijft staan terwijl
    je in een blad iets aanpast: heb je net op "leerkracht van De Regenboog"
@@ -111,7 +114,8 @@ function haalAlles(){
     SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:50 }),
     SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 }),
     SB.lees('profielen', { kies:'id,naam,rol,school_id,gebruikersnaam,email,aangemaakt',
-                           volgorde:'naam' })
+                           volgorde:'naam' }),
+    SB.lees('feedback', { kies:'*', volgorde:'tijd.desc', hoeveel:300 })
   ]).then(function (uit) {
     cijfers  = uit[0] || [];
     scholenRij = uit[1] || [];
@@ -119,6 +123,7 @@ function haalAlles(){
     deuren   = uit[3] || [];
     logboek  = uit[4] || [];
     mensen   = uit[5] || [];
+    feedback = uit[6] || [];
   });
 }
 
@@ -173,6 +178,7 @@ function teken(){
   var v = leeg($('inhoud'));
   if (huidig === 'meekijken') return tekenMeekijken(v);
   if (huidig === 'accounts')  return tekenAccounts(v);
+  if (huidig === 'feedback')  return tekenFeedback(v);
   if (huidig === 'logboek')   return tekenLogboek(v);
   if (huidig === 'databank')  return tekenDatabank(v);
   return tekenScholen(v);
@@ -822,6 +828,238 @@ function nieuwWachtwoord(mens, schoolnaam){
                       wachtwoord: ww, rol: mens.rol, school: schoolnaam });
       }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
     }));
+    blad.appendChild(rij);
+  });
+}
+
+/* ── wat de scholen ons laten weten ───────────────────────────────────
+   Alle meldingen uit de app, met een stand erbij zodat je ziet wat je
+   nog moet doen. Dit is het enige scherm waar ze te lezen zijn: de
+   notitie is van jou, en een melding kan over een collega gaan.
+
+   Niet verwijderen maar afhandelen. Een melding die weg is, is een
+   melding waarvan je over een half jaar niet meer weet dat hij er is
+   geweest -- en dan komt hij een tweede keer binnen en begin je opnieuw. */
+
+var STANDEN = [['nieuw','Nieuw'], ['opgepakt','Opgepakt'],
+               ['afgehandeld','Afgehandeld'], ['afgewezen','Afgewezen']];
+var SOORTWOORD = { probleem:'Er klopt iets niet', vraag:'Ik snap iets niet',
+                   idee:'Een idee', compliment:'Compliment' };
+var filterStand = 'open';   // 'open' = nieuw + opgepakt, '' = alles
+var filterSoort = '';
+var csvAdres = null;
+
+function standWoord(stand){
+  for (var i = 0; i < STANDEN.length; i++) if (STANDEN[i][0] === stand) return STANDEN[i][1];
+  return stand;
+}
+
+function meldingenNu(){
+  return feedback.filter(function (f) {
+    if (filterStand === 'open' && f.stand !== 'nieuw' && f.stand !== 'opgepakt') return false;
+    if (filterStand && filterStand !== 'open' && f.stand !== filterStand) return false;
+    if (filterSoort && f.soort !== filterSoort) return false;
+    return true;
+  });
+}
+
+function naamVan(id){
+  for (var i = 0; i < mensen.length; i++) {
+    if (mensen[i].id === id) return mensen[i].naam || mensen[i].gebruikersnaam || '—';
+  }
+  return 'account is weg';
+}
+
+/* Eén veld voor een csv-bestand.
+
+   Die apostrof vooraan is geen sierlijkheid. Begint een veld met = + -
+   of @, dan ziet Excel er een formule in en voert die uit zodra je het
+   bestand opent. De tekst in een melding typt iemand anders in; dat is
+   precies het soort veld waar je dat niet wilt. */
+function csvVeld(waarde){
+  var t = String(waarde == null ? '' : waarde);
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return '"' + t.replace(/"/g, '""') + '"';
+}
+
+function csvMaken(rijen){
+  var kop = ['tijd','stand','soort','school','van','scherm','uitgave',
+             'apparaat','tekst','contact','notitie'];
+  var regels = [kop.map(csvVeld).join(';')];
+  rijen.forEach(function (f) {
+    regels.push([
+      f.tijd, standWoord(f.stand), SOORTWOORD[f.soort] || f.soort,
+      f.school_id ? schoolnaamVan(f.school_id) : 'geen school',
+      naamVan(f.wie), f.scherm, f.versie, f.apparaat,
+      f.tekst, f.contact, f.notitie
+    ].map(csvVeld).join(';'));
+  });
+  /* De bom vooraan is voor Excel: zonder dat leest het de tekst als
+     latin-1 en wordt elke é een Ã©. Puntkomma's en geen komma's om
+     dezelfde reden -- een Nederlandse Excel splitst daarop. */
+  return '﻿' + regels.join('\r\n') + '\r\n';
+}
+
+function tekenFeedback(v){
+  var open = feedback.filter(function (f) {
+    return f.stand === 'nieuw' || f.stand === 'opgepakt'; }).length;
+
+  /* Uitvoeren is een link en geen knop: een knop die een bestand
+     binnenhaalt verandert niets aan het scherm, en dan is hij niet te
+     onderscheiden van een knop die stuk is. */
+  var uit = el('a', 'knop knop-stil knop-klein', 'Uitvoeren als csv');
+  uit.id = 'csv-uitvoeren';
+  uit.download = 'feedback.csv';
+
+  v.appendChild(kopregel('Feedback',
+    feedback.length
+      ? (open === 1 ? 'Eén melding open' : open + ' meldingen open') +
+        ' · ' + feedback.length + ' in totaal'
+      : 'Nog geen meldingen',
+    [uit]));
+
+  var rij1 = el('div', 'chips');
+  [['open','Nog te doen'], ['','Alles']].concat(STANDEN).forEach(function (paar) {
+    var c = el('button', 'chip' + (filterStand === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { filterStand = paar[0]; teken(); });
+    rij1.appendChild(c);
+  });
+  v.appendChild(rij1);
+
+  var rij2 = el('div', 'chips');
+  [['','Alle soorten']].concat(Object.keys(SOORTWOORD).map(function (k) {
+    return [k, SOORTWOORD[k]];
+  })).forEach(function (paar) {
+    var c = el('button', 'chip' + (filterSoort === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { filterSoort = paar[0]; teken(); });
+    rij2.appendChild(c);
+  });
+  v.appendChild(rij2);
+
+  var nu = meldingenNu();
+
+  /* Het adres van het csv-bestand hangt aan wat er nu op het scherm
+     staat: wat je uitvoert is wat je ziet. Het oude adres gaat eruit,
+     anders houdt de browser elk bestand van deze sessie vast. */
+  if (csvAdres) { try { URL.revokeObjectURL(csvAdres); } catch (e) {} }
+  csvAdres = URL.createObjectURL(new Blob([csvMaken(nu)], { type:'text/csv;charset=utf-8' }));
+  uit.href = csvAdres;
+  if (!nu.length) uit.classList.add('uit');
+
+  var vak = el('div', 'paneel');
+  if (!nu.length) {
+    vak.appendChild(el('p', 'hint', feedback.length
+      ? 'Geen melding die hierop past.'
+      : 'Er is nog niets binnengekomen. De knop staat in de zijbalk van het ' +
+        'beheer en in het menu van het bord.'));
+  } else {
+    nu.forEach(function (f) { vak.appendChild(meldingKaart(f)); });
+  }
+  v.appendChild(vak);
+
+  var uitleg = el('div', 'paneel');
+  uitleg.appendChild(el('div', 'paneelkop', 'Wat er meekomt en wat niet'));
+  uitleg.appendChild(el('p', 'hint',
+    'Scherm, uitgave en apparaat gaan vanzelf mee, en de app zegt er in het ' +
+    'meldingsscherm ook bij dat dat gebeurt. Er komt geen schermafdruk mee ' +
+    'en niets van de kinderen. Staat er toch een kindernaam in een melding, ' +
+    'dan heeft iemand hem zelf ingetypt — haal hem er dan uit met de notitie ' +
+    'en handel de melding af.'));
+  v.appendChild(uitleg);
+}
+
+function meldingKaart(f){
+  var k = el('div', 'melding-kaart');
+
+  var kop = el('div', 'melding-kop');
+  kop.appendChild(el('span', 'rolmerk' + (f.soort === 'probleem' ? ' platform' :
+                                          f.soort === 'compliment' ? ' beheer' : ''),
+                     SOORTWOORD[f.soort] || f.soort));
+  kop.appendChild(el('span', 'melding-stand stand-' + f.stand, standWoord(f.stand)));
+  kop.appendChild(el('span', 'melding-tijd', datum(f.tijd)));
+  k.appendChild(kop);
+
+  k.appendChild(el('div', 'melding-tekst', f.tekst));
+
+  var onder = el('div', 'melding-onder');
+  onder.textContent = naamVan(f.wie) + ' · ' +
+    (f.school_id ? schoolnaamVan(f.school_id) : 'geen school') +
+    (f.scherm ? ' · ' + f.scherm : '') +
+    (f.versie ? ' · ' + f.versie : '') +
+    (f.apparaat ? ' · ' + f.apparaat : '');
+  k.appendChild(onder);
+
+  if (f.contact) {
+    var c = el('div', 'melding-onder');
+    c.textContent = 'Terugkoppelen via: ' + f.contact;
+    k.appendChild(c);
+  }
+  if (f.notitie) {
+    var n = el('div', 'melding-notitie');
+    n.textContent = f.notitie;
+    k.appendChild(n);
+  }
+
+  var acties = el('div', 'knoprij');
+  acties.appendChild(knop('Behandelen', 'stil', function () { toonBehandelen(f); }));
+  k.appendChild(acties);
+  return k;
+}
+
+function toonBehandelen(f){
+  var stand = f.stand;
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Melding behandelen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+
+    var citaat = el('div', 'melding-tekst', f.tekst);
+    citaat.style.marginBottom = '4px';
+    blad.appendChild(citaat);
+    blad.appendChild(el('p', 'hint', naamVan(f.wie) + ' · ' +
+      (f.school_id ? schoolnaamVan(f.school_id) : 'geen school') + ' · ' + datum(f.tijd)));
+
+    var r1 = el('div', 'veldrij');
+    r1.appendChild(el('label', 'veldlabel', 'Stand'));
+    var chips = el('div', 'knoprij');
+    STANDEN.forEach(function (paar) {
+      var c = el('button', 'chip' + (stand === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        stand = paar[0];
+        [].forEach.call(chips.children, function (x) { x.classList.remove('aan'); });
+        c.classList.add('aan');
+      });
+      chips.appendChild(c);
+    });
+    r1.appendChild(chips);
+    blad.appendChild(r1);
+
+    var r2 = el('div', 'veldrij');
+    r2.appendChild(el('label', 'veldlabel', 'Notitie voor jezelf'));
+    var notitie = el('textarea', 'invoer');
+    notitie.id = 'fb-notitie';
+    notitie.rows = 3;
+    notitie.style.cssText = 'resize:vertical;min-height:72px;line-height:1.5';
+    notitie.value = f.notitie || '';
+    notitie.placeholder = 'Wat je ermee hebt gedaan, of waarom niet.';
+    r2.appendChild(notitie);
+    r2.appendChild(el('div', 'hint', 'Alleen jij leest dit. De school ziet het niet.'));
+    blad.appendChild(r2);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    var bewaar = knop('Opslaan', 'primair', function () {
+      bewaar.disabled = true; bewaar.textContent = 'Bezig…';
+      SB.roep('feedback_behandelen', { welke: f.id, nieuwe_stand: stand,
+                                       nieuwe_notitie: notitie.value || '' })
+        .then(function () { return haalAlles(); })
+        .then(function () { sluitBlad(); teken(); meld('Opgeslagen'); },
+              function (e) {
+                bewaar.disabled = false; bewaar.textContent = 'Opslaan';
+                meld((e && e.message) || 'Dat lukte niet');
+              });
+    });
+    rij.appendChild(bewaar);
     blad.appendChild(rij);
   });
 }

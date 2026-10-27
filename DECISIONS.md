@@ -841,3 +841,58 @@ staat die doet alsof hij hem dichthoudt.
 **Wat er niet bij is gekomen:** de platformbeheerder ziet nog steeds geen
 kinderen, geen borden en geen statistieken. Dit gaat over namen, rollen
 en scholen. Zie docs/ROLLEN.md.
+
+## 2026-10-27 · De feedbackknop
+
+Tijdens een proefperiode hoor je anders alleen van de school die
+toevallig belt. De juf die denkt "het zal wel aan mij liggen" hoor je
+nooit, en juist die melding is de nuttigste. Vandaar één knop: er klopt
+iets niet, ik snap iets niet, ik heb een idee, of een compliment.
+
+**Wat er automatisch meegaat.** Het scherm, de uitgave en wat voor
+apparaat. Dat zijn precies de drie dingen die je anders per mail terug
+moet vragen, en dan is het al een week later. De useragent gaat er niet
+ruw in maar in woorden ("iPad · Safari · 2360×1640"): een regel van
+tweehonderd tekens in een overzicht is een regel waar niemand doorheen
+kijkt.
+
+**Wat er met opzet niet meegaat.** Geen schermafdruk. Een afdruk van een
+bord is een foto van een klas met namen erop, en die hoort niet bij de
+leverancier terecht te komen omdat iemand meldt dat een knop niet werkt.
+En geen enkel gegeven van een kind — daarom staat er in het scherm ook
+met zoveel woorden dat ze geen namen moet opschrijven. Een tekstvak
+nodigt uit om een voorbeeld te geven, en het makkelijkste voorbeeld is
+een kind.
+
+**En het staat er allemaal bij, vóór het versturen.** Een melding die
+stilletjes dingen meestuurt is een melding die je de volgende keer niet
+meer durft te sturen. De proef kijkt daarom ook of dat lijstje klopt met
+wat de app werkelijk verstuurt.
+
+**Waar de knop staat.** In de zijbalk van het beheer, en in het menu van
+het bord — dat menu zit achter de pincode en is dus al van de
+leerkracht. Niet los op het bord: daar is elke plek die geen hoek is er
+een te veel, en kleuters staan er met hun handen bovenop.
+
+**Wie het leest: alleen de platformbeheerder.** Niet de schoolbeheerder
+en niet de afzender zelf. Er staat een notitie bij die van jou is, en
+een melding kan over een collega gaan — een schoolbeheerder die
+meeleest maakt dat niemand meer iets stuurt. Dat betekent ook dat de
+afzender haar eigen melding niet terugziet; dat is de prijs, en hij is
+het waard.
+
+**Geen mail, nog niet.** Een Edge Function die een mailtje stuurt kan
+later, maar een mailserver die stilletjes stukgaat is een postbus
+waarvan niemand merkt dat hij vol zit. Nu staat alles in één tabel met
+een stand erbij (nieuw, opgepakt, afgehandeld, afgewezen) die je zelf
+nakijkt.
+
+**Niet verwijderen maar afhandelen.** Een melding die weg is, is een
+melding waarvan je over een half jaar niet meer weet dat hij er is
+geweest — en dan komt hij een tweede keer binnen en begin je opnieuw.
+
+**De csv-uitvoer heeft twee dingen die je niet verwacht.** Een bom
+vooraan, anders leest Excel elke é als Ã©. En een apostrof voor elk veld
+dat met `=` `+` `-` of `@` begint: anders ziet Excel er een formule in en
+voert die uit zodra je het bestand opent. De tekst in een melding typt
+iemand anders in — dat is precies het soort veld waar je dat niet wilt.

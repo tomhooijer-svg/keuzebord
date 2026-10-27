@@ -66,6 +66,33 @@ body{ background: var(--vlak-2); }
 .mensrij button.weg:hover{ background:var(--stop-zacht); }
 @media (max-width:760px){ .mensrol{ flex:0 0 auto; } .mensrij .knoprij{ margin-left:0; } }
 
+/* ── de meldingen ──────────────────────────────────────────────────
+   Eén kaart per melding. De tekst krijgt de ruimte -- dat is waar het
+   om gaat; de herkomst staat er klein onder. */
+.melding-kaart{ padding:14px 16px; border-radius:12px; background:var(--vlak-2);
+                margin-bottom:10px; }
+.melding-kop{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.melding-stand{ font-size:.72rem; font-weight:620; letter-spacing:.02em;
+                padding:4px 10px; border-radius:var(--rond-vol);
+                background:rgba(20,28,44,.07); color:var(--inkt-2); }
+.melding-stand.stand-nieuw{ background:var(--stop-zacht); color:var(--stop); }
+.melding-stand.stand-opgepakt{ background:var(--let-op-zacht); color:var(--let-op); }
+.melding-tijd{ font-size:.76rem; color:var(--inkt-3); margin-left:auto;
+               font-variant-numeric:tabular-nums; }
+.melding-tekst{ font-size:.95rem; line-height:1.6; color:var(--inkt);
+                white-space:pre-wrap; overflow-wrap:anywhere; }
+.melding-onder{ font-size:.76rem; color:var(--inkt-3); margin-top:6px;
+                overflow-wrap:anywhere; }
+.melding-notitie{ font-size:.83rem; line-height:1.5; color:var(--inkt-2);
+                  margin-top:8px; padding:8px 11px; border-radius:9px;
+                  background:var(--vlak); border-left:3px solid var(--lijn);
+                  white-space:pre-wrap; }
+.melding-kaart .knoprij{ margin-top:10px; }
+/* Een uitvoerknop zonder iets om uit te voeren. Niet verbergen: dan
+   verspringt de kop zodra er een melding binnenkomt. */
+.knop.uit{ opacity:.45; pointer-events:none; }
+a.knop{ text-decoration:none; }
+
 /* Een waarschuwing in een blad: wat er gaat gebeuren, vóór de knop en
    niet erna. */
 .waarschuwing{ margin-top:8px; padding:10px 12px; border-radius:11px;
@@ -152,6 +179,7 @@ body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
 <script src="src/kb-app.js"></script>
 <script src="src/kb-testbanner.js"></script>
 <script src="src/kb-supabase.js"></script>
+<script src="src/kb-feedback.js"></script>
 <script src="src/kb-kaartje.js"></script>
 <script src="src/kb-platform.js"></script>
 </body>

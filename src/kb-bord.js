@@ -1413,6 +1413,16 @@ function toonMenu(){
       lijst.appendChild(knop);
     });
 
+    /* Iets melden staat hier en niet op het bord zelf. Dit menu zit al
+       achter de pincode, dus het is al van de leerkracht -- en op het
+       bord is elke plek die geen hoek is er een te veel. */
+    if (window.KBFEEDBACK && window.SB && SB.ingelogd && SB.ingelogd()) {
+      var melden = el('button', 'knop knop-stil', 'Iets melden');
+      melden.id = 'knop-melden';
+      melden.addEventListener('click', function () { sluitBlad(); KBFEEDBACK.open(); });
+      lijst.appendChild(melden);
+    }
+
     var beheer = el('a', 'knop knop-primair', 'Naar beheer');
     beheer.href = 'beheer.html';
     lijst.appendChild(beheer);
