@@ -389,6 +389,96 @@ alter table public.scholen add column if not exists modules jsonb not null defau
    hem dus met rust. */
 alter table public.scholen add column if not exists huisstijl jsonb not null default '{}'::jsonb;
 
+-- ── inloggen met een gebruikersnaam ───────────────────────────────────
+/* Een testleerkracht krijgt een kaartje in haar handen en moet binnen
+   een minuut binnen zijn. Een e-mailadres intypen op een digibord is
+   daarvoor te veel gedoe, en het betekent ook dat er van elke juf een
+   echt adres in dit systeem staat.
+
+   Supabase herkent iemand altijd aan een e-mailadres, dus achter de
+   gebruikersnaam zit er een: juf.marieke@keuzebord.invalid. Dat
+   .invalid is geen verzinsel maar een domein dat officieel is
+   vastgelegd om nooit te bestaan (RFC 2606). Er kan dus nooit per
+   ongeluk post heen, en wie later in deze database kijkt ziet meteen
+   dat het geen echt adres is.
+
+   De prijs: "wachtwoord vergeten" per mail kan niet meer. Dat is met
+   open ogen gekozen -- de platformbeheerder zet een wachtwoord terug.
+   Zie DECISIONS.md en docs/HERSTEL.md.
+
+   De gebruikersnaam is uniek over alle scholen heen. Dat kan niet
+   anders zolang hij een adres moet worden, en het heeft een voordeel:
+   op het inlogscherm hoeft niemand eerst zijn school te kiezen. */
+alter table public.profielen add column if not exists gebruikersnaam text;
+
+/* Wat een geldige gebruikersnaam is: kleine letters, cijfers, punt en
+   streepje. Geen spaties (niet te typen op een digibord), geen hoofd-
+   letters (dan logt de helft zichzelf buiten door een hoofdletter), en
+   geen accenten (want die moeten door een e-mailadres heen). */
+create or replace function public.gebruikersnaam_net(ruw text)
+returns text language sql immutable as $$
+  select nullif(
+    regexp_replace(
+      regexp_replace(lower(trim(coalesce(ruw, ''))), '[^a-z0-9.-]+', '.', 'g'),
+      '^[.-]+|[.-]+$', '', 'g'),
+    '')
+$$;
+
+/* Het adres dat erbij hoort. Eén plek, zodat de app en de database het
+   nooit oneens kunnen zijn. */
+create or replace function public.inlogadres(gebruikersnaam text)
+returns text language sql immutable as $$
+  select public.gebruikersnaam_net(gebruikersnaam) || '@keuzebord.invalid'
+$$;
+
+-- Bestaande profielen krijgen er een, afgeleid van wat voor hun @ stond.
+update public.profielen
+   set gebruikersnaam = public.gebruikersnaam_net(split_part(email, '@', 1))
+ where gebruikersnaam is null and email <> '';
+
+/* Botsingen oplossen voordat de regel erop komt: twee mensen met
+   dezelfde naam voor de @ (jan@school-a.nl en jan@school-b.nl) zouden
+   anders dezelfde gebruikersnaam krijgen, en dan kan de tweede niet
+   meer inloggen. De oudste houdt hem; de rest krijgt een cijfer. */
+with dubbel as (
+  select id, gebruikersnaam,
+         row_number() over (partition by gebruikersnaam order by aangemaakt, id) as n
+    from public.profielen
+   where gebruikersnaam is not null
+)
+update public.profielen p
+   set gebruikersnaam = d.gebruikersnaam || d.n::text
+  from dubbel d
+ where p.id = d.id and d.n > 1;
+
+create unique index if not exists profielen_gebruikersnaam_uniek
+  on public.profielen (gebruikersnaam) where gebruikersnaam is not null;
+
+/* Is deze gebruikersnaam nog vrij? Het accountscherm vraagt dit vóór
+   het aanmaken, zodat niemand pas bij het opslaan hoort dat de naam
+   bezet is.
+
+   Alleen voor wie is ingelogd. Zou dit open staan, dan kon iedereen
+   met een lijstje namen uitvinden wie er op welke school werkt -- één
+   vraag per naam, en je weet het. Het antwoord is ook niet meer dan
+   ja of nee: wie de naam heeft blijft erbuiten. */
+/* De parameter heet met opzet niet 'naam': profielen heeft een kolom
+   die zo heet, en binnen de subquery wint de kolom. Dan vergelijkt hij
+   elke gebruikersnaam met de persoonsnaam van die rij, en is geen enkele
+   naam ooit vrij -- zonder dat er iets klaagt. */
+create or replace function public.gebruikersnaam_vrij(gewenst text)
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.gebruikersnaam_net(gewenst) is not null
+     and not exists (select 1 from public.profielen p
+                      where p.gebruikersnaam = public.gebruikersnaam_net(gewenst))
+$$;
+/* Eerst intrekken, dan uitdelen. PostgreSQL geeft van zichzelf aan
+   iedereen uitvoerrecht op een nieuwe functie, dus zonder deze regel
+   voegt de grant hieronder niets toe en kan een willekeurige bezoeker
+   alsnog namen aflopen. */
+revoke execute on function public.gebruikersnaam_vrij(text) from public;
+grant  execute on function public.gebruikersnaam_vrij(text) to authenticated;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check
@@ -1059,12 +1149,19 @@ begin
    where lower(email) = lower(new.email) and verzilverd is null
    order by aangemaakt limit 1;
 
-  insert into public.profielen (id, email, naam, school_id, rol)
+  insert into public.profielen (id, email, naam, school_id, rol, gebruikersnaam)
   values (new.id,
           coalesce(new.email, ''),
           coalesce(new.raw_user_meta_data ->> 'naam', ''),
           u.school_id,
-          coalesce(u.rol, 'leerkracht'))
+          coalesce(u.rol, 'leerkracht'),
+          /* De gebruikersnaam staat in de gegevens die bij het aanmelden
+             zijn meegestuurd; staat hij er niet, dan leiden we hem af van
+             wat voor de @ staat. Zo krijgt ook een account dat ergens
+             anders vandaan komt er een. */
+          public.gebruikersnaam_net(
+            coalesce(new.raw_user_meta_data ->> 'gebruikersnaam',
+                     split_part(coalesce(new.email, ''), '@', 1))))
   on conflict (id) do nothing;
 
   if u.id is not null then
