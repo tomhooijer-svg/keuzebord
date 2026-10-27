@@ -723,7 +723,9 @@ function toonNieuweSchool(){
         }, function (err) {
           maak.disabled = false;
           maak.textContent = 'Aanmaken';
-          meld('Dat lukte niet: ' + (err && err.message));
+          meld(SB.isTeVaak(err)
+            ? 'Supabase laat maar dertig aanmeldingen per vijf minuten toe vanaf \u00e9\u00e9n plek. Wacht vijf minuten en ga dan verder \u2014 er is niets misgegaan.'
+            : 'Dat lukte niet: ' + (err && err.message));
         });
     });
     rij.appendChild(maak);

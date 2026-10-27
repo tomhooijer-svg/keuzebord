@@ -220,7 +220,14 @@ body.inlog{
   }
 
   function toonFout(e){
-    if (e && e.offline) {
+    if (SB.isTeVaak(e)) {
+      /* Niet onze eigen rem maar die van Supabase: dertig pogingen per
+         vijf minuten vanaf hetzelfde IP-adres. Op een school delen alle
+         apparaten één adres naar buiten, dus dit kan ook iemand raken
+         die niets fout deed. */
+      meld('Er is vanaf deze school te vaak geprobeerd in te loggen. ' +
+           'Wacht vijf minuten en probeer het dan nog eens.');
+    } else if (e && e.offline) {
       meld('Geen verbinding met de server. Controleer het internet en probeer het opnieuw.');
     } else if (e && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
       /* Niet zeggen wélke van de twee fout is. Zou er staan "die

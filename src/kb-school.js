@@ -1311,7 +1311,9 @@ function toonCollegaToevoegen(concept){
           maak.disabled = false;
           maak.textContent = 'Account aanmaken';
           var bericht = (e && e.message) || '';
-          if (/duplicate|unique|al een account|already/i.test(bericht)) {
+          if (SB.isTeVaak(e)) {
+            meld('Supabase laat maar dertig aanmeldingen per vijf minuten toe vanaf \u00e9\u00e9n plek. Wacht vijf minuten en ga dan verder \u2014 er is niets misgegaan.');
+          } else if (/duplicate|unique|al een account|already/i.test(bericht)) {
             meld('Die gebruikersnaam is al in gebruik. Kies een andere.');
           } else {
             meld('Dat lukte niet: ' + bericht);

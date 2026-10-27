@@ -747,3 +747,37 @@ niemand die jouw wachtwoord kan terugzetten. Zie docs/HERSTEL.md voor
 wat je dan doet. Dat kan niet in de app zitten, want een knop "zet mijn
 eigen wachtwoord terug" zonder inloggen is een knop waarmee iedereen dat
 kan.
+
+## 2026-10-27 · De rem van Supabase nagekeken
+
+Opgezocht wat er werkelijk staat: **dertig in- of aanmeldingen per vijf
+minuten per IP-adres**, dus 360 per uur. Dat is de echte rem waar de
+wachtwoordsterkte op gerekend is, en hij staat aan.
+
+Wat dat betekent voor drie woorden en een cijfer (16.386.048
+mogelijkheden, gemiddeld de helft te proberen):
+
+| Wie probeert | Hoe lang |
+|---|---|
+| Iemand vanaf één plek | 2,6 jaar |
+| Iemand met honderd adressen | 9,5 dagen |
+| Iemand met duizend adressen | 1 dag |
+
+Drie woorden blijft. Een duizend-adressenaanval op de gebruikersnaam
+van één juf van een kleuterklas is geen scenario dat bij dit product
+hoort, en elk wachtwoord is met één klik te vervangen. Wordt dit ooit
+een product met echte leerlinggegevens, dan is een vierde woord één
+regel in `src/kb-kaartje.js` en gaat het naar 2,0 miljard -- ook bij
+duizend adressen een kwestie van maanden.
+
+**Wat die rem ook raakt, en dat is het punt om te onthouden:** aanmelden
+en inloggen delen dezelfde teller. Wie in één keer een school met tien
+leerkrachten aanmaakt, doet tien aanmeldingen vanaf hetzelfde adres.
+Boven de dertig komt er een technische melding terug waar niemand iets
+aan heeft, terwijl er niets kapot is. `SB.isTeVaak()` herkent dat nu op
+één plek, en alle drie de schermen zeggen hetzelfde: wacht vijf minuten.
+
+Op een school delen bovendien alle apparaten één adres naar buiten. Dat
+is zelden een probleem -- een digibord blijft ingelogd -- maar het kan
+iemand raken die niets fout deed, en dan hoort de melding dat te zeggen
+in plaats van naar het wachtwoord te wijzen.
