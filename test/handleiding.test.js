@@ -52,27 +52,47 @@ async function apparaat(b, fouten){
   zeg('en zegt waar je bent in de reeks',
       /Stap 1 van 5/.test(await p.textContent('#rl-kaart')), 'stap 1 van 5');
 
-  /* Hij mag niets afdekken. Een kaart in de hoek is iets anders dan een
-     venster over het scherm, en het verschil is of je kunt doorwerken. */
-  const dektAf = await p.evaluate(() => {
+  /* Hij mag niets afdekken. Dit stond eerst als zwevende kaart in de
+     hoek, en die lag op het scherm Vandaag precies over "Taak
+     inplannen" -- een leerkracht drukt op een knop en er gebeurt niets,
+     op haar eerste dag, door iets wat haar zou moeten helpen. Nu staat
+     hij in de stroom van de pagina en duwt hij de inhoud omlaag.
+
+     Deze controle kijkt niet naar hoe hij staat maar naar wat hij doet:
+     van elke knop op het scherm het middelpunt nemen en vragen wie daar
+     ligt. Ligt de kaart daar, dan is die knop onbereikbaar. */
+  const inStroom = await p.evaluate(() => {
     const k = document.getElementById('rl-kaart');
-    const d = getComputedStyle(k);
-    const r = k.getBoundingClientRect();
-    return { vast: d.position === 'fixed',
-             deel: Math.round((r.width * r.height) /
-                              (innerWidth * innerHeight) * 100) };
+    return { ouder: k.parentNode.id || k.parentNode.tagName,
+             positie: getComputedStyle(k).position };
   });
-  zeg('hij staat in de hoek en dekt het scherm niet af',
-      dektAf.vast && dektAf.deel < 25, dektAf.deel + '% van het scherm');
-  const menuKlikbaar = await p.evaluate(() => {
-    const kn = [].slice.call(document.querySelectorAll('.zij-knop'));
-    const k = kn[kn.length - 1];
-    if (!k) return 'geen menu';
-    const r = k.getBoundingClientRect();
-    const boven = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return k.contains(boven) ? 'klikbaar' : 'afgedekt';
+  zeg('hij staat in de pagina en niet erover',
+      inStroom.ouder === 'inhoud' && inStroom.positie === 'static',
+      inStroom.ouder + ' / ' + inStroom.positie);
+
+  const afgedekt = await p.evaluate(() => {
+    const k = document.getElementById('rl-kaart');
+    const kapot = [];
+    [].slice.call(document.querySelectorAll('button, a[href], .zij-knop'))
+      .forEach(function (kn) {
+        if (k.contains(kn)) return;
+        const r = kn.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        if (r.top < 0 || r.bottom > innerHeight) return;
+        const boven = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (boven && k.contains(boven)) kapot.push((kn.textContent || '').trim().slice(0, 24));
+      });
+    return kapot;
   });
-  zeg('en het menu blijft gewoon aan te klikken', menuKlikbaar === 'klikbaar', menuKlikbaar);
+  zeg('geen enkele knop op het scherm wordt afgedekt', afgedekt.length === 0,
+      afgedekt.length ? afgedekt.join(' | ') : 'niets afgedekt');
+
+  /* Het beheer tekent zijn inhoud opnieuw bij elke menuklik. Een
+     rondleiding die daarbij verdwijnt is geen rondleiding. */
+  await p.click('.zij-knop:has-text("Hoeken")');
+  await p.waitForTimeout(600);
+  zeg('hij overleeft een klik in het menu',
+      await p.isVisible('#rl-kaart'), 'staat er nog');
 
   // ── vijf stappen, heen en terug ──
   let standen = [await p.evaluate(() => document.body.className)];
