@@ -479,6 +479,79 @@ $$;
 revoke execute on function public.gebruikersnaam_vrij(text) from public;
 grant  execute on function public.gebruikersnaam_vrij(text) to authenticated;
 
+/* ── een wachtwoord opnieuw instellen ─────────────────────────────────
+   Inloggen gaat met een gebruikersnaam, dus er is geen adres om een
+   herstelmail heen te sturen. Wie zijn wachtwoord kwijt is, krijgt een
+   nieuw van een mens:
+
+     een leerkracht          van haar schoolbeheerder
+     een schoolbeheerder     van de leverancier
+     de leverancier zelf     uit docs/HERSTEL.md
+
+   Waarom dit in de database staat en niet in de app: een wachtwoord
+   zetten kan bij Supabase alleen met de servicesleutel, en die hoort
+   nergens in een browser en ook niet in iemands hoofd. Deze functie
+   doet het namens de server, met de rechten die hieronder worden
+   gecontroleerd.
+
+   We schrijven daarmee in auth.users, een tabel van Supabase zelf. Dat
+   is de prijs van niet met die sleutel willen werken. Verandert
+   Supabase ooit hoe wachtwoorden worden opgeslagen, dan breekt dit --
+   en het zou stil breken, want "wachtwoord gezet" en "kan niet
+   inloggen" zien er van buiten hetzelfde uit. Daarom controleert deze
+   functie haar eigen werk voordat ze ja zegt. */
+create or replace function public.wachtwoord_zetten(wie uuid, nieuw text)
+returns void language plpgsql security definer set search_path = public as $$
+declare doel public.profielen%rowtype;
+        ik   public.profielen%rowtype;
+begin
+  select * into doel from public.profielen where id = wie;
+  if doel.id is null then raise exception 'Dat account bestaat niet.'; end if;
+  select * into ik from public.profielen where id = auth.uid();
+  if ik.id is null then raise exception 'Je bent niet ingelogd.'; end if;
+
+  /* Wie mag van wie het wachtwoord zetten.
+
+     Een schoolbeheerder mag dat voor haar eigen school -- ook voor een
+     andere schoolbeheerder daar, want anders kan een school zichzelf
+     buitensluiten zodra er één persoon uitvalt.
+
+     De platformbeheerder mag het voor iedereen. Dat is niet hetzelfde
+     als bij de gegevens van een school kunnen: een wachtwoord zetten
+     geeft hem geen inzage, en zonder dit recht kan hij een school die
+     niemand meer binnen heeft helemaal niet helpen. */
+  if not (public.ben_platformbeheerder()
+          or (ik.rol = 'schoolbeheerder' and ik.school_id is not null
+              and ik.school_id = doel.school_id)
+          or ik.id = doel.id) then
+    raise exception 'Je mag het wachtwoord van dit account niet zetten.';
+  end if;
+
+  /* Kort genoeg om te raden is geen wachtwoord. De app maakt er zelf
+     een van drie woorden; dit is de ondergrens voor wie het met de
+     hand doet. */
+  if length(coalesce(nieuw, '')) < 10 then
+    raise exception 'Een wachtwoord van minstens tien tekens, graag.';
+  end if;
+
+  update auth.users
+     set encrypted_password = extensions.crypt(nieuw, extensions.gen_salt('bf'))
+   where id = wie;
+
+  -- en meteen kijken of het ook echt zo is opgeslagen
+  if not exists (select 1 from auth.users
+                  where id = wie
+                    and encrypted_password = extensions.crypt(nieuw, encrypted_password)) then
+    raise exception 'Het wachtwoord is niet opgeslagen zoals verwacht. Meld dit.';
+  end if;
+
+  perform public.noteer('wachtwoord opnieuw ingesteld', doel.school_id,
+                        coalesce(nullif(doel.naam, ''), doel.gebruikersnaam),
+                        jsonb_build_object('gebruikersnaam', doel.gebruikersnaam));
+end $$;
+revoke execute on function public.wachtwoord_zetten(uuid, text) from public;
+grant  execute on function public.wachtwoord_zetten(uuid, text) to authenticated;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check

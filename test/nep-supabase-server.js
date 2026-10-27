@@ -165,19 +165,24 @@ const server = http.createServer(async (req, res) => {
       const bestaat = await alsBeheer(c => c.query('select id from auth.users where lower(email)=lower($1)', [lijf.email]));
       if (bestaat.rows.length) return stuur(400, { message: 'Dit e-mailadres heeft al een account.' });
       if (!lijf.password || lijf.password.length < 6) return stuur(400, { message: 'Kies een wachtwoord van minstens 6 tekens.' });
+      // Gehasht opslaan, net als Supabase: zie de toelichting bij
+      // auth.users in supabase/test-01-nepsupabase.sql.
       const r = await alsBeheer(c => c.query(
-        'insert into auth.users (email, raw_user_meta_data) values ($1,$2) returning id, email',
-        [lijf.email, JSON.stringify(lijf.data || {})]));
+        'insert into auth.users (email, encrypted_password, raw_user_meta_data) ' +
+        "values ($1, extensions.crypt($2, extensions.gen_salt('bf')), $3) returning id, email",
+        [lijf.email, lijf.password, JSON.stringify(lijf.data || {})]));
       const g = r.rows[0];
-      await alsBeheer(c => c.query('update auth.users set raw_user_meta_data = raw_user_meta_data || $2 where id=$1',
-        [g.id, JSON.stringify({ ww: lijf.password })]));
       return stuur(200, nieuweSessie(g.id, g));
     }
     if (pad === '/auth/v1/token' && u.searchParams.get('grant_type') === 'password') {
+      // Vergelijken zoals Supabase: de hash opnieuw maken met het
+      // opgeslagen zout en kijken of hij gelijk uitkomt.
       const r = await alsBeheer(c => c.query(
-        "select id, email, raw_user_meta_data ->> 'ww' as ww from auth.users where lower(email)=lower($1)", [lijf.email]));
+        'select id, email, (encrypted_password is not null and ' +
+        'encrypted_password = extensions.crypt($2, encrypted_password)) as klopt ' +
+        'from auth.users where lower(email)=lower($1)', [lijf.email, lijf.password || '']));
       const g = r.rows[0];
-      if (!g || g.ww !== lijf.password) return stuur(400, { message: 'Dit e-mailadres of wachtwoord klopt niet.' });
+      if (!g || !g.klopt) return stuur(400, { message: 'Dit e-mailadres of wachtwoord klopt niet.' });
       return stuur(200, nieuweSessie(g.id, { id: g.id, email: g.email }));
     }
     if (pad === '/auth/v1/token' && u.searchParams.get('grant_type') === 'refresh_token') {
