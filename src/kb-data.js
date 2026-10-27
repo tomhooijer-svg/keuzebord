@@ -1930,6 +1930,7 @@ var HUISSTIJL_UITLEG = [
 ];
 var HUISSTIJL_SLEUTEL   = 'kb_huisstijl';
 var HUISSTIJL_LOGO      = 'kb_schoollogo';
+var KINDFOTOS_SLEUTEL   = 'kb_kindfotos';
 
 function geldigeKleur(h){
   return (typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h.trim())) ? h.trim().toLowerCase() : null;
@@ -2046,6 +2047,46 @@ function zetHuisstijl(h, logo){
       else localStorage.removeItem(HUISSTIJL_LOGO);
     }
   } catch (e) {}
+}
+
+/* ── foto's van kinderen ──────────────────────────────────────────────
+   Een school zet zelf aan of er foto's van kinderen in de app mogen.
+   Standaard staat het uit: een foto van een kleuter is het zwaarste wat
+   dit product bewaart, en dat hoort een keuze te zijn die iemand maakt
+   en niet een stand die iemand overkomt.
+
+   Staat het uit, dan blijft een foto die er al is wél bewaard -- hij
+   komt alleen niet in beeld. Weggooien bij het omzetten van een
+   schakelaar is onomkeerbaar werk doen namens iemand anders. Wie de
+   foto's echt kwijt wil, haalt ze per kind weg.
+
+   Deze stand staat in de opslag van de browser en niet alleen in de
+   sessie: het bord in de klas start 's ochtends op en moet het meteen
+   weten, nog voordat de server antwoord heeft gegeven.
+
+   Weet de browser het niet (de werkplaats, waar geen school achter zit
+   en geen echt kind in staat), dan mag het gewoon. */
+function kindfotosAan(){
+  try {
+    var v = localStorage.getItem(KINDFOTOS_SLEUTEL);
+    if (v === 'nee') return false;
+    if (v === 'ja')  return true;
+  } catch (e) {}
+  return true;
+}
+function zetKindfotos(aan){
+  try {
+    if (aan === null || aan === undefined) localStorage.removeItem(KINDFOTOS_SLEUTEL);
+    else localStorage.setItem(KINDFOTOS_SLEUTEL, aan ? 'ja' : 'nee');
+  } catch (e) {}
+}
+
+/* Welk plaatje van een kind er op het scherm mag. Staan de foto's uit,
+   dan blijft een getekende picto gewoon staan -- dat is geen foto. */
+function kindbeeld(l, k){
+  if (!l || !l.image) return null;
+  if (kindfotosAan()) return l.image;
+  return isTekening(l, k) ? l.image : null;
 }
 
 /* Wat deze browser nog wist van de vorige keer. */
@@ -2356,6 +2397,7 @@ global.KB = {
   contrast: contrast, huisstijlLeesbaarheid: huisstijlLeesbaarheid,
   huisstijlVariabelen: huisstijlVariabelen, huisstijlEigen: huisstijlEigen,
   zetHuisstijl: zetHuisstijl, huisstijlOnthouden: huisstijlOnthouden,
+  kindfotosAan: kindfotosAan, zetKindfotos: zetKindfotos, kindbeeld: kindbeeld,
   schoollogo: schoollogo,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,

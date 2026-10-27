@@ -402,6 +402,32 @@ alter table public.scholen add column if not exists huisstijl jsonb not null def
    hele app zou een merkwaardige ruil zijn. */
 alter table public.scholen add column if not exists logo text;
 
+/* Mogen er foto's van kinderen in de app? Standaard niet.
+
+   Dat is de kant waar je op moet vallen: een foto van een kleuter is
+   het zwaarste wat dit product kan bewaren, en een school die er niet
+   over heeft nagedacht hoort hem niet per ongeluk te gebruiken. Wie
+   hem wil, zet hem aan -- en krijgt daarbij te lezen wat dat betekent.
+
+   Scholen die al foto's gebruikten houden ze. Anders verdwijnt er bij
+   het bijwerken van de software zonder aankondiging een gezicht van het
+   bord, en dat is precies het soort verrassing waar een school haar
+   vertrouwen op verliest. Dit bijwerken gebeurt één keer: bij een
+   tweede keer draaien bestaat de kolom al, en dan zou het een school
+   overrulen die hem zelf heeft uitgezet. */
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'scholen'
+                    and column_name = 'kindfotos') then
+    alter table public.scholen add column kindfotos boolean not null default false;
+    update public.scholen s set kindfotos = true
+     where exists (select 1 from public.leerlingen l
+                    join public.groepen g on g.id = l.groep_id
+                   where g.school_id = s.id and coalesce(l.foto_pad, '') <> '');
+  end if;
+end $$;
+
 -- ── inloggen met een gebruikersnaam ───────────────────────────────────
 /* Een testleerkracht krijgt een kaartje in haar handen en moet binnen
    een minuut binnen zijn. Een e-mailadres intypen op een digibord is

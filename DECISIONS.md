@@ -896,3 +896,53 @@ vooraan, anders leest Excel elke é als Ã©. En een apostrof voor elk veld
 dat met `=` `+` `-` of `@` begint: anders ziet Excel er een formule in en
 voert die uit zodra je het bestand opent. De tekst in een melding typt
 iemand anders in — dat is precies het soort veld waar je dat niet wilt.
+
+## 2026-10-27 · Foto's van kinderen staan standaard uit
+
+Dit is de zwaarste knop in de app. Een foto van een kleuter is het meest
+gevoelige wat dit product bewaart, en de kant waarop je moet vallen is
+dus: uit, tenzij iemand er uitdrukkelijk voor kiest. Een school die er
+nooit over heeft nagedacht hoort niet ongemerkt gezichten van kleuters
+op een server te zetten.
+
+**Een schakelaar per school, bij de schoolbeheerder.** Niet per groep en
+niet per leerkracht: dan is het geen schoolbeleid maar een voorkeur, en
+dan heeft de ene juf foto's en de andere niet. Niet bij de
+platformbeheerder: dit is een keuze van de school over haar eigen
+kinderen, niet van wie de software levert.
+
+**Aanzetten vraagt om een bevestiging, uitzetten niet.** Niet omdat
+aanzetten technisch iets voorstelt, maar omdat dat het ene moment is
+waarop iemand erover moet nadenken — en dat moment komt nooit meer
+terug. In die bevestiging staat dat de school de toestemming van ouders
+regelt en niet de app. Dat is geen juridische formulering maar een
+feitelijke: wij weten niet wie er toestemming heeft gegeven.
+
+**De schakelaar verbergt niet alleen de uploadknop.** Staat hij uit, dan
+komt een foto die er al is ook niet meer in beeld — niet in het beheer,
+niet op het bord, niet in een oudergesprek. Een schakelaar die alleen de
+knop weghaalt is een schakelaar die niets betekent. Daarom loopt alles
+nu langs één functie, `KB.kindbeeld()`, in plaats van langs `l.image`.
+
+**Een picto blijft altijd staan.** Een getekend konijn is geen foto, en
+een school die foto's uitzet hoort niet ineens zes lege rondjes te
+hebben. De app wist dat verschil al (`KB.isTekening`); het wordt hier
+alleen voor het eerst gebruikt om iets te verbergen.
+
+**Uitzetten gooit niets weg.** De foto blijft bewaard en komt terug
+zodra je de schakelaar weer omzet. Weggooien bij het omzetten van een
+schakelaar is onomkeerbaar werk doen namens een collega die er niet bij
+zit. Wie ze echt kwijt wil, haalt ze per kind weg.
+
+**Bestaande scholen houden hun foto's.** De kolom krijgt `false` als
+standaard, maar bij het toevoegen van de kolom gaan scholen die al
+foto's gebruikten in één keer op `true`. Anders verdwijnt er bij het
+bijwerken van de software zonder aankondiging een gezicht van het bord,
+en dat is precies het soort verrassing waar een school haar vertrouwen
+op verliest. Dat bijwerken gebeurt één keer: bij een tweede keer draaien
+bestaat de kolom al, en dan zou het een school overrulen die hem zelf
+heeft uitgezet.
+
+**En de werkplaats blijft werken.** Weet de browser van geen school, dan
+mag het gewoon — anders kan niemand de app uitproberen zonder eerst een
+school te hebben. Daar staat geen echt kind in.

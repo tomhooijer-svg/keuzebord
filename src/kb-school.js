@@ -565,6 +565,7 @@ function tekenSchool(v){
 
   if (metServer()) v.appendChild(schoolnaamPaneel());
   if (metServer()) v.appendChild(huisstijlPaneel());
+  if (metServer()) v.appendChild(kindfotoPaneel());
   if (metServer()) v.appendChild(ondersteuningPaneel());
   if (metServer()) v.appendChild(uitdraaiPaneel());
   if (metServer()) v.appendChild(logboekPaneel());
@@ -706,6 +707,72 @@ function schoolnaamPaneel(){
 }
 
 /* ── de kleuren ───────────────────────────────────────────────────── */
+
+/* ── foto's van kinderen ──────────────────────────────────────────────
+   Standaard uit, en dat is de kant waar je op moet vallen. Een foto van
+   een kleuter is het zwaarste wat deze app bewaart; dat hoort een keuze
+   te zijn die iemand maakt en niet een stand die iemand overkomt.
+
+   Wat er bij het uitzetten níét gebeurt: de foto's die er al zijn
+   verdwijnen niet. Ze komen alleen niet meer in beeld. Weggooien bij
+   het omzetten van een schakelaar is onomkeerbaar werk doen namens een
+   collega die er niet bij zit. Wie ze echt weg wil, haalt ze per kind
+   weg -- of draait de hele school uit en heft hem op. */
+function kindfotoPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Foto\u2019s van kinderen'));
+  if (!alleenBeheerder(p)) return p;
+
+  var aan = KB.kindfotosAan();
+  p.appendChild(el('p', 'hint',
+    'Staat dit uit, dan kan niemand een foto van een kind kiezen en komen ' +
+    'bestaande foto\u2019s niet in beeld. In plaats daarvan staat er een picto ' +
+    'of de eerste letter van de naam. Picto\u2019s blijven altijd werken \u2014 ' +
+    'een getekend konijn is geen foto.'));
+  p.appendChild(el('p', 'hint',
+    'Zet je het uit, dan worden de foto\u2019s niet weggegooid. Ze komen terug ' +
+    'zodra je het weer aanzet. Wil je ze echt kwijt, haal ze dan per kind weg.'));
+
+  var rij = el('div', 'knoprij-onder');
+  var knopje = knop(aan ? 'Foto\u2019s uitzetten' : 'Foto\u2019s aanzetten',
+                    aan ? 'stil' : 'primair', function () {
+    if (aan) { zetFotos(false); return; }
+    /* Aanzetten gaat niet zomaar. Niet omdat het technisch iets voorstelt,
+       maar omdat dit het moment is waarop iemand er één keer over moet
+       nadenken -- en dat moment komt nooit meer terug. */
+    vraagBevestiging('Foto\u2019s van kinderen aanzetten?',
+      'Dan kunnen leerkrachten een foto van een kind kiezen. Die foto staat ' +
+      'daarna op het digibord in de klas en op de server. Zorg dat je ouders ' +
+      'hiervoor toestemming hebben gevraagd \u2014 dat regelt de school, niet de app.',
+      'Aanzetten', function () { zetFotos(true); });
+  });
+  rij.appendChild(knopje);
+  p.appendChild(rij);
+
+  var stand = el('div', 'hint');
+  stand.style.marginTop = '8px';
+  stand.textContent = aan
+    ? 'Foto\u2019s staan nu aan.'
+    : 'Foto\u2019s staan nu uit. Dit is de standaard.';
+  p.appendChild(stand);
+  return p;
+}
+
+function zetFotos(aan){
+  var wie = KBV.wie();
+  var school = (wie && wie.school) || {};
+  SB.wijzig('scholen', { kindfotos: !!aan }, { id:'eq.' + school.id })
+    .then(function () {
+      return SB.roep('noteer', { wat: aan ? 'kindfoto\u2019s aangezet' : 'kindfoto\u2019s uitgezet',
+                                 school: school.id, waarover: school.naam })
+        .catch(function () {});
+    })
+    .then(function () { KB.zetKindfotos(!!aan); return KBV.herstart(); })
+    .then(function () {
+      teken();
+      meld(aan ? 'Foto\u2019s van kinderen staan aan' : 'Foto\u2019s van kinderen staan uit');
+    }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+}
 
 function huisstijlPaneel(){
   var p = el('div', 'paneel');

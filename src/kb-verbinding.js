@@ -284,6 +284,11 @@ function start(opties){
     /* De kleuren van de school. kb-data heeft er al een gezet uit wat
        deze browser onthield; dit is de echte, van de server. */
     KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
+    /* En of deze school foto's van kinderen gebruikt. Dit moet in de
+       opslag staan en niet alleen in de sessie: het bord in de klas
+       start 's ochtends op en tekent de kinderen voordat de server
+       antwoord heeft gegeven. */
+    KB.zetKindfotos(ik.school ? !!ik.school.kindfotos : null);
     /* Doorsturen naar de pagina waar je al staat is geen doorsturen maar
        een herlaadlus: de pagina begint opnieuw, komt tot dezelfde
        conclusie, en stuurt zichzelf weer door -- tientallen keren per
@@ -357,6 +362,11 @@ function herstart(){
   return SB.wieBenIk().then(function (uit) {
     ik = uit;
     KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
+    /* En of deze school foto's van kinderen gebruikt. Dit moet in de
+       opslag staan en niet alleen in de sessie: het bord in de klas
+       start 's ochtends op en tekent de kinderen voordat de server
+       antwoord heeft gegeven. */
+    KB.zetKindfotos(ik.school ? !!ik.school.kindfotos : null);
     zorgVoorGroepen();
     klasId = kiesGroep();
     groepId = klasId ? KBSYNC.opServer(klasId) : null;
@@ -412,6 +422,7 @@ function afmelden(){
        andere school in op hetzelfde apparaat, dan hoort die niet eerst
        de kleuren van de vorige te zien. */
     KB.zetHuisstijl(null, null);
+    KB.zetKindfotos(null);
     location.href = 'inloggen.html';
   });
 }

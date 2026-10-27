@@ -64,6 +64,25 @@ async function inloggen(p, email, waarheen){
   zeg('de hoekfoto ook', !!na.hoekPad, na.hoekPad || 'geen pad');
   zeg('en er staat niets meer te wachten', na.wacht === false, 'wachtend: ' + na.wacht);
 
+  /* Deze school gebruikt foto's van kinderen. Dat is niet de standaard
+     -- die staat uit -- dus de schoolbeheerder zet hem hier aan, net
+     zoals ze dat in het echt bij "De school" zou doen. Deze proef gaat
+     over of een foto van de laptop op het digibord komt, en dan moet
+     die foto wel mogen. */
+  const schoolbaas = await apparaat(b, 'schoolbeheerder');
+  await inloggen(schoolbaas, 'beheerder@mijnschool.nl', /school\.html|beheer\.html/);
+  await schoolbaas.goto(APP + '/school.html');
+  await schoolbaas.waitForTimeout(2200);
+  await schoolbaas.click('.zij-knop:has-text("De school")').catch(()=>{});
+  await schoolbaas.waitForTimeout(900);
+  await schoolbaas.click('button:has-text("Foto\u2019s aanzetten")');
+  await schoolbaas.waitForTimeout(400);
+  await schoolbaas.click('.blad button:has-text("Aanzetten")');
+  await schoolbaas.waitForTimeout(1800);
+  zeg('de school zet foto\u2019s van kinderen aan',
+      await schoolbaas.isVisible('button:has-text("Foto\u2019s uitzetten")'), 'staan aan');
+  await schoolbaas.context().close();
+
   // ── het digibord ──
   const bord = await apparaat(b, 'digibord');
   await inloggen(bord, 'juf@mijnschool.nl', /beheer\.html/);
@@ -85,6 +104,12 @@ async function inloggen(p, email, waarheen){
   });
   zeg('het digibord haalde de picto op', op.pictos === 1, 'aantal: ' + op.pictos);
   zeg('en Sem heeft zijn eigen foto', op.kindHeeftFoto, op.kindNaam);
+  /* En hij staat ook echt in beeld. Dat is sinds de schakelaar
+     "foto's van kinderen" geen vanzelfsprekendheid meer: die staat
+     standaard uit, en deze proef zet hem hieronder aan. Zonder deze
+     controle zou de proef groen blijven terwijl er op het digibord
+     een letter staat waar een gezicht hoorde. */
+  zeg('en staat in beeld op het bord', op.inBeeld, op.inBeeld ? 'zichtbaar' : 'niets te zien');
   zeg('de hoek heeft zijn foto', op.hoekHeeftFoto, '');
   await bord.screenshot({ path:'/tmp/fotos-bord.png' });
 

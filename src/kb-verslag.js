@@ -109,7 +109,11 @@ function gegevens(leerlingId, k, opties){
   var stat = { dagen: opties.dagen || 0, eind: opties.eind || null };
   return {
     naam: l.naam,
-    beeld: opties.fotos === false ? null : (l.image || null),
+    /* KB.kindbeeld en niet l.image: staan de foto's van kinderen uit op
+       deze school, dan hoort er ook geen foto in een oudergesprek te
+       staan. De schakelaar in het verslag blijft daarnaast bestaan --
+       die is van de leerkracht, voor dit ene gesprek. */
+    beeld: opties.fotos === false ? null : KB.kindbeeld(l, k),
     doelen: doelenVanKind(leerlingId, k, opties),
     hoeken: hoekenVanKind(leerlingId, k, stat),
     maatjes: maatjes(leerlingId, k, stat),
