@@ -44,7 +44,7 @@ rm -rf "$UIT"; mkdir -p "$UIT"
 
 # ── wat elke uitgave krijgt ──────────────────────────────────────────
 # De motor: overal hetzelfde.
-KERN="kb-app.js kb-testbanner.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
+KERN="kb-app.js kb-testbanner.js kb-pictobank.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
 BORD_SCHERMEN="kb-bord.js kb-school.js kb-platform.js kb-statistiekpaneel.js kb-docx.js"
 PLAN_SCHERMEN="kb-school.js kb-doelzoeker.js kb-verslag.js kb-plan.js kb-thema.js"
 
@@ -176,7 +176,7 @@ EOF
 echo "── uitgeven ($V) ──"
 bouw keuzebord "Keuzebord" planbord "Planbord" "../planbord/" \
   "'vandaag','statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'" \
-  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html platform.html demo.html handleiding.html diagnose.html 404.html" true false
+  "$BORD_SCHERMEN" "index.html inloggen.html bord.html testbord.html school.html beheer.html platform.html demo.html handleiding.html pictos.html diagnose.html 404.html" true false
 
 bouw planbord "Planbord" keuzebord "Keuzebord" "../keuzebord-app/" \
   "'vandaag','week','themas','taken','doelen','observaties','groep'" \
