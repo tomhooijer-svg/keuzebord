@@ -389,6 +389,19 @@ alter table public.scholen add column if not exists modules jsonb not null defau
    hem dus met rust. */
 alter table public.scholen add column if not exists huisstijl jsonb not null default '{}'::jsonb;
 
+/* Het logo van de school, als verkleind plaatje in de rij zelf.
+
+   Waarom niet in de opslag, waar alle andere plaatjes staan: het logo
+   hoort op het inlogscherm, en daar is nog niemand binnen. De
+   opslagregels vragen om een school, dus een logo daar is onzichtbaar
+   precies op de plek waar het moet staan. Hier komt het mee met de rij
+   die elke pagina toch al ophaalt.
+
+   Dat kan alleen omdat het klein is. De app verkleint naar 256 pixels
+   en weigert alles boven de 60 kB -- een logo dat zwaarder is dan de
+   hele app zou een merkwaardige ruil zijn. */
+alter table public.scholen add column if not exists logo text;
+
 -- ── inloggen met een gebruikersnaam ───────────────────────────────────
 /* Een testleerkracht krijgt een kaartje in haar handen en moet binnen
    een minuut binnen zijn. Een e-mailadres intypen op een digibord is

@@ -82,15 +82,24 @@ Dit heb je nodig als je per ongeluk je eigen rol hebt veranderd, of als
 je een vers account hebt gemaakt dat nog nergens bij hoort.
 
 ```sql
-select set_config('kb.systeem', 'aan', true);
-update public.profielen
-   set rol = 'platformbeheerder', school_id = null
- where gebruikersnaam = 'jouw.gebruikersnaam';
+do $$
+begin
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen
+     set rol = 'platformbeheerder', school_id = null
+   where gebruikersnaam = 'jouw.gebruikersnaam';
+end $$;
 ```
 
-Die eerste regel is nodig: er zit een slot op de kolommen `rol` en
-`school_id` dat voorkomt dat iemand zichzelf promoveert. `kb.systeem`
-zet dat slot even open, en alleen binnen deze ene query.
+`kb.systeem` is nodig: er zit een slot op de kolommen `rol` en
+`school_id` dat voorkomt dat iemand zichzelf promoveert. Die vlag geldt
+alleen binnen één transactie.
+
+**Daarom staat het in een `do $$ ... end $$;`-blok.** Zet je de twee
+regels los onder elkaar, dan draait de SQL-editor ze mogelijk ieder in
+een eigen transactie, is de vlag bij de tweede regel alweer weg, en
+loopt de update tegen het slot aan. Een blok is één opdracht en dus één
+transactie.
 
 ---
 
@@ -106,10 +115,13 @@ Als er helemaal niets meer werkt. Maak eerst een gebruiker aan via
 Daarna in de SQL Editor:
 
 ```sql
-select set_config('kb.systeem', 'aan', true);
-update public.profielen
-   set rol = 'platformbeheerder', school_id = null, gebruikersnaam = 'noodluik'
- where lower(email) = 'noodluik@keuzebord.invalid';
+do $$
+begin
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen
+     set rol = 'platformbeheerder', school_id = null, gebruikersnaam = 'noodluik'
+   where lower(email) = 'noodluik@keuzebord.invalid';
+end $$;
 ```
 
 Inloggen doe je dan met gebruikersnaam `noodluik`. Ruim hem daarna op:

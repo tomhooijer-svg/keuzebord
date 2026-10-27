@@ -572,71 +572,183 @@ function tekenSchool(v){
    "gekozen" of "aan de beurt" -- een afspraak met de kinderen, geen
    smaakkwestie. */
 
-function huisstijlPaneel(){
-  var p = el('div', 'paneel');
-  p.appendChild(el('div', 'paneelkop', 'De kleuren van de school'));
+/* ══════════════════════════════════════════════════════════
+   DE SCHOOL ZELF
+   Naam, logo en kleuren. Alles wat een school tot háár school
+   maakt, op één plek -- want wie het een gaat aanpassen, wil
+   meestal het ander ook.
+   ══════════════════════════════════════════════════════════ */
 
+function alleenBeheerder(p){
   var wie = KBV.wie();
   if (!wie || wie.profiel.rol !== 'schoolbeheerder') {
     p.appendChild(el('p', 'hint', 'Alleen de schoolbeheerder kan dit aanpassen.'));
-    return p;
+    return false;
   }
+  return true;
+}
+
+/* ── naam en logo ─────────────────────────────────────────────────── */
+
+function schoolnaamPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Naam en logo'));
+  if (!alleenBeheerder(p)) return p;
+
+  var school = (KBV.wie() && KBV.wie().school) || {};
+  p.appendChild(el('p', 'hint',
+    'De naam staat op het inlogkaartje van je collega\'s en bovenaan dit scherm. ' +
+    'Het logo komt op het inlogscherm en in het menu \u2014 niet op het bord zelf, ' +
+    'want daar is elke plek die geen hoek is er een te veel.'));
+
+  var veld = el('div', 'veld');
+  veld.appendChild(el('label', null, 'Naam van de school'));
+  var invoer = el('input');
+  invoer.type = 'text'; invoer.value = school.naam || '';
+  invoer.placeholder = 'Kindcentrum De Regenboog';
+  veld.appendChild(invoer);
+  p.appendChild(veld);
+
+  var logovak = el('div', 'logovak');
+  var logoBeeld = el('img', 'logovoorbeeld');
+  var huidigLogo = school.logo || KB.schoollogo();
+  if (huidigLogo) logoBeeld.src = huidigLogo;
+  else logoBeeld.style.display = 'none';
+  logovak.appendChild(logoBeeld);
+  var logouitleg = el('div', 'hint', huidigLogo
+    ? 'Dit logo staat nu op het inlogscherm en in het menu.'
+    : 'Nog geen logo. Een vierkant of liggend plaatje werkt het beste.');
+  logovak.appendChild(logouitleg);
+  p.appendChild(logovak);
+
+  var rij = el('div', 'knoprij-onder');
+  rij.appendChild(knop('Naam opslaan', 'primair', function () {
+    var n = invoer.value.trim();
+    if (!n) { meld('Een school heeft een naam nodig'); invoer.focus(); return; }
+    SB.wijzig('scholen', { naam: n }, { id:'eq.' + school.id })
+      .then(function () { return KBV.herstart(); })
+      .then(function () { teken(); meld('Naam opgeslagen'); },
+            function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+  }));
+
+  rij.appendChild(bestandKnop('Logo kiezen', 'image/*', false, function (bestanden) {
+    var f = bestanden[0];
+    if (!f) return;
+    meld('Bezig met verkleinen\u2026');
+    /* Hard verkleinen. Dit plaatje reist mee in de rij van de school,
+       die elke pagina bij het openen ophaalt -- een logo van twee
+       megabyte zou elke keer weer over de lijn gaan, ook op een
+       telefoon van een juf onderweg. */
+    KB.verkleinTekening(f, 256).then(function (data) {
+      if (data.length > 60000) {
+        meld('Dit logo blijft te zwaar. Probeer een eenvoudiger plaatje.');
+        return;
+      }
+      return SB.wijzig('scholen', { logo: data }, { id:'eq.' + school.id })
+        .then(function () { KB.zetHuisstijl(school.huisstijl, data); return KBV.herstart(); })
+        .then(function () { teken(); meld('Logo opgeslagen'); });
+    }).catch(function (e) {
+      meld('Dat lukte niet: ' + ((e && e.message) || 'onbekend'));
+    });
+  }, 'stil'));
+
+  if (huidigLogo) {
+    rij.appendChild(knop('Logo weghalen', 'stil', function () {
+      SB.wijzig('scholen', { logo: null }, { id:'eq.' + school.id })
+        .then(function () { KB.zetHuisstijl(school.huisstijl, null); return KBV.herstart(); })
+        .then(function () { teken(); meld('Logo weggehaald'); },
+              function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    }));
+  }
+  p.appendChild(rij);
+  return p;
+}
+
+/* ── de kleuren ───────────────────────────────────────────────────── */
+
+function huisstijlPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'De kleuren van de school'));
+  if (!alleenBeheerder(p)) return p;
 
   p.appendChild(el('p', 'hint',
-    'Standaard staat het keuzebord in de kleuren van Pixelplein. Wil je school haar ' +
-    'eigen kleuren, dan zet je ze hier. Ze gelden voor iedereen van de school, op elk ' +
-    'apparaat. Het bord zelf houdt daarnaast zijn eigen sfeer per groep \u2014 die stel je ' +
-    'bij Uiterlijk in.'));
+    'Standaard staat het keuzebord in de kleuren van Pixelplein. Zes kleuren zijn ' +
+    'aan te passen; de rest rekent de app daaruit. Ze gelden voor iedereen van de ' +
+    'school, op elk apparaat. Het bord houdt daarnaast zijn eigen sfeer per groep \u2014 ' +
+    'die stel je bij Uiterlijk in.'));
 
-  var school = wie.school || {};
-  /* Een werkkopie: pas als er op Bewaren wordt gedrukt gaat hij naar de
-     server. Tot die tijd mag je rustig rondschuiven en terug. */
-  var nu = {
-    inkt:  KB.geldigeKleur((school.huisstijl || {}).inkt)  || KB.HUISSTIJL_STANDAARD.inkt,
-    grond: KB.geldigeKleur((school.huisstijl || {}).grond) || KB.HUISSTIJL_STANDAARD.grond,
-    knop:  KB.geldigeKleur((school.huisstijl || {}).knop)  || KB.HUISSTIJL_STANDAARD.knop
-  };
+  var school = (KBV.wie() && KBV.wie().school) || {};
+  /* Een werkkopie: pas bij Bewaren gaat hij naar de server. Tot die tijd
+     mag je rustig rondschuiven en terug. */
+  var nu = {};
+  KB.HUISSTIJL_UITLEG.forEach(function (u) {
+    nu[u[0]] = KB.huisstijlKleur(school.huisstijl, u[0]);
+  });
 
   var rij = el('div', 'huisstijlrij');
   var proef = el('div', 'huisstijlproef');
   var pk = el('div', 'pk', 'Groep 1A');
   var pt = el('p', 'pt', 'Zo ziet een scherm er dan uit.');
+  var pkaart = el('div', 'pkaart');
+  var pbeurt = el('span', 'pbeurt', 'Aan de beurt');
+  pkaart.appendChild(pbeurt);
   var pknop = el('div', 'pknop', 'Bord openen');
-  proef.appendChild(pk); proef.appendChild(pt); proef.appendChild(pknop);
+  proef.appendChild(pk); proef.appendChild(pt);
+  proef.appendChild(pkaart); proef.appendChild(pknop);
+
+  var oordeel = el('div', 'leesbaarheid');
 
   function toonProef(){
     proef.style.background = nu.grond;
     pk.style.color = nu.inkt;
     pt.style.color = KB.mengMetWit(nu.inkt, 0.28);
+    pkaart.style.background = nu.kaart;
+    pkaart.style.color = nu.inkt;
+    pbeurt.style.background = nu.warm;
+    pbeurt.style.color = nu.inkt;
     pknop.style.background = nu.knop;
+
+    /* Met zes kleuren kan een school zichzelf onleesbaar maken. Dat
+       verbieden we niet -- het is hun school -- maar we zeggen het wel,
+       en we zeggen erbij wát er niet leest. */
+    leeg(oordeel);
+    var lijst = KB.huisstijlLeesbaarheid(nu);
+    var slecht = lijst.filter(function (x) { return x.oordeel !== 'goed'; });
+    if (!slecht.length) {
+      var goed = el('div', 'leesregel goed', 'Alles is goed leesbaar.');
+      oordeel.appendChild(goed);
+      return;
+    }
+    slecht.forEach(function (x) {
+      oordeel.appendChild(el('div', 'leesregel ' + x.oordeel,
+        x.wat + ': ' + (x.oordeel === 'slecht' ? 'slecht leesbaar' : 'krap') +
+        ' (contrast ' + x.waarde.toString().replace('.', ',') + ')'));
+    });
   }
 
-  [['inkt', 'Inkt', 'tekst en menu'],
-   ['grond', 'Grond', 'de achtergrond'],
-   ['knop', 'Knop', 'waar je op drukt']].forEach(function (k) {
+  KB.HUISSTIJL_UITLEG.forEach(function (u) {
     var vak = el('div', 'huisstijlkleur');
     var kiezer = el('input');
     kiezer.type = 'color';
-    kiezer.value = nu[k[0]];
-    kiezer.setAttribute('aria-label', k[1]);
+    kiezer.value = nu[u[0]];
+    kiezer.setAttribute('aria-label', u[1]);
     kiezer.addEventListener('input', function () {
-      nu[k[0]] = kiezer.value.toLowerCase();
+      nu[u[0]] = kiezer.value.toLowerCase();
       toonProef();
     });
     vak.appendChild(kiezer);
-    vak.appendChild(el('div', 'n', k[1]));
-    vak.appendChild(el('div', 's', k[2]));
+    vak.appendChild(el('div', 'n', u[1]));
+    vak.appendChild(el('div', 's', u[2]));
     rij.appendChild(vak);
   });
   rij.appendChild(proef);
   toonProef();
   p.appendChild(rij);
+  p.appendChild(oordeel);
 
   function bewaarKleuren(waarden){
-    return SB.wijzig('scholen', { huisstijl: waarden }, { id: 'eq.' + school.id })
+    return SB.wijzig('scholen', { huisstijl: waarden }, { id:'eq.' + school.id })
       .then(function () {
-        /* Meteen zichtbaar maken, en in deze browser onthouden zodat de
-           volgende pagina er niet eerst zonder opent. */
         KB.zetHuisstijl(waarden);
         return KBV.herstart();
       })

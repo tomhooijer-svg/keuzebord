@@ -283,7 +283,7 @@ function start(opties){
     ik = uit;
     /* De kleuren van de school. kb-data heeft er al een gezet uit wat
        deze browser onthield; dit is de echte, van de server. */
-    KB.zetHuisstijl(ik.school && ik.school.huisstijl);
+    KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
     /* Doorsturen naar de pagina waar je al staat is geen doorsturen maar
        een herlaadlus: de pagina begint opnieuw, komt tot dezelfde
        conclusie, en stuurt zichzelf weer door -- tientallen keren per
@@ -356,7 +356,7 @@ function volgIntervallen(){
 function herstart(){
   return SB.wieBenIk().then(function (uit) {
     ik = uit;
-    KB.zetHuisstijl(ik.school && ik.school.huisstijl);
+    KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
     zorgVoorGroepen();
     klasId = kiesGroep();
     groepId = klasId ? KBSYNC.opServer(klasId) : null;
@@ -411,7 +411,7 @@ function afmelden(){
     /* Ook de kleuren van deze school. Logt er daarna iemand van een
        andere school in op hetzelfde apparaat, dan hoort die niet eerst
        de kleuren van de vorige te zien. */
-    KB.zetHuisstijl(null);
+    KB.zetHuisstijl(null, null);
     location.href = 'inloggen.html';
   });
 }
