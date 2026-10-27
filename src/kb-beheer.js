@@ -1296,10 +1296,17 @@ panelen.pictos = function (v){
       KB_PICTOBANK.alle().length + ' getekende picto\'s die elke school heeft. Klik er een ' +
       'aan om hem aan een kind te geven. Ze zijn ook uit te printen \u2014 handig voor op ' +
       'een bakje, een kapstok of de deur van een hoek.'));
+    /* Een link, geen knop. Dit brengt je ergens heen, en dan hoort het
+       een link te zijn: middelklikken werkt, "openen in nieuw tabblad"
+       werkt, en een schermlezer zegt "link" in plaats van "knop". Als
+       knop met window.open was het bovendien niet te onderscheiden van
+       een dode knop -- zie test/knoppen.test.js, die daarover viel. */
     var printrij = el('div', 'knoprij-onder');
-    printrij.appendChild(knop('Printvel openen', 'stil', function () {
-      window.open('pictos.html', '_blank', 'noopener');
-    }));
+    var printlink = el('a', 'knop knop-stil knop-klein', 'Printvel openen');
+    printlink.href = 'pictos.html';
+    printlink.target = '_blank';
+    printlink.rel = 'noopener';
+    printrij.appendChild(printlink);
     b.appendChild(printrij);
     var zoekvak = el('div', 'veld');
     zoekvak.style.marginTop = '12px';
