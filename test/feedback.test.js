@@ -86,6 +86,16 @@ async function inloggen(p, naam, ww){
   zeg('en het vraagt om geen kindernamen op te schrijven',
       /geen namen van kinderen/.test(bladtekst), 'staat er');
 
+  /* Open of dicht staat ook op body. Dat is geen sierlijkheid: dit
+     venster hangt náást dat van de pagina, en de veger in
+     test/knoppen.test.js neemt een afdruk waarin alleen het eigen
+     venster van de pagina zit. Zonder die klasse is Annuleren voor die
+     proef niet te onderscheiden van een knop die stuk is -- en dat is
+     precies wat zij hoort te vangen. Hij had hem ook gevangen. */
+  const standOpen = await p.evaluate(() => document.body.className);
+  zeg('dat dit venster openstaat, staat ook op het scherm zelf',
+      /melden-open/.test(standOpen), standOpen || '(leeg)');
+
   // Leeg versturen hoort niet te kunnen: een lege melding is een melding
   // waar je niets mee kunt en die je wel moet afhandelen.
   await p.click('#fb-versturen');
@@ -140,6 +150,10 @@ async function inloggen(p, naam, ww){
   zeg('en dan staat er bord.html als scherm bij', /bord\.html/.test(vanafBord),
       (vanafBord.match(/Scherm: [^·]+/) || ['—'])[0].trim());
   await p.click('#fb-blad button:has-text("Annuleren")');
+  await p.waitForTimeout(400);
+  const standDicht = await p.evaluate(() => document.body.className);
+  zeg('en bij sluiten gaat die stand er weer af',
+      !/melden-open/.test(standDicht), standDicht || '(leeg)');
 
   // ── wie mag het lezen ──
   const token = async (e, w) => (await (await fetch(SERVER + '/auth/v1/token?grant_type=password', {
