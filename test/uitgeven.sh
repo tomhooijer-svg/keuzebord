@@ -230,15 +230,18 @@ kop "$UIT/planbord"  /tmp/kb-kop-planbord.md
 
 n=$(grep -rlE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" "$UIT" 2>/dev/null \
     | xargs grep -hoE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" 2>/dev/null \
-    | grep -vcE "@(school|mijnschool|school-a|school-b|voorbeeld|deregenboog|platform|tweede)\.nl" || true)
+    | grep -vcE "@((school|mijnschool|school-a|school-b|voorbeeld|deregenboog|platform|tweede)\.nl|[a-z0-9.-]+\.invalid)" || true)
 # Voorbeeldadressen staan in de proeven, de leesmij en het schema; die
-# horen erbij. Alles daarbuiten is een echt adres dat per ongeluk mee is
-# gelift, en dat mag niet publiek. Nul hoort het antwoord te zijn.
+# horen erbij. Adressen op .invalid ook: dat domein is officieel
+# vastgelegd om nooit te bestaan, en het is precies wat er achter een
+# gebruikersnaam zit (juf.marieke@keuzebord.invalid). Alles daarbuiten
+# is een echt adres dat per ongeluk mee is gelift, en dat mag niet
+# publiek. Nul hoort het antwoord te zijn.
 echo "  e-mailadressen die geen voorbeeld zijn: ${n:-0}"
 if [ "${n:-0}" -gt 0 ]; then
   grep -rlE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" "$UIT" 2>/dev/null \
     | xargs grep -hoE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" 2>/dev/null \
-    | grep -vE "@(school|mijnschool|school-a|school-b|voorbeeld|deregenboog|platform|tweede)\.nl" \
+    | grep -vE "@((school|mijnschool|school-a|school-b|voorbeeld|deregenboog|platform|tweede)\.nl|[a-z0-9.-]+\.invalid)" \
     | sort -u | sed 's/^/    LET OP: /'
 fi
 echo "── klaar in $UIT ──"
