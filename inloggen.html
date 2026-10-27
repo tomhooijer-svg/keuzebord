@@ -155,6 +155,70 @@ body.inlog{
          'jij zelf? Neem dan contact op met de leverancier.', 'goed');
   }
 
+  /* ── de pogingenrem ───────────────────────────────────────────────
+     Na een paar misgeslagen pogingen moet je even wachten, en elke
+     volgende keer langer.
+
+     Wees eerlijk over wat dit is: deze rem zit in de browser, en
+     inloggen gaat rechtstreeks naar Supabase. Wie deze pagina overslaat
+     en de server zelf aanroept, merkt er niets van. Dit remt dus een
+     mens -- een kind dat aan het digibord wachtwoorden zit te proberen,
+     een collega die blijft gokken -- en geen programma.
+
+     De echte rem staat in Supabase zelf, bij Authentication → Rate
+     Limits. Die hoort aan te staan; zie docs/HERSTEL.md en
+     DECISIONS.md. Zolang die er is, zijn drie woorden en een cijfer
+     genoeg. Valt die weg, dan moeten de wachtwoorden langer.
+
+     De telling staat per browser en per naam. Niet per account op de
+     server: dan kon iemand een juf buitensluiten door tien keer een
+     fout wachtwoord voor haar in te typen, en dat is een aanval op
+     zichzelf. */
+  var REM_NA = 5;                       // zoveel misslagen mogen vrijuit
+  var REM_TIJDEN = [10, 30, 60, 120, 300];   // daarna wachten, in seconden
+
+  function remLees(){
+    try { return JSON.parse(localStorage.getItem('kb_pogingen') || '{}'); }
+    catch (e) { return {}; }
+  }
+  function remSchrijf(p){
+    try { localStorage.setItem('kb_pogingen', JSON.stringify(p)); } catch (e) {}
+  }
+  function remSleutel(naam){ return String(naam || '').trim().toLowerCase(); }
+
+  /* Hoeveel seconden moet deze naam nog wachten? */
+  function remWacht(naam){
+    var p = remLees()[remSleutel(naam)];
+    if (!p || !p.tot) return 0;
+    return Math.max(0, Math.ceil((p.tot - Date.now()) / 1000));
+  }
+
+  function remMisgeslagen(naam){
+    var alles = remLees(), k = remSleutel(naam);
+    var p = alles[k] || { aantal: 0, tot: 0 };
+    p.aantal++;
+    if (p.aantal > REM_NA) {
+      var i = Math.min(p.aantal - REM_NA - 1, REM_TIJDEN.length - 1);
+      p.tot = Date.now() + REM_TIJDEN[i] * 1000;
+    }
+    alles[k] = p;
+    remSchrijf(alles);
+  }
+
+  function remGelukt(naam){
+    var alles = remLees();
+    delete alles[remSleutel(naam)];
+    remSchrijf(alles);
+  }
+
+  function wachttekst(sec){
+    if (sec >= 60) {
+      var m = Math.ceil(sec / 60);
+      return m === 1 ? 'een minuut' : m + ' minuten';
+    }
+    return sec + ' seconden';
+  }
+
   function toonFout(e){
     if (e && e.offline) {
       meld('Geen verbinding met de server. Controleer het internet en probeer het opnieuw.');
@@ -195,6 +259,12 @@ body.inlog{
     var ww    = $('ww').value;
     if (!email) { meld('Vul je gebruikersnaam in.'); $('email').focus(); return; }
     if (!ww)    { meld('Vul je wachtwoord in.');  $('ww').focus();    return; }
+
+    var wacht = remWacht(email);
+    if (wacht > 0) {
+      meld('Te vaak misgeslagen. Probeer het over ' + wachttekst(wacht) + ' nog eens.');
+      return;
+    }
     if (stand === 'registreren' && ww.length < 8) {
       meld('Kies een wachtwoord van minstens acht tekens.'); $('ww').focus(); return;
     }
@@ -213,8 +283,22 @@ body.inlog{
              'Lukt inloggen niet, meld het dan bij de leverancier.', 'goed');
         return;
       }
+      remGelukt(email);
       return verder();
-    }).catch(toonFout).then(function () {
+    }).catch(function (e) {
+      /* Alleen tellen bij een afgewezen inlogpoging. Geen verbinding of
+         een server die piept is geen misslag -- dan zou een school met
+         slecht wifi zichzelf buitensluiten. */
+      if (e && !e.offline && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
+        remMisgeslagen(email);
+        var nu = remWacht(email);
+        if (nu > 0) {
+          meld('Te vaak misgeslagen. Probeer het over ' + wachttekst(nu) + ' nog eens.');
+          return;
+        }
+      }
+      toonFout(e);
+    }).then(function () {
       bezig = false;
       document.querySelector('.kaart').classList.remove('bezig');
     });
