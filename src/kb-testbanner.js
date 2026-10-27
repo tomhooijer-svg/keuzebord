@@ -102,6 +102,15 @@ function opBord(){
   function teken(){
     var k = klein();
     chip.classList.toggle('klein', k);
+    /* En op de pagina zelf, zoals deze app zijn schermstanden overal
+       bijhoudt (body.bord, body.beheer, body.inlog). Dat is hier geen
+       sierlijkheid: een knop die alleen zichzelf verandert is voor de
+       proef in test/knoppen.test.js niet te onderscheiden van een knop
+       die stuk is. Die proef klikt elke knop op elk scherm aan en kijkt
+       of het scherm er daarna anders uitziet -- precies de controle die
+       een dode knop vangt, en die wil ik overeind houden. Met de stand
+       op body staat hij in die afdruk, en klopt het verhaal ook. */
+    document.body.classList.toggle('testversie-klein', k);
     var v = versietekst(false);
     woord.textContent = 'Testversie' + (v ? ' · ' + v : '');
     chip.title = k ? 'Testversie' + (v ? ' · ' + v : '') + ' — tik om uit te klappen'
