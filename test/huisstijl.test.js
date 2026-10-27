@@ -168,9 +168,29 @@ const naarHex = (s) => {
   if (naarSchool) { await naarSchool.click(); await p.waitForTimeout(600); }
   await p.waitForSelector('.huisstijlrij', { timeout: 9000 });
   const kiezers = await p.$$eval('.huisstijlkleur input[type="color"]', n => n.map(x => x.value));
-  zeg('er staan precies drie kleuren om aan te draaien', kiezers.length === 3, kiezers.join(' '));
+  // Dit waren er eerst drie. Met zes kan een school meer, en kan ze
+  // zichzelf ook onleesbaar maken -- vandaar de controle hieronder.
+  zeg('er staan zes kleuren om aan te draaien', kiezers.length === 6, kiezers.join(' '));
   zeg('en ze staan op de kleuren van de school',
       kiezers.indexOf('#2d1b55') >= 0 && kiezers.indexOf('#7a3fb0') >= 0, kiezers.join(' '));
+
+  /* Zwijgen als de tekst onleesbaar wordt zou geen dienst zijn. We
+     verbieden het niet -- het is hun school -- maar het hoort er wel te
+     staan, en er moet bij staan wát er niet leest. */
+  const voorHet = (await p.textContent('.leesbaarheid') || '').trim();
+  zeg('en er staat of het leesbaar is', voorHet.length > 0, voorHet.slice(0, 44));
+
+  await p.evaluate(() => {
+    const k = [...document.querySelectorAll('.huisstijlkleur input[type="color"]')];
+    k[0].value = '#eeeeee';                       // inkt bijna wit
+    k[0].dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await p.waitForTimeout(300);
+  const klacht = (await p.textContent('.leesbaarheid') || '').trim();
+  zeg('bij lichtgrijze tekst op wit klaagt hij',
+      /slecht leesbaar|krap/.test(klacht), klacht.slice(0, 60));
+  zeg('en zegt erbij wat er niet leest',
+      /Tekst op/.test(klacht), (klacht.match(/Tekst op [^(]*/) || ['\u2014'])[0].slice(0, 40));
 
   await p.click('button:has-text("Terug naar Pixelplein")');
   await p.waitForTimeout(1200);

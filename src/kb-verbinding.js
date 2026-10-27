@@ -425,7 +425,11 @@ function maakAccountknop(opties){
   opties = opties || {};
   if (!ik || !ik.profiel) return null;
 
-  var naam = ik.profiel.naam || ik.profiel.email || 'ingelogd';
+  /* Naam, anders gebruikersnaam, anders het adres. Dat middelste is
+     erbij gekomen met het inloggen op gebruikersnaam: een account dat
+     geen naam heeft gekregen toonde anders een afgekapt intern adres,
+     en daar herkent niemand zichzelf in. */
+  var naam = ik.profiel.naam || ik.profiel.gebruikersnaam || ik.profiel.email || 'ingelogd';
   var rol  = ik.profiel.rol === 'schoolbeheerder' ? 'Schoolbeheerder' : 'Leerkracht';
 
   var doos = document.createElement('div');

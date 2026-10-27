@@ -53,6 +53,24 @@ function gaNaar(pagina){
   location.href = pagina;
 }
 
+/* Een bestandskiezer die eruitziet als een knop. Staat ook in
+   kb-beheer.js; die twee schermen delen geen code, want ze zijn
+   allebei een eigen eilandje met een eigen venster en eigen
+   meldingen. Let op de vorm van bijKeuze: zonder meervoud krijg je
+   één bestand, niet een lijst van één. */
+function bestandKnop(tekst, accept, meervoud, bijKeuze, soort){
+  var label = el('label', 'knop knop-' + (soort || 'stil') + ' knop-klein uploadvak', tekst);
+  var inv = el('input');
+  inv.type = 'file'; inv.accept = accept; inv.multiple = !!meervoud; inv.style.display = 'none';
+  inv.addEventListener('change', function () {
+    var lijst = Array.prototype.slice.call(inv.files);
+    inv.value = '';
+    if (lijst.length) bijKeuze(meervoud ? lijst : lijst[0]);
+  });
+  label.appendChild(inv);
+  return label;
+}
+
 function knop(tekst, soort, doen){
   var b = el('button', 'knop knop-' + (soort || 'stil') + ' knop-klein', tekst);
   b.addEventListener('click', doen);
@@ -280,7 +298,30 @@ var ONDERDELEN = [
 ];
 var huidig = 'groepen';
 
+/* Het logo van de school in de zijbalk, op de plek van het p'tje. Voor
+   een juf is haar school belangrijker dan wie de app gemaakt heeft; het
+   woordmerk onderin blijft staan, dus er gaat niets verloren.
+
+   Het komt uit wat deze browser onthield, zodat het er meteen staat en
+   niet pas als de school is opgehaald. */
+function zetSchoollogo(){
+  var logo = KB.schoollogo();
+  var kop = document.querySelector('.zijbalk .zij-kop');
+  if (!kop) return;
+  var oud = kop.querySelector('.schoollogo');
+  if (!logo) { if (oud) oud.remove(); return; }
+  var merk = kop.querySelector('.merkteken');
+  if (merk) merk.style.display = 'none';
+  if (oud) { oud.src = logo; return; }
+  var beeld = document.createElement('img');
+  beeld.className = 'schoollogo';
+  beeld.src = logo;
+  beeld.alt = '';
+  kop.insertBefore(beeld, kop.firstChild);
+}
+
 function tekenMenu(){
+  zetSchoollogo();
   var vak = leeg($('zij-menu'));
   ONDERDELEN.forEach(function (o) {
     var b = el('button', 'zij-knop' + (o.id === huidig ? ' aan' : ''));
@@ -522,6 +563,7 @@ function tekenSchool(v){
     'groep het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen.'));
   v.appendChild(uitleg);
 
+  if (metServer()) v.appendChild(schoolnaamPaneel());
   if (metServer()) v.appendChild(huisstijlPaneel());
   if (metServer()) v.appendChild(ondersteuningPaneel());
   if (metServer()) v.appendChild(uitdraaiPaneel());
@@ -601,9 +643,9 @@ function schoolnaamPaneel(){
     'Het logo komt op het inlogscherm en in het menu \u2014 niet op het bord zelf, ' +
     'want daar is elke plek die geen hoek is er een te veel.'));
 
-  var veld = el('div', 'veld');
-  veld.appendChild(el('label', null, 'Naam van de school'));
-  var invoer = el('input');
+  var veld = el('div', 'veldrij');
+  veld.appendChild(el('label', 'veldlabel', 'Naam van de school'));
+  var invoer = el('input', 'invoer');
   invoer.type = 'text'; invoer.value = school.naam || '';
   invoer.placeholder = 'Kindcentrum De Regenboog';
   veld.appendChild(invoer);
@@ -631,8 +673,7 @@ function schoolnaamPaneel(){
             function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
   }));
 
-  rij.appendChild(bestandKnop('Logo kiezen', 'image/*', false, function (bestanden) {
-    var f = bestanden[0];
+  rij.appendChild(bestandKnop('Logo kiezen', 'image/*', false, function (f) {
     if (!f) return;
     meld('Bezig met verkleinen\u2026');
     /* Hard verkleinen. Dit plaatje reist mee in de rij van de school,
@@ -1024,6 +1065,9 @@ function groepKaart(k, beheerd){
   }));
   if (metServer()) {
     acties.appendChild(knop('Leerkrachten', 'stil', function () { toonLeden(k); }));
+    /* Hernoemen kon al bij Beheer → Groep, maar daar zoekt niemand het
+       als hij hier naar zes groepen staat te kijken. */
+    acties.appendChild(knop('Naam', 'stil', function () { hernoemGroep(k); }));
   }
   if (k.id !== beheerd) {
     acties.appendChild(knop('Dit apparaat hierop zetten', 'stil', function () {
@@ -1052,6 +1096,48 @@ function ganaarGroep(k, pagina){
 }
 
 /* ── leerkrachten aan een groep hangen ───────────────────────────────── */
+
+/* De naam van een groep. Dit verandert twee dingen tegelijk: de groep
+   op dit apparaat en de rij op de server. Dat moet, want het beheer van
+   de leerkracht leest de ene en het schoolbeheer de andere -- lopen ze
+   uiteen, dan ziet de juf een andere naam dan haar schoolbeheerder. */
+function hernoemGroep(k){
+  toonBlad(function (blad) {
+    blad.appendChild(el('h3', 'titel', 'Naam van de groep'));
+    blad.appendChild(el('p', 'hint', k.naam));
+    var veld = el('div', 'veldrij');
+    veld.appendChild(el('label', 'veldlabel', 'Naam'));
+    var invoer = el('input', 'invoer');
+    invoer.type = 'text'; invoer.value = k.naam;
+    invoer.placeholder = 'Groep 1A';
+    veld.appendChild(invoer);
+    blad.appendChild(veld);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Opslaan', 'primair', function () {
+      var n = invoer.value.trim();
+      if (!n) { meld('Een groep heeft een naam nodig'); invoer.focus(); return; }
+      k.naam = n;
+      bewaar();
+      var sid = KBSYNC.opServer(k.id);
+      var opServer = sid
+        ? SB.wijzig('groepen', { naam: n }, { id:'eq.' + sid })
+        : Promise.resolve();
+      opServer.then(function () {
+        sluitBlad(); tekenMenu(); teken(); meld('Naam opgeslagen');
+      }, function (e) {
+        /* Lokaal staat hij al goed; alleen de server weet het nog niet.
+           Dat eerlijk zeggen in plaats van doen alsof het klaar is. */
+        sluitBlad(); teken();
+        meld('Opgeslagen op dit apparaat, maar de server wist het nog niet: ' +
+             ((e && e.message) || 'onbekend'));
+      });
+    }));
+    blad.appendChild(rij);
+    zetCursor(invoer, blad);
+  });
+}
 
 function toonLeden(k){
   var serverId = KBSYNC.opServer(k.id);

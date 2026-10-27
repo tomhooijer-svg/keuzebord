@@ -408,7 +408,7 @@ function bestandWeg(paden){
    het eerste wat elke pagina opvraagt. */
 
 function wieBenIk(){
-  return lees('profielen', { kies: 'id,naam,email,rol,school_id' }).then(function (rijen) {
+  return lees('profielen', { kies: 'id,naam,email,rol,school_id,gebruikersnaam' }).then(function (rijen) {
     var ik = (rijen || []).filter(function (p) {
       return sessie && sessie.gebruiker && p.id === sessie.gebruiker.id;
     })[0] || (rijen || [])[0] || null;

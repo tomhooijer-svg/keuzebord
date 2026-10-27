@@ -244,7 +244,30 @@ function mijnOnderdelen(){
   });
 }
 
+/* Het logo van de school in de zijbalk, op de plek van het p'tje. Voor
+   een juf is haar school belangrijker dan wie de app gemaakt heeft; het
+   woordmerk onderin blijft staan, dus er gaat niets verloren.
+
+   Het komt uit wat deze browser onthield, zodat het er meteen staat en
+   niet pas als de school is opgehaald. */
+function zetSchoollogo(){
+  var logo = KB.schoollogo();
+  var kop = document.querySelector('.zijbalk .zij-kop');
+  if (!kop) return;
+  var oud = kop.querySelector('.schoollogo');
+  if (!logo) { if (oud) oud.remove(); return; }
+  var merk = kop.querySelector('.merkteken');
+  if (merk) merk.style.display = 'none';
+  if (oud) { oud.src = logo; return; }
+  var beeld = document.createElement('img');
+  beeld.className = 'schoollogo';
+  beeld.src = logo;
+  beeld.alt = '';
+  kop.insertBefore(beeld, kop.firstChild);
+}
+
 function tekenMenu(){
+  zetSchoollogo();
   var menu = leeg($('zij-menu'));
   mijnOnderdelen().forEach(function (o) {
     if (o.scheiding) { menu.appendChild(el('div', 'zij-scheiding')); return; }
