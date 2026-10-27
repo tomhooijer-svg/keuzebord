@@ -40,7 +40,19 @@ async function vingerSleep(p, cdp, van, naar){
     await p.waitForTimeout(25);
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await p.waitForTimeout(600);
+  /* Wachten tot het slepen echt klaar is, niet een vast aantal
+     milliseconden. Een losgelaten kind wordt pas geplaatst als de
+     veeranimatie is uitgelopen -- leg() staat in de afloop van die
+     vlucht -- en die duurt niet elke keer even lang. Met een vaste
+     pauze van 600 ms faalde deze proef twee van de drie keer, en dan
+     is elke groene ronde een beetje gelogen.
+
+     De zwevende bol (.sleep-geest) wordt aan het eind van de vlucht
+     opgeruimd, in beide gevallen: neergezet én teruggevlogen. Dat is
+     dus het eerlijke signaal, want het gaat niet uit van de afloop. */
+  await p.waitForFunction(() => !document.querySelector('.sleep-geest'),
+                          null, { timeout: 6000 });
+  await p.waitForTimeout(120);
 }
 
 const midden = async (p, kiezer) => {

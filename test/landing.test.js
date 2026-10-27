@@ -47,7 +47,17 @@ const zeg = (n, ok, extra) =>
   await p.mouse.move(c.x + c.width / 2, c.y + 30, { steps: 12 });
   await p.mouse.up();
 
-  await p.waitForTimeout(520);
+  /* Wachten tot de vlucht klaar is in plaats van een vast aantal
+     milliseconden. De plek krijgt 'netgeland' pas als het kind is
+     geland, en die klasse blijft maar 800 ms staan -- duurt de veer
+     net iets langer dan de pauze hier, dan kijkt de proef naar een
+     landing die nog moet beginnen. De zwevende bol verdwijnt precies
+     op het moment dat de vlucht eindigt, dus daar wachten we op.
+     Zie ook test/aanraken.test.js, waar dit twee van de drie keer
+     misging. */
+  await p.waitForFunction(() => !document.querySelector('.sleep-geest'),
+                          null, { timeout: 6000 });
+  await p.waitForTimeout(60);
   const tijdens = await p.evaluate(() => {
     const n = document.querySelector('.plek.netgeland');
     if (!n) return null;
