@@ -23,12 +23,18 @@ UIT=${1:-/tmp/keuzebord-uitgaven}
 # Nu is het een korte vingerafdruk van de code zelf. Verandert er één
 # letter in één bestand, dan verandert de stempel; verandert er niets,
 # dan blijft hij staan en hoeft er ook niets opnieuw geladen te worden.
-DATUM=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | tr -cd 'A-Za-z0-9')
+VERSIE_TEKST=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js")
+DATUM=$(printf '%s' "$VERSIE_TEKST" | tr -d ' ' | tr -cd 'A-Za-z0-9')
 VINGER=$(cat "$R"/src/*.js "$R"/src/*.css "$R"/stijl/css/*.css "$R"/*.html 2>/dev/null | sha1sum | cut -c1-8)
 V="$DATUM-$VINGER"
 
 # Waar de twee uitgaven publiek staan. Eén plek; het uitgeefscript schrijft
 # ze in kb-app.js van allebei, zodat er nergens een adres los rondslingert.
+# Draaien deze uitgaven op proef bij scholen? Dan krijgen bord en beheer
+# een kleine chip met het versienummer erin. Eén regel voor allebei de
+# uitgaven; zet hem op false als de app echt in gebruik gaat.
+TESTVERSIE=true
+
 BORDMAP=keuzebord-app
 PLANMAP=planbord
 BORDURL="https://tomhooijer-svg.github.io/$BORDMAP/"
@@ -38,7 +44,7 @@ rm -rf "$UIT"; mkdir -p "$UIT"
 
 # ── wat elke uitgave krijgt ──────────────────────────────────────────
 # De motor: overal hetzelfde.
-KERN="kb-app.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
+KERN="kb-app.js kb-testbanner.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
 BORD_SCHERMEN="kb-bord.js kb-school.js kb-platform.js kb-statistiekpaneel.js kb-docx.js"
 PLAN_SCHERMEN="kb-school.js kb-doelzoeker.js kb-verslag.js kb-plan.js kb-thema.js"
 
@@ -87,6 +93,12 @@ window.KB_APP = {
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
   bouw: '$VINGER',
+  /* De datum die de leerkracht herkent. Staat samen met de
+     bouwvingerafdruk in de testchip, zodat je bij een melding weet
+     welke code ze voor zich had. */
+  versie: '$VERSIE_TEKST',
+  /* Draait deze uitgave op proef? Zie src/kb-testbanner.js. */
+  testversie: $TESTVERSIE,
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: $heeftBord,

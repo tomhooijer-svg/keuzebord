@@ -25,6 +25,12 @@ window.KB_APP = {
   id: 'werkplaats',
   naam: 'Keuzebord',
 
+  /* Draait deze uitgave op proef bij scholen? Dan staat er een kleine
+     chip met het versienummer op het bord en in het beheer. Zie
+     src/kb-testbanner.js. Eén schakelaar, hier en in test/uitgeven.sh:
+     gaat de app echt in gebruik, dan is hij overal in één keer weg. */
+  testversie: true,
+
   /* Welke panelen deze app heeft. null betekent: allemaal -- dat is de
      werkplaats, waar de proeven overheen lopen. */
   panelen: null,
