@@ -68,6 +68,22 @@ body{ background: var(--vlak-2); }
 body.metbalk{ padding-top:46px; box-sizing:border-box; }
 body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
 @media (max-width:640px){ #meekijkbalk span{ display:none; } }
+
+@media print{
+  /* Alles weg behalve het blad zelf. Een leerkracht krijgt een kaartje
+     met haar inloggegevens, geen schermafdruk van het beheer. */
+  .app, .melding{ display:none !important; }
+  .overlay{ position:static !important; display:block !important;
+            background:none !important; backdrop-filter:none !important;
+            padding:0 !important; opacity:1 !important; }
+  .blad{ box-shadow:none !important; border-radius:0 !important;
+         max-width:none !important; width:auto !important;
+         max-height:none !important; transform:none !important;
+         animation:none !important; padding:0 !important; }
+  .nietprinten{ display:none !important; }
+  body{ background:#fff !important; }
+  @page{ margin: 18mm; }
+}
 </style>
 </head>
 <body>

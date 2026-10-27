@@ -1887,6 +1887,68 @@ function bordthemaVariabelen(k){
            '--accent-zacht': mengMetWit(t.accent, 0.9) };
 }
 
+/* ── wachtwoorden die je kunt overtypen ───────────────────
+   Een testleerkracht krijgt een kaartje in haar handen en typt het
+   wachtwoord over op een digibord. Dan moet het te lezen zijn, te
+   dicteren aan een collega, en toch niet te raden.
+
+   Drie woorden en een cijfer: zandbak-tulp-regen-7. De woorden zijn
+   kort, concreet en eenduidig gespeld, zodat niemand hoeft te raden
+   of het nou "ij" of "ei" was.
+
+   Hoe sterk is dat? Drie verschillende woorden uit honderdachtentwintig
+   (128 x 127 x 126) maal acht cijfers: ruim zestien miljoen
+   mogelijkheden. Dat klinkt veel en is het niet: een computer die
+   ongestoord mag proberen, is daar zo doorheen. Wat het wél veilig
+   maakt is dat niemand ongestoord mag proberen -- de pogingenrem hoort
+   dus bij dit ontwerp en is geen extraatje. Wordt die rem ooit
+   weggehaald, dan moeten deze wachtwoorden langer worden.
+   Zie DECISIONS.md.
+
+   De cijfers 0 en 1 zitten er niet in: op een kaartje zijn ze niet
+   van de o en de l te onderscheiden. */
+var WACHTWOORDEN = [
+  'anker','appel','auto','bal','beer','berg','bezem','bloem','boek','boom',
+  'boot','brief','brood','bril','broek','bus','dak','dans','deur','dier',
+  'doos','draak','druif','duif','eend','egel','eiland','emmer','fiets','fluit',
+  'gans','gitaar','glas','haai','haas','hamer','hand','hart','hoed','hond',
+  'hout','huis','jas','kaars','kano','kaart','kast','kat','kikker','klok',
+  'koek','koning','kraan','krant','kroon','kussen','lamp','leeuw','lepel','licht',
+  'maan','mand','muis','muur','neus','noot','olifant','oven','paard','pan',
+  'papier','parel','pen','piano','plant','poes','pot','puzzel','raam','raket',
+  'regen','reus','ring','rivier','roos','schaap','schaar','schelp','schip','schoen',
+  'sleutel','slot','sneeuw','ster','steen','stoel','strand','taart','tafel','tak',
+  'tent','tijger','toren','trein','trommel','tuin','tulp','uil','vaas','veer',
+  'vijver','vink','vis','vlag','vlieger','vogel','vork','vuur','wagen','wesp',
+  'wiel','wind','wolk','worm','zand','zebra','zeil','zon'
+];
+
+/* Toeval dat niet te voorspellen is. Math.random is daar niet voor
+   gemaakt: wie weet wanneer een account is aangemaakt, kan de reeks
+   benaderen. crypto hoort hier dus, en als die er niet is maken we
+   liever géén wachtwoord dan een zwakke. */
+function toevalGetal(grens){
+  var c = global.crypto || global.msCrypto;
+  if (!c || !c.getRandomValues) throw new Error('Deze browser kan geen veilig toeval maken.');
+  /* Niet zomaar modulo: de hoogste restjes komen dan vaker voor. We
+     gooien het weg en pakken opnieuw, zodat elke uitkomst even vaak kan. */
+  var max = Math.floor(0xFFFFFFFF / grens) * grens;
+  var a = new Uint32Array(1);
+  do { c.getRandomValues(a); } while (a[0] >= max);
+  return a[0] % grens;
+}
+
+function wachtwoordVoorstel(){
+  var woorden = [], gebruikt = {};
+  while (woorden.length < 3) {
+    var w = WACHTWOORDEN[toevalGetal(WACHTWOORDEN.length)];
+    if (gebruikt[w]) continue;        // drie keer hetzelfde woord is geen drie woorden
+    gebruikt[w] = true;
+    woorden.push(w);
+  }
+  return woorden.join('-') + '-' + (toevalGetal(8) + 2);
+}
+
 /* ── de huisstijl van de school ───────────────────────────
    De app staat in de kleuren van Pixelplein, en dat is ook wat een
    school te zien krijgt als ze niets doet. Maar een school die hem
@@ -2262,6 +2324,7 @@ global.KB = {
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
   BORDTHEMAS: BORDTHEMAS, bordthemaVan: bordthemaVan, bordthemaNu: bordthemaNu,
   bordthemaVariabelen: bordthemaVariabelen,
+  WACHTWOORDEN: WACHTWOORDEN, wachtwoordVoorstel: wachtwoordVoorstel,
   HUISSTIJL_STANDAARD: HUISSTIJL_STANDAARD, geldigeKleur: geldigeKleur,
   huisstijlVariabelen: huisstijlVariabelen, huisstijlEigen: huisstijlEigen,
   zetHuisstijl: zetHuisstijl, huisstijlOnthouden: huisstijlOnthouden,

@@ -234,6 +234,34 @@ function registreren(gebruikersnaam, wachtwoord, naam){
   });
 }
 
+/* Een account aanmaken vóór iemand anders, zonder zelf uitgelogd te
+   raken.
+
+   Aanmelden levert normaal een sessie op, en die zou de jouwe
+   overschrijven: de schoolbeheerder die drie collega's aanmaakt zou na
+   de eerste als die collega binnen zitten. Daarom gooien we hier het
+   antwoord weg in plaats van het te bewaren.
+
+   De school en de rol komen niet van hier maar van de uitnodiging die
+   er al klaar ligt op dit adres; de trekker nieuw_profiel() in de
+   database koppelt ze. Zo is er maar één plek waar bepaald wordt bij
+   welke school iemand hoort, en die plek kan niet vanuit een browser
+   worden overruled. */
+function maakAccountVoor(gebruikersnaam, wachtwoord, naam){
+  var adres = inlogadres(gebruikersnaam);
+  if (!adres) return Promise.reject(new Error('Die gebruikersnaam kan niet.'));
+  return vraag('/auth/v1/signup', {
+    methode: 'POST', zonderSessie: true,
+    lijf: { email: adres, password: wachtwoord,
+            data: { naam: naam || '', gebruikersnaam: gebruikersnaamNet(gebruikersnaam) } }
+  }).then(function (a) {
+    /* Met opzet niets bewaren. Het antwoord bevat een sessie van de
+       zojuist gemaakte persoon; die hoort nergens thuis. */
+    var g = a && (a.user || a);
+    return { id: g && g.id, gebruikersnaam: gebruikersnaamNet(gebruikersnaam), adres: adres };
+  });
+}
+
 function afmelden(){
   var had = sessie;
   bewaarSessie(null);
@@ -389,7 +417,7 @@ global.SB = {
   wachtwoordVergeten: wachtwoordVergeten, inloglinkSturen: inloglinkSturen,
   vernieuw: vernieuw,
   lees: lees, schrijf: schrijf, wijzig: wijzig, wis: wis, roep: roep,
-  INLOG_DOMEIN: INLOG_DOMEIN,
+  INLOG_DOMEIN: INLOG_DOMEIN, maakAccountVoor: maakAccountVoor,
   gebruikersnaamNet: gebruikersnaamNet, inlogadres: inlogadres,
   bestandOp: bestandOp, bestandLink: bestandLink, bestandWeg: bestandWeg,
   wieBenIk: wieBenIk
