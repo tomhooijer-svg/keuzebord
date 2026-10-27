@@ -781,3 +781,63 @@ Op een school delen bovendien alle apparaten één adres naar buiten. Dat
 is zelden een probleem -- een digibord blijft ingelogd -- maar het kan
 iemand raken die niets fout deed, en dan hoort de melding dat te zeggen
 in plaats van naar het wachtwoord te wijzen.
+
+## 2026-10-27 · Het platformbeheer als beheeromgeving
+
+Het platformbeheer kon een school aanmaken en opheffen, en verder niets.
+Dat is te weinig voor tien scholen: wat er in de praktijk binnenkomt is
+"Marieke is naar een andere school", "die rol staat verkeerd", "dat
+account mag weg". Daar moet een knop voor zijn, anders doe je het met de
+hand in de database -- en dat is precies waar fouten vandaan komen die
+niemand terugziet.
+
+**Eén lijst, geen lijstje per school.** De vragen gaan over een mens, niet
+over een school: je weet dat Marieke niet kan inloggen, niet per se waar
+ze werkt. Dus één lijst over alle scholen heen, met zoeken en twee
+filters. De knop "Accounts" op een schoolkaart springt naar diezelfde
+lijst met het filter al gezet. Twee lijsten met dezelfde mensen erin
+lopen vroeg of laat uit elkaar.
+
+Accounts zonder school staan er ook in. Dat zijn er in de praktijk een
+paar (jijzelf, iemand die nog moet worden gekoppeld), en juist die raak
+je kwijt in een indeling per school.
+
+**Verwijderen is echt verwijderen.** Niet "op inactief": de regel in
+`auth.users` gaat eruit en het profiel en de groepskoppelingen gaan daar
+vanzelf achteraan. Een account dat er nog half is, is een account waarvan
+niemand weet of het nu wel of niet meetelt. Wat blijft staan: de
+kinderen, de groepen en de borden -- die horen bij de school en niet bij
+de leerkracht die toevallig was ingelogd -- en de regels in het logboek.
+
+**Verhuizen mag, met een waarschuwing vooraf.** Haar groepen gaan er
+daarbij af. Dat moet wel: een koppeling die blijft staan laat haar op
+haar nieuwe school nog in de kinderen van haar oude kijken, en dat is
+precies het lek waar de hele rollenscheiding tegen is. Dat staat in het
+scherm voordat je op Opslaan drukt, niet erna.
+
+**Eén nieuwe regel die overal geldt: een school houdt minstens één
+schoolbeheerder.** Degradeer, verhuis of verwijder je de enige, dan
+weigert de database het. Een school zonder beheerder is een school waar
+niemand meer collega's kan toevoegen of groepen kan regelen, en dat merkt
+ze pas op het moment dat ze het nodig heeft. Het is te herstellen -- maak
+eerst iemand anders beheerder -- en daarom mag het tegenhouden in plaats
+van alleen waarschuwen. Op de schoolkaart staat er een rood merkje als
+het toch zover komt (een school die net is aangemaakt, bijvoorbeeld).
+
+**Je eigen account kun je hier niet aanraken.** Geen rol, geen school,
+geen verwijderen. Wie zichzelf kan degraderen kan zichzelf buitensluiten,
+en er is niemand boven de platformbeheerder die dat terugzet. In de lijst
+staan bij je eigen regel daarom geen knoppen -- een knop die altijd een
+foutmelding geeft is erger dan geen knop.
+
+**Drie losse functies in de database, geen grote.** `account_rol`,
+`account_verplaatsen` en `account_verwijderen`. Ze hebben elk hun eigen
+gevaar, en bij een functie die van alles wat doet zie je bij het lezen
+niet meer wat hij afschermt. Alle drie staan ze dicht voor `public`:
+PostgreSQL geeft uitvoerrecht van zichzelf aan iedereen, dus zonder een
+uitdrukkelijke `revoke` staat de deur open terwijl er een `grant` onder
+staat die doet alsof hij hem dichthoudt.
+
+**Wat er niet bij is gekomen:** de platformbeheerder ziet nog steeds geen
+kinderen, geen borden en geen statistieken. Dit gaat over namen, rollen
+en scholen. Zie docs/ROLLEN.md.

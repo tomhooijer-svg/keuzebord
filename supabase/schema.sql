@@ -1679,6 +1679,180 @@ begin
   return jsonb_build_object('naam', echte_naam, 'weg', aantallen);
 end $$;
 
+/* ── accounts beheren ────────────────────────────────────────────────
+   Een rol aanpassen, iemand naar een andere school verhuizen, of een
+   account echt weghalen. Alleen de platformbeheerder, en nooit bij
+   zichzelf -- wie zijn eigen rol kan afpakken kan zichzelf buitensluiten
+   en dan is er niemand meer die het terugzet.
+
+   Drie losse functies en niet één grote. Dat is met opzet: ze hebben
+   elk hun eigen gevaar, en een functie die "van alles wat" doet is een
+   functie waarvan je bij het lezen niet meer ziet wat hij afschermt.
+
+   Eén regel keert in alle drie terug: een school houdt ten minste één
+   schoolbeheerder. Een school zonder beheerder is een school waar
+   niemand meer collega's kan toevoegen of groepen kan regelen, en dat
+   merkt niemand tot het moment dat het nodig is. Het is te herstellen
+   -- maak eerst iemand anders beheerder -- en daarom mag het tegenhouden. */
+
+create or replace function public.laatste_beheerder(wie uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.profielen p
+     where p.id = wie and p.rol = 'schoolbeheerder' and p.school_id is not null
+       and not exists (select 1 from public.profielen q
+                        where q.school_id = p.school_id
+                          and q.rol = 'schoolbeheerder' and q.id <> p.id));
+$$;
+
+create or replace function public.account_rol(wie uuid, nieuwe_rol text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder past rollen aan.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je eigen rol kun je niet aanpassen.';
+  end if;
+  if nieuwe_rol not in ('leerkracht','schoolbeheerder','platformbeheerder') then
+    raise exception 'Die rol bestaat niet.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if p.rol = nieuwe_rol then
+    return jsonb_build_object('naam', p.naam, 'rol', p.rol);
+  end if;
+  if nieuwe_rol <> 'schoolbeheerder' and public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  /* Een platformbeheerder hoort bij geen school. Zou hij dat wel doen,
+     dan ziet hij op één school alles én overal de aantallen, en dan is
+     niet meer uit te leggen wat hij waar mag. Zijn groepen gaan mee weg. */
+  if nieuwe_rol = 'platformbeheerder' then
+    delete from public.groep_leden where profiel_id = wie;
+  end if;
+
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen
+     set rol = nieuwe_rol,
+         school_id = case when nieuwe_rol = 'platformbeheerder' then null else school_id end
+   where id = wie;
+  perform set_config('kb.systeem', '', true);
+
+  perform public.noteer('rol gewijzigd', p.school_id,
+                        coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                        jsonb_build_object('van', p.rol, 'naar', nieuwe_rol));
+  return jsonb_build_object('naam', p.naam, 'rol', nieuwe_rol);
+end $$;
+
+/* Iemand naar een andere school. Haar groepen gaan niet mee: die zijn
+   van de oude school en een koppeling die blijft staan zou haar bij
+   kinderen laten die niet meer de hare zijn. Dat staat ook met zoveel
+   woorden in het scherm, want het is precies wat iemand vergeet. */
+create or replace function public.account_verplaatsen(wie uuid, nieuwe_school uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+        nieuwe_naam text;
+        weg int;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder verplaatst een account.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je kunt jezelf niet verplaatsen.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if p.rol = 'platformbeheerder' then
+    raise exception 'Een platformbeheerder hoort bij geen school. Geef eerst een andere rol.';
+  end if;
+  if nieuwe_school is not null then
+    select naam into nieuwe_naam from public.scholen where id = nieuwe_school;
+    if nieuwe_naam is null then
+      raise exception 'Die school bestaat niet.';
+    end if;
+  end if;
+  if p.school_id is not distinct from nieuwe_school then
+    return jsonb_build_object('naam', p.naam, 'school', nieuwe_naam, 'groepen_weg', 0);
+  end if;
+  if public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  delete from public.groep_leden where profiel_id = wie;
+  get diagnostics weg = row_count;
+
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen set school_id = nieuwe_school where id = wie;
+  perform set_config('kb.systeem', '', true);
+
+  /* Twee regels in het logboek, want beide scholen hebben er mee te
+     maken: de ene raakt iemand kwijt, de andere krijgt er iemand bij. */
+  if p.school_id is not null then
+    perform public.noteer('account verplaatst', p.school_id,
+                          coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                          jsonb_build_object('naar', nieuwe_naam, 'groepen_weg', weg));
+  end if;
+  if nieuwe_school is not null then
+    perform public.noteer('account erbij gekomen', nieuwe_school,
+                          coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                          jsonb_build_object('rol', p.rol));
+  end if;
+  return jsonb_build_object('naam', p.naam, 'school', nieuwe_naam, 'groepen_weg', weg);
+end $$;
+
+/* Een account echt weghalen. Niet "op inactief", maar weg: het rijtje
+   in auth.users gaat eruit en het profiel en de groepskoppelingen gaan
+   daar vanzelf achteraan.
+
+   Wat níét weggaat: de kinderen, de borden en wat er op die borden is
+   gebeurd. Die hangen aan een groep en aan een school, niet aan de
+   leerkracht die toevallig was ingelogd. En het logboek blijft: dat een
+   account weg is, is zelf iets om terug te kunnen lezen. */
+create or replace function public.account_verwijderen(wie uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder verwijdert een account.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je kunt je eigen account niet verwijderen.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  perform public.noteer('account verwijderd', p.school_id,
+                        coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                        jsonb_build_object('rol', p.rol, 'gebruikersnaam', p.gebruikersnaam));
+  delete from auth.users where id = wie;
+  return jsonb_build_object('naam', coalesce(nullif(p.naam, ''), p.gebruikersnaam));
+end $$;
+
+/* Deze drie zijn van de platformbeheerder. De functies controleren dat
+   zelf, maar PostgreSQL geeft van zichzelf uitvoerrecht aan iedereen --
+   en een deur die op slot zit achter een deur die openstaat is een deur
+   die openstaat zodra iemand de binnenste vergeet. */
+revoke execute on function public.laatste_beheerder(uuid)        from public;
+revoke execute on function public.account_rol(uuid, text)        from public;
+revoke execute on function public.account_verplaatsen(uuid, uuid) from public;
+revoke execute on function public.account_verwijderen(uuid)      from public;
+grant  execute on function public.laatste_beheerder(uuid)        to authenticated;
+grant  execute on function public.account_rol(uuid, text)        to authenticated;
+grant  execute on function public.account_verplaatsen(uuid, uuid) to authenticated;
+grant  execute on function public.account_verwijderen(uuid)      to authenticated;
+
 /* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
    iemand te laten zien hoe het werkt.
 

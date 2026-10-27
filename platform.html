@@ -35,6 +35,42 @@ body{ background: var(--vlak-2); }
 .stil{ font-size:.8rem; color:var(--inkt-3); margin-top:auto; padding-top:4px; }
 .deur{ font-size:.8rem; font-weight:550; color:var(--let-op); background:var(--let-op-zacht);
        padding:6px 10px; border-radius:var(--rond-vol); align-self:flex-start; }
+.deur.geenbeheer{ color:var(--stop); background:var(--stop-zacht); }
+.schoolkaart button.weg{ color:var(--stop); }
+.schoolkaart button.weg:hover{ background:var(--stop-zacht); }
+
+/* ── de accountslijst ──────────────────────────────────────────────
+   Eén rij per mens. Naam en gebruikersnaam links, de rol als merkje in
+   het midden, de knoppen rechts -- en op een smal scherm vallen die
+   onder elkaar in plaats van dat de naam wordt afgeknepen. */
+.filterbalk{ display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px; }
+.zoekveld{ flex:1 1 280px; }
+.kiesveld{ flex:0 1 220px; }
+.mensrij{ display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+          padding:11px 14px; border-radius:12px; background:var(--vlak-2);
+          margin-bottom:8px; }
+.menslinks{ flex:1 1 200px; min-width:0; }
+.mensnaam{ font-size:.96rem; font-weight:560; letter-spacing:-.01em; color:var(--inkt);
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mensonder{ font-size:.78rem; color:var(--inkt-3); margin-top:1px;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mensrol{ flex:0 0 132px; }
+.rolmerk{ font-size:.72rem; font-weight:620; letter-spacing:.02em; white-space:nowrap;
+          padding:4px 10px; border-radius:var(--rond-vol);
+          background:rgba(20,28,44,.07); color:var(--inkt-2); }
+.rolmerk.beheer{ background:var(--accent-zacht); color:var(--accent); }
+.rolmerk.platform{ background:var(--let-op-zacht); color:var(--let-op); }
+.mensrij .knoprij{ margin-left:auto; }
+.mensrij .hint{ font-size:.78rem; }
+.mensrij button.weg{ color:var(--stop); }
+.mensrij button.weg:hover{ background:var(--stop-zacht); }
+@media (max-width:760px){ .mensrol{ flex:0 0 auto; } .mensrij .knoprij{ margin-left:0; } }
+
+/* Een waarschuwing in een blad: wat er gaat gebeuren, vóór de knop en
+   niet erna. */
+.waarschuwing{ margin-top:8px; padding:10px 12px; border-radius:11px;
+               background:var(--let-op-zacht); color:var(--let-op);
+               font-size:.83rem; line-height:1.5; }
 
 .logrij{ display:flex; align-items:baseline; justify-content:space-between; gap:14px;
          padding:9px 13px; border-radius:11px; background:var(--vlak-2); margin-bottom:7px; }

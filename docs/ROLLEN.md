@@ -97,6 +97,37 @@ werkt alles meteen — maar dan loopt het buiten alle rechtenregels om en
 is één fout in de app genoeg om alles van alle scholen te openen. De
 ondersteuningstoegang loopt dus via precies dezelfde weg als iedereen.
 
+## Wat de platformbeheerder met accounts kan
+
+Namen, rollen en scholen -- verder niets. In het scherm Accounts staat
+één lijst over alle scholen heen, inclusief de accounts die bij geen
+school horen.
+
+| Handeling | Hoe |
+|---|---|
+| Naam aanpassen | gewone wijziging op `profielen` |
+| Rol aanpassen | `account_rol(wie, nieuwe_rol)` |
+| Naar een andere school | `account_verplaatsen(wie, nieuwe_school)` |
+| Wachtwoord vervangen | `wachtwoord_zetten(wie, nieuw)` |
+| Account weghalen | `account_verwijderen(wie)` |
+| Account erbij | een uitnodiging + een aanmelding, net als in het schoolbeheer |
+
+Drie regels gelden voor alle drie de functies:
+
+1. **Je eigen account kun je niet aanraken.** Wie zichzelf kan
+   degraderen kan zichzelf buitensluiten, en er staat niemand boven hem
+   die dat terugzet. Zie docs/HERSTEL.md.
+2. **Een school houdt minstens één schoolbeheerder.** De laatste
+   degraderen, verhuizen of verwijderen weigert de database. Maak eerst
+   iemand anders beheerder.
+3. **Verhuizen haalt haar groepen eraf.** Anders kijkt ze op haar nieuwe
+   school nog in de kinderen van haar oude.
+
+Verwijderen is echt verwijderen: de rij in `auth.users` gaat eruit en het
+profiel en de groepskoppelingen gaan daar vanzelf achteraan. De kinderen,
+de groepen en de borden blijven -- die horen bij de school. Het logboek
+blijft ook.
+
 ## Hoe je er een wordt
 
 Niet via een scherm. Er is er één, en die benoem je met de hand in de
