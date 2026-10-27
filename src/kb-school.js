@@ -1277,7 +1277,7 @@ function toonCollegaToevoegen(concept){
       if (!gn)   { meld('Vul een gebruikersnaam in'); ginvoer.focus(); return; }
 
       var ww;
-      try { ww = KB.wachtwoordVoorstel(); }
+      try { ww = KBKAARTJE.wachtwoord(); }
       catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
 
       maak.disabled = true;
@@ -1315,9 +1315,11 @@ function toonCollegaToevoegen(concept){
   });
 }
 
-/* Het kaartje. Bij printen blijft hier alleen het blad van over; zie
-   @media print in school.html. */
+/* Het kaartje zelf wordt getekend door src/kb-kaartje.js, omdat het
+   platformbeheer hetzelfde kaartje nodig heeft. Hier staan alleen de
+   knoppen eronder: vensters en meldingen werken per scherm anders. */
 function toonKaartje(gegevens){
+  gegevens.school = (KBV.wie() && KBV.wie().school && KBV.wie().school.naam) || '';
   toonBlad(function (blad) {
     var kop = el('div', 'nietprinten');
     kop.appendChild(el('h3', 'titel', 'Het account staat klaar'));
@@ -1327,61 +1329,19 @@ function toonKaartje(gegevens){
       'kunt het straks niet opzoeken. Raakt ze het kwijt, dan maak je een nieuw.'));
     blad.appendChild(kop);
 
-    var kaart = el('div', 'kaartje');
-    var kkop = el('div', 'kaartje-kop');
-    var merk = el('img');
-    merk.src = 'stijl/logo/ptje.svg'; merk.alt = '';
-    kkop.appendChild(merk);
-    var ktitel = el('div');
-    ktitel.appendChild(el('div', 'n', 'Keuzebord'));
-    var school = (KBV.wie() && KBV.wie().school && KBV.wie().school.naam) || '';
-    ktitel.appendChild(el('div', 's', school + (school ? ' \u00b7 ' : '') +
-      (gegevens.rol === 'schoolbeheerder' ? 'Schoolbeheerder' : 'Leerkracht')));
-    kkop.appendChild(ktitel);
-    kaart.appendChild(kkop);
-
-    [['Voor', gegevens.naam],
-     ['Gebruikersnaam', gegevens.gebruikersnaam],
-     ['Wachtwoord', gegevens.wachtwoord]].forEach(function (paar) {
-      var r = el('div', 'kaartje-regel');
-      r.appendChild(el('div', 'l', paar[0]));
-      r.appendChild(el('div', 'w', paar[1]));
-      kaart.appendChild(r);
-    });
-
-    /* Volledige adressen, niet 'bord.html'. Dit gaat op papier mee naar
-       huis; een pad zonder domein is daar niets waard. We leiden het af
-       van waar deze pagina zelf staat, zodat het klopt op GitHub Pages,
-       op een eigen domein en op een testserver. */
-    var basis = location.origin + location.pathname.replace(/[^/]*$/, '');
-    var voet = el('div', 'kaartje-voet');
-    voet.appendChild(el('div', null, 'Het bord: ' + basis + 'bord.html'));
-    voet.appendChild(el('div', null, 'Het beheer: ' + basis + 'beheer.html'));
-    voet.appendChild(el('div', null,
-      'Wachtwoord kwijt? Vraag je schoolbeheerder om een nieuw kaartje.'));
-    kaart.appendChild(voet);
-    blad.appendChild(kaart);
+    blad.appendChild(KBKAARTJE.bouw(gegevens));
 
     var rij = el('div', 'knoprij-onder nietprinten');
     rij.appendChild(knop('Printen', 'primair', function () { window.print(); }));
     rij.appendChild(knop('Kopi\u00ebren', 'stil', function () {
-      var b = location.origin + location.pathname.replace(/[^/]*$/, '');
-      var tekst = gegevens.naam + '\n' +
-                  'Gebruikersnaam: ' + gegevens.gebruikersnaam + '\n' +
-                  'Wachtwoord: ' + gegevens.wachtwoord + '\n' +
-                  'Bord: ' + b + 'bord.html\n' +
-                  'Beheer: ' + b + 'beheer.html';
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(tekst).then(
-          function () { meld('Gekopieerd'); },
-          function () { meld('Kopi\u00ebren lukte niet \u2014 schrijf het over'); });
-      } else meld('Kopi\u00ebren kan hier niet \u2014 schrijf het over');
+      KBKAARTJE.kopieer(gegevens).then(
+        function () { meld('Gekopieerd'); },
+        function () { meld('Kopi\u00ebren lukte niet \u2014 schrijf het over'); });
     }));
     rij.appendChild(knop('Klaar', 'stil', sluitBlad));
     blad.appendChild(rij);
   });
 }
-
 
 
 KB.laad();

@@ -610,17 +610,25 @@ function tekenMeekijken(v){
   v.appendChild(uitleg);
 }
 
-/* ── een school erbij ─────────────────────────────────────────── */
+/* ── een school erbij ───────────────────────────────────────────
+   Eén venster: naam van de school, naam van de schoolbeheerder, en
+   er rolt een kaartje uit. Zij kan daarmee meteen inloggen.
+
+   Hiervoor vulde je hier een e-mailadres in en kreeg je een code om
+   door te geven; die persoon moest zich dan zelf aanmelden en de code
+   intikken. Drie stappen waarin iets mis kon gaan voordat iemand ook
+   maar iets had gezien. Nu is het één stap, en wat je doorgeeft is een
+   kaartje in plaats van een procedure. */
 
 function toonNieuweSchool(){
-  var concept = { naam:'', email:'' };
+  var concept = { naam:'', beheerder:'', gebruikersnaam:'', zelfGekozen:false };
   toonBlad(function (blad) {
     var t = el('div', null, 'Nieuwe school');
     t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
     blad.appendChild(t);
     blad.appendChild(el('p', 'hint',
-      'De school krijgt meteen een schoolbeheerder uitgenodigd. Zonder ' +
-      'beheerder is het een school waar niemand bij kan.'));
+      'De school krijgt meteen een schoolbeheerder met een eigen account. ' +
+      'Zonder beheerder is het een school waar niemand bij kan.'));
 
     var r1 = el('div', 'veldrij');
     r1.appendChild(el('label', 'veldlabel', 'Naam van de school'));
@@ -632,45 +640,121 @@ function toonNieuweSchool(){
     blad.appendChild(r1);
 
     var r2 = el('div', 'veldrij');
-    r2.appendChild(el('label', 'veldlabel', 'E-mailadres van de schoolbeheerder'));
-    var mail = el('input', 'invoer');
-    mail.type = 'email'; mail.placeholder = 'ict@deregenboog.nl';
-    mail.value = concept.email;
-    mail.addEventListener('input', function () { concept.email = mail.value; });
-    r2.appendChild(mail);
+    r2.appendChild(el('label', 'veldlabel', 'Naam van de schoolbeheerder'));
+    var pers = el('input', 'invoer');
+    pers.type = 'text'; pers.placeholder = 'Marloes de Vries';
+    pers.value = concept.beheerder;
+    r2.appendChild(pers);
     blad.appendChild(r2);
+
+    var r3 = el('div', 'veldrij');
+    r3.appendChild(el('label', 'veldlabel', 'Gebruikersnaam'));
+    var gn = el('input', 'invoer');
+    gn.type = 'text'; gn.placeholder = 'marloes.devries';
+    gn.autocapitalize = 'off'; gn.spellcheck = false;
+    gn.value = concept.gebruikersnaam;
+    r3.appendChild(gn);
+    var stand = el('div', 'hint');
+    stand.style.marginTop = '4px';
+    r3.appendChild(stand);
+    blad.appendChild(r3);
+
+    /* Vóór het aanmaken kijken of de naam vrij is. Komt dat er pas bij
+       het opslaan uit, dan bestaat de school al en de beheerder niet --
+       en dan staat er een school zonder iemand die erbij kan. */
+    var kijker = null;
+    function kijkNaam(){
+      var n = concept.gebruikersnaam;
+      clearTimeout(kijker);
+      stand.style.color = '';
+      if (!n) { stand.textContent = ''; return; }
+      stand.textContent = 'Even kijken\u2026';
+      kijker = setTimeout(function () {
+        SB.roep('gebruikersnaam_vrij', { gewenst: n }).then(function (vrij) {
+          stand.textContent = vrij ? 'Vrij.' : 'Die naam is al in gebruik. Kies een andere.';
+          stand.style.color = vrij ? '' : 'var(--stop)';
+        }, function () { stand.textContent = ''; });
+      }, 350);
+    }
+
+    pers.addEventListener('input', function () {
+      concept.beheerder = pers.value;
+      if (!concept.zelfGekozen) {
+        gn.value = SB.gebruikersnaamNet(pers.value);
+        concept.gebruikersnaam = gn.value;
+        kijkNaam();
+      }
+    });
+    gn.addEventListener('input', function () {
+      concept.zelfGekozen = true;
+      gn.value = SB.gebruikersnaamNet(gn.value);
+      concept.gebruikersnaam = gn.value;
+      kijkNaam();
+    });
 
     var rij = el('div', 'knoprij-onder');
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
-    rij.appendChild(knop('Aanmaken', 'primair', function () {
+    var maak = knop('Aanmaken', 'primair', function () {
       var n = (concept.naam || '').trim();
-      var e = (concept.email || '').trim();
-      if (!n) { meld('Geef de school een naam'); return; }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { meld('Dat lijkt geen geldig e-mailadres'); return; }
-      SB.roep('school_aanmaken', { schoolnaam: n, beheerder_email: e })
-        .then(function (uit) {
-          sluitBlad();
-          return haalAlles().then(function () { teken(); toonCode(e, uit && uit.code); });
-        }, function (err) { meld('Dat lukte niet: ' + (err && err.message)); });
-    }));
+      var persoon = (concept.beheerder || '').trim();
+      var gebruiker = SB.gebruikersnaamNet(concept.gebruikersnaam);
+      if (!n) { meld('Geef de school een naam'); naam.focus(); return; }
+      if (!persoon) { meld('Vul de naam van de schoolbeheerder in'); pers.focus(); return; }
+      if (!gebruiker) { meld('Vul een gebruikersnaam in'); gn.focus(); return; }
+
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
+
+      maak.disabled = true;
+      maak.textContent = 'Bezig\u2026';
+
+      /* De school eerst: die zet meteen een uitnodiging klaar op het
+         interne adres, met de rol schoolbeheerder erbij. Daarna het
+         account, en dan koppelt de trekker in de database de twee. */
+      SB.roep('school_aanmaken', { schoolnaam: n, beheerder_email: SB.inlogadres(gebruiker) })
+        .then(function () { return SB.maakAccountVoor(gebruiker, ww, persoon); })
+        .then(function () { return haalAlles(); })
+        .then(function () {
+          sluitBlad(); teken();
+          toonKaartje({ naam: persoon, gebruikersnaam: gebruiker, wachtwoord: ww,
+                        rol: 'schoolbeheerder', school: n });
+        }, function (err) {
+          maak.disabled = false;
+          maak.textContent = 'Aanmaken';
+          meld('Dat lukte niet: ' + (err && err.message));
+        });
+    });
+    rij.appendChild(maak);
     blad.appendChild(rij);
     zetCursor(naam, blad);
   });
 }
 
-function toonCode(email, code){
+/* Het kaartje komt uit src/kb-kaartje.js, zodat het schoolbeheer en het
+   platformbeheer er één versie van delen. */
+function toonKaartje(gegevens){
   toonBlad(function (blad) {
+    var kop = el('div', 'nietprinten');
     var t = el('div', null, 'De school staat klaar');
     t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
-    blad.appendChild(t);
-    blad.appendChild(el('p', 'hint',
-      'Geef deze code door aan ' + email + '. Daarmee komt dat account als ' +
-      'schoolbeheerder binnen. De code vervalt na drie weken.'));
-    var vak = el('div', 'codevak');
-    vak.appendChild(el('div', 'codetekst', code || '—'));
-    blad.appendChild(vak);
-    var rij = el('div', 'knoprij-onder');
-    rij.appendChild(knop('Klaar', 'primair', sluitBlad));
+    kop.appendChild(t);
+    kop.appendChild(el('p', 'hint',
+      'Print dit kaartje of schrijf het over, en geef het aan ' + gegevens.naam + '. ' +
+      'Het wachtwoord staat hierna nergens meer \u2014 ook jij kunt het niet opzoeken. ' +
+      'Raakt zij het kwijt, dan maak je een nieuw.'));
+    blad.appendChild(kop);
+
+    blad.appendChild(KBKAARTJE.bouw(gegevens));
+
+    var rij = el('div', 'knoprij-onder nietprinten');
+    rij.appendChild(knop('Printen', 'primair', function () { window.print(); }));
+    rij.appendChild(knop('Kopi\u00ebren', 'stil', function () {
+      KBKAARTJE.kopieer(gegevens).then(
+        function () { meld('Gekopieerd'); },
+        function () { meld('Kopi\u00ebren lukte niet \u2014 schrijf het over'); });
+    }));
+    rij.appendChild(knop('Klaar', 'stil', sluitBlad));
     blad.appendChild(rij);
   });
 }
