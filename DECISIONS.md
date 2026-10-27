@@ -694,3 +694,56 @@ haalt dat nét, met zes keer zoveel verkeer. Realtime duwt de wijziging
 meteen door. Het pollen blijft eronder liggen als terugval -- valt de
 verbinding weg, dan werkt het bord door en haalt het daarna alsnog op.
 Dat is de bestaande belofte en die mag een nieuwe techniek niet breken.
+
+## 2026-10-27 · Inloggen met een gebruikersnaam: wat het kost
+
+De uitwerking van het besluit van vanochtend. Vier dingen die je moet
+weten als je hier later naar kijkt.
+
+**Het adres achter de naam.** `juf.marieke` wordt
+`juf.marieke@keuzebord.invalid`. Dat `.invalid` is officieel vastgelegd
+om nooit te bestaan (RFC 2606), dus er kan nooit per ongeluk post heen,
+en wie in de database kijkt ziet meteen dat het geen echt adres is.
+Gecontroleerd op het echte Supabase: het accepteert zo'n adres.
+
+Dezelfde omzetting staat twee keer: in `src/kb-supabase.js` en in
+`public.inlogadres()`. Dat is met opzet dubbel, want als ze het oneens
+zijn maakt het accountscherm iemand aan die daarna niet kan inloggen --
+en dat merk je pas als er een leerkracht voor een digibord staat. De
+proef vergelijkt ze letterlijk met elkaar.
+
+**Een wachtwoord zetten gaat buiten de servicesleutel om.** Bij Supabase
+kan dat normaal alleen met die sleutel, en die hoort niet in een browser
+en niet in iemands hoofd. Dus doet `public.wachtwoord_zetten()` het
+namens de server, met een rechtencontrole vooraf. Dat betekent wel dat we
+in `auth.users` schrijven, een tabel van Supabase zelf. Verandert
+Supabase ooit hoe wachtwoorden worden opgeslagen, dan breekt dit -- en
+stil, want "gezet" en "kan niet inloggen" zien er van buiten hetzelfde
+uit. Daarom controleert de functie haar eigen werk voordat ze ja zegt.
+
+**Een wachtwoord terugzetten zet het account meteen om.** Op het kaartje
+staat een gebruikersnaam; een account dat nog op een echt e-mailadres
+staat komt daar niet mee binnen. Een kaartje dat liegt is erger dan geen
+kaartje, dus hoort het omzetten bij dezelfde handeling. Gevolg: oude
+e-mailadressen verdwijnen vanzelf uit de database naarmate wachtwoorden
+worden vervangen.
+
+**De pogingenrem remt een mens, geen programma.** Hij zit in de browser,
+en inloggen gaat rechtstreeks naar Supabase: wie de app overslaat merkt
+er niets van. Hij is er voor een kind dat aan het digibord wachtwoorden
+zit te proberen, niet voor een aanvaller. De echte rem staat in Supabase
+(Authentication → Rate Limits), en daar is de wachtwoordsterkte op
+gerekend: drie woorden en een cijfer zijn ruim zestien miljoen
+mogelijkheden -- genoeg zolang niemand ongestoord mag proberen, te
+weinig zodra dat wel kan. Valt die rem weg, dan moeten de wachtwoorden
+een woord langer.
+
+De telling staat per browser en per naam, niet per account op de server.
+Dat laatste zou betekenen dat iemand een juf kan buitensluiten door tien
+keer fout te gokken op haar naam -- een aanval die zichzelf uitvoert.
+
+**Wat dit niet oplost.** Jij staat aan het eind van de ketting: er is
+niemand die jouw wachtwoord kan terugzetten. Zie docs/HERSTEL.md voor
+wat je dan doet. Dat kan niet in de app zitten, want een knop "zet mijn
+eigen wachtwoord terug" zonder inloggen is een knop waarmee iedereen dat
+kan.

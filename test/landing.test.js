@@ -37,9 +37,20 @@ const zeg = (n, ok, extra) =>
       Math.round(afstand) + ' px ertussen');
 
   // ── slepen ──
-  const picto = await p.$('.strook .picto');
-  const hoek = await p.$('.hoek');
-  const a = await picto.boundingBox(), c = await hoek.boundingBox();
+  /* Met locators en niet met $(): een handle wijst naar één knooppunt,
+     en het bord tekent zichzelf opnieuw zodra er iets verandert. Meet
+     je dan een knooppunt dat net is vervangen, dan komt er null uit en
+     struikelt de proef over "kan x niet lezen van null" -- een
+     foutmelding die niets zegt over wat er mis is. Een locator zoekt
+     opnieuw op het moment dat je hem gebruikt. */
+  await p.waitForSelector('.strook .picto', { timeout: 9000 });
+  const a = await p.locator('.strook .picto').first().boundingBox();
+  const c = await p.locator('.hoek').first().boundingBox();
+  if (!a || !c) {
+    zeg('het kind en de hoek staan op het scherm', false,
+        'kind: ' + (a ? 'ja' : 'nee') + ', hoek: ' + (c ? 'ja' : 'nee'));
+    throw new Error('niets om te slepen');
+  }
   await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await p.mouse.down();
   /* Loslaten bóven in de kaart, ver van de plek: zo zie je of hij

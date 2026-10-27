@@ -51,7 +51,17 @@ async function inloggen(p, email, waarheen){
       menu.open && menu.knoppen.includes('Uitloggen'), menu.knoppen.join(', '));
   await p.screenshot({ path:'/tmp/account-menu.png' });
 
-  // ── iemand uitnodigen: dat staat onder het onderdeel Accounts ──
+  // ── een collega erbij: dat staat onder het onderdeel Accounts ──
+  //
+  // Hiervoor zette de schoolbeheerder een uitnodiging klaar op een
+  // e-mailadres en meldde de collega zich daarna zelf aan. Nu maakt zij
+  // het account meteen aan en krijgt ze een kaartje om uit te printen.
+  //
+  // Wat deze proef bewaakte blijft hetzelfde: een collega bij een
+  // bepaalde groep zetten, en die collega komt dáár binnen, met haar
+  // naam en haar rol. Er komt één ding bij, en dat is het punt van de
+  // hele verbouwing: de juf logt in met wat er op het kaartje staat.
+  // Klopt dat niet, dan staat ze voor een digibord en komt ze er niet in.
   await p.keyboard.press('Escape');
   await p.evaluate(() => {
     [...document.querySelectorAll('.zij-knop')]
@@ -59,36 +69,60 @@ async function inloggen(p, email, waarheen){
   });
   await p.waitForTimeout(600);
   await p.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].filter(x => x.textContent === 'Iemand uitnodigen')[0];
+    const b = [...document.querySelectorAll('button')]
+      .filter(x => x.textContent === 'Collega toevoegen')[0];
     b.click();
   });
-  await p.waitForTimeout(400);
-  await p.fill('#blad .invoer', 'nieuwe.juf@mijnschool.nl');
+  await p.waitForSelector('#blad .invoer', { timeout: 8000 });
+  await p.waitForTimeout(300);
+
+  const velden = await p.$$('#blad .invoer');
+  await velden[0].fill('Juf Sanne');
+  await p.waitForTimeout(800);
+  const voorstel = await velden[1].inputValue();
+  zeg('de gebruikersnaam volgt vanzelf uit de naam', voorstel === 'sanne', voorstel);
+  const vrij = await p.textContent('#blad .veldrij .hint');
+  zeg('en het scherm zegt meteen of hij vrij is', /Vrij/.test(vrij || ''), (vrij || '').slice(0, 44));
+
   await p.evaluate(() => {
-    const c = [...document.querySelectorAll('#blad .chip')].filter(x => x.textContent === 'Groep 2A')[0];
+    const c = [...document.querySelectorAll('#blad .chip')]
+      .filter(x => x.textContent === 'Groep 2A')[0];
     if (c) c.click();
   });
   await p.waitForTimeout(400);
-  await p.fill('#blad .invoer', 'nieuwe.juf@mijnschool.nl');
-  await p.screenshot({ path:'/tmp/account-uitnodigen.png' });
+  await p.screenshot({ path:'/tmp/account-toevoegen.png' });
   await p.evaluate(() => {
-    const b = [...document.querySelectorAll('#blad button')].filter(x => x.textContent === 'Uitnodigen')[0];
+    const b = [...document.querySelectorAll('#blad button')]
+      .filter(x => x.textContent === 'Account aanmaken')[0];
     b.click();
   });
-  await p.waitForTimeout(1800);
+  await p.waitForSelector('.kaartje', { timeout: 12000 });
+  await p.waitForTimeout(600);
 
-  const wacht = await p.evaluate(() => [...document.querySelectorAll('.ledenrij.wacht')]
-    .map(r => r.textContent));
-  zeg('de uitnodiging staat in het overzicht', wacht.length === 1 && /nieuwe\.juf/.test(wacht[0]),
-      wacht.join(' | ').slice(0,90));
-  zeg('met de groep erbij', /Groep 2A/.test(wacht[0] || ''), (wacht[0]||'').slice(0,80));
+  const kaartje = await p.evaluate(() => {
+    const regels = [...document.querySelectorAll('.kaartje-regel')]
+      .map(r => [r.querySelector('.l').textContent, r.querySelector('.w').textContent]);
+    const zoek = (l) => (regels.filter(x => x[0] === l)[0] || [])[1] || '';
+    return { naam: zoek('Voor'), gebruiker: zoek('Gebruikersnaam'),
+             wachtwoord: zoek('Wachtwoord'),
+             voet: (document.querySelector('.kaartje-voet') || {}).textContent || '' };
+  });
+  await p.screenshot({ path:'/tmp/account-kaartje.png' });
+  zeg('er komt een kaartje met haar gebruikersnaam',
+      kaartje.gebruiker === 'sanne' && kaartje.naam === 'Juf Sanne',
+      kaartje.naam + ' / ' + kaartje.gebruiker);
+  // Drie woorden en een cijfer, over te typen vanaf een vel papier.
+  zeg('en een wachtwoord van drie woorden en een cijfer',
+      /^[a-z]+-[a-z]+-[a-z]+-[2-9]$/.test(kaartje.wachtwoord), kaartje.wachtwoord);
+  // Een pad zonder domein is op papier niets waard.
+  zeg('met volledige adressen erop, niet alleen bord.html',
+      /https?:\/\/[^ ]+bord\.html/.test(kaartje.voet),
+      (kaartje.voet.match(/Het bord: \S+/) || ['—'])[0].slice(0, 54));
 
-  // ── zij meldt zich aan ──
+  // ── zij logt in met wat er op het kaartje staat ──
   const nieuw = await apparaat(b, 'nieuwe juf');
-  await nieuw.click('button[data-naar="registreren"]');
-  await nieuw.fill('#naam','Juf Sanne');
-  await nieuw.fill('#email','nieuwe.juf@mijnschool.nl');
-  await nieuw.fill('#ww','haarwachtwoord');
+  await nieuw.fill('#email', kaartje.gebruiker);
+  await nieuw.fill('#ww', kaartje.wachtwoord);
   await nieuw.click('#verstuur');
   await nieuw.waitForURL(/beheer\.html/, { timeout: 12000 }).catch(()=>{});
   await nieuw.waitForTimeout(2000);
@@ -97,13 +131,19 @@ async function inloggen(p, email, waarheen){
     naam: (document.querySelector('.account-naam')||{}).textContent,
     rol: (document.querySelector('.account-rol')||{}).textContent
   }));
-  zeg('de uitgenodigde juf komt binnen bij haar groep',
+  zeg('met het kaartje in de hand komt ze binnen bij haar groep',
       zijZiet.groepen.length === 1 && zijZiet.groepen[0] === 'Groep 2A', zijZiet.groepen.join(', '));
   zeg('het beheer toont haar naam onderin', zijZiet.naam === 'Juf Sanne', zijZiet.naam);
   zeg('en haar rol', zijZiet.rol === 'Leerkracht', zijZiet.rol);
   await nieuw.screenshot({ path:'/tmp/account-beheer.png' });
 
-  // ── de uitnodiging is verdwenen uit het overzicht ──
+  // ── en de schoolbeheerder is zelf niet uitgelogd geraakt ──
+  // Aanmelden levert normaal een sessie op; die zou de hare overschrijven.
+  const nogSteeds = await p.evaluate(() =>
+    (document.querySelector('.account-rol') || {}).textContent);
+  zeg('de schoolbeheerder zit zelf nog gewoon ingelogd',
+      nogSteeds === 'Schoolbeheerder', nogSteeds);
+
   await p.reload(); await p.waitForTimeout(2200);
   await p.evaluate(() => {
     [...document.querySelectorAll('.zij-knop')]
@@ -114,7 +154,7 @@ async function inloggen(p, email, waarheen){
     wacht: [...document.querySelectorAll('.ledenrij.wacht')].length,
     rijen: [...document.querySelectorAll('.ledenrij')].map(r => r.textContent.slice(0,40))
   }));
-  zeg('de uitnodiging is verzilverd en weg uit de lijst', na.wacht === 0, 'nog wachtend: ' + na.wacht);
+  zeg('er blijft niets staan wachten', na.wacht === 0, 'nog wachtend: ' + na.wacht);
   zeg('zij staat nu tussen de accounts', na.rijen.some(r => /Juf Sanne/.test(r)), na.rijen.join(' | ').slice(0,110));
 
   // ── uitloggen en als iemand anders inloggen ──

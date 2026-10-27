@@ -108,7 +108,11 @@ async function metSB(p){
   const off = await s2.textContent('#melder');
   zeg('zonder verbinding een begrijpelijke melding', /verbinding/i.test(off||''), (off||'').slice(0,50));
 
-  // ── 6. bestaand e-mailadres ──
+  // ── 6. een gebruikersnaam die al bestaat ──
+  // Hier stond "al een account met dit e-mailadres". Sinds het inloggen
+  // met gebruikersnamen gaat, zou die tekst verraden dat het om een
+  // adres gaat dat niemand ooit intypt. De melding moet zeggen wat je
+  // eraan kunt doen: een andere naam kiezen.
   const t = await nieuwePagina(b);
   await t.click('button[data-naar="registreren"]');
   await t.fill('#email','marieke@school.nl');
@@ -116,7 +120,8 @@ async function metSB(p){
   await t.click('#verstuur');
   await t.waitForTimeout(900);
   const dubbel = await t.textContent('#melder');
-  zeg('een bestaand e-mailadres wordt netjes gemeld', /al een account/i.test(dubbel||''), (dubbel||'').slice(0,50));
+  zeg('een naam die al bestaat wordt netjes gemeld',
+      /al in gebruik/i.test(dubbel||''), (dubbel||'').slice(0,50));
 
   console.log(uit.join('\n'));
   const goed = uit.filter(x => x.startsWith('  goed')).length;

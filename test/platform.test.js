@@ -62,20 +62,68 @@ async function apparaat(b){
       !/Bram|Isa|Kees|Yara/.test(tekst), 'geen van de testnamen');
 
   // ── een school erbij ──
+  // Hiervoor vulde je hier een e-mailadres in en kreeg je een code om
+  // door te geven; die persoon moest zich dan zelf aanmelden en de code
+  // intikken. Nu rolt er een kaartje uit waarmee ze meteen binnen is.
   await q.click('button:has-text("Nieuwe school")');
   await q.waitForSelector('.overlay.open', { timeout: 4000 });
   const velden = await q.$$('.blad input');
   await velden[0].fill('Kindcentrum De Regenboog');
-  await velden[1].fill('ict@deregenboog.nl');
+  await velden[1].fill('Marloes de Vries');
+  await q.waitForTimeout(800);
+  const voorstel = await velden[2].inputValue();
+  zeg('de gebruikersnaam volgt uit de naam van de beheerder',
+      voorstel === 'marloes.de.vries', voorstel);
+
   await q.click('.blad button:has-text("Aanmaken")');
-  await q.waitForSelector('.codetekst', { timeout: 9000 });
-  const code = (await q.textContent('.codetekst') || '').trim();
-  zeg('de school krijgt een toegangscode', /^[A-Z0-9]{8}$/.test(code), code);
+  await q.waitForSelector('.kaartje', { timeout: 12000 });
+  const kaartje = await q.evaluate(() => {
+    const r = [...document.querySelectorAll('.kaartje-regel')]
+      .map(x => [x.querySelector('.l').textContent, x.querySelector('.w').textContent]);
+    const zoek = (l) => (r.filter(x => x[0] === l)[0] || [])[1] || '';
+    return { naam: zoek('Voor'), gebruiker: zoek('Gebruikersnaam'),
+             wachtwoord: zoek('Wachtwoord'),
+             kop: (document.querySelector('.kaartje-kop') || {}).textContent || '' };
+  });
+  zeg('er komt een kaartje voor de schoolbeheerder',
+      kaartje.gebruiker === 'marloes.de.vries' && /Schoolbeheerder/.test(kaartje.kop),
+      kaartje.naam + ' / ' + kaartje.gebruiker);
+  zeg('met de naam van haar school erop',
+      /Kindcentrum De Regenboog/.test(kaartje.kop), kaartje.kop.replace(/\s+/g, ' ').slice(0, 54));
+  zeg('en een wachtwoord van drie woorden en een cijfer',
+      /^[a-z]+-[a-z]+-[a-z]+-[2-9]$/.test(kaartje.wachtwoord), kaartje.wachtwoord);
   await q.click('.blad button:has-text("Klaar")');
 
   await q.waitForTimeout(400);
   const namen1 = await q.$$eval('.schoolnaam', ns => ns.map(n => n.textContent));
   zeg('en staat in de lijst', namen1.indexOf('Kindcentrum De Regenboog') >= 0, namen1.join(' / '));
+
+  /* En dan de enige vraag die er echt toe doet: komt zij met dat kaartje
+     binnen? Een school aanmaken waar de beheerder niet in kan is erger
+     dan geen school aanmaken -- dan denk je dat het klaar is. */
+  const haar = await b.newContext({ viewport:{ width:1280, height:900 } });
+  const hp = await haar.newPage();
+  await hp.goto(APP + '/inloggen.html');
+  await hp.evaluate(() => {
+    localStorage.setItem('kb_server','http://localhost:5455');
+    localStorage.setItem('kb_serversleutel','proefsleutel');
+  });
+  await hp.goto(APP + '/inloggen.html');
+  await hp.fill('#email', kaartje.gebruiker);
+  await hp.fill('#ww', kaartje.wachtwoord);
+  await hp.click('#verstuur');
+  await hp.waitForTimeout(3500);
+  const zijZiet = await hp.evaluate(() => ({
+    waar: location.pathname.split('/').pop(),
+    school: (window.KBV && KBV.wie() && KBV.wie().school || {}).naam || '',
+    rol: (window.KBV && KBV.wie() && KBV.wie().profiel || {}).rol || ''
+  }));
+  zeg('de schoolbeheerder komt binnen met haar kaartje',
+      zijZiet.waar === 'school.html', zijZiet.waar);
+  zeg('bij haar eigen school, als schoolbeheerder',
+      zijZiet.school === 'Kindcentrum De Regenboog' && zijZiet.rol === 'schoolbeheerder',
+      zijZiet.school + ' / ' + zijZiet.rol);
+  await haar.close();
 
   // ── de voorbeeldschool ──
   await q.click('button:has-text("Voorbeeldschool")');
