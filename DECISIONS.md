@@ -650,3 +650,47 @@ kleuren van de vorige school te zien.
 zijbalk en in de bordbalk, het woordmerk onderin het menu en op de
 demo. Op het bord zelf — waar kleuters naar kijken — staat alleen het
 p'tje. De app heet nog steeds Keuzebord; Pixelplein is wie hem maakt.
+
+## 2026-10-27 · Op weg naar de eerste testscholen: vier besluiten
+
+De app gaat naar een paar scholen buiten de eigen school. Testleerkrachten
+moeten zonder hulp kunnen starten en makkelijk feedback kunnen geven.
+Vier keuzes die daaruit volgen.
+
+**Inloggen met een gebruikersnaam, het e-mailadres verborgen.** De
+leerkracht typt `juf.marieke` en haar wachtwoord; achter de schermen
+maakt de app daar een intern adres van, omdat Supabase Auth dat veld
+nodig heeft. Zij ziet nooit een e-mailadres.
+
+Dit draait een eerdere keuze terug. Toen ging het over AVG, en was het
+antwoord: e-mail, want dan kan iedereen zichzelf helpen met "wachtwoord
+vergeten". Nu weegt iets anders zwaarder: een testleerkracht die een
+kaartje in handen krijgt en binnen een minuut binnen is. Wachtwoord
+vergeten kan dan niet meer per mail -- de platformbeheerder zet hem
+terug. Dat is geen gat dat we vergeten zijn maar de prijs van deze
+keuze, en hij is bewust betaald.
+
+Gebruikersnamen zijn uniek over alle scholen heen. Dat kan niet anders
+zolang ze een adres moeten worden, en het heeft een voordeel: de
+leerkracht hoeft op het inlogscherm niet eerst haar school te kiezen.
+
+**Drie rollen blijven.** De brief vroeg om twee (beheerder en
+leerkracht). Toch blijft de schoolbeheerder bestaan, want zij is degene
+die de deur voor hulp openzet en haar school kan uitdraaien. Zonder haar
+zou de leverancier zelf bij de kinderen en borden van een school moeten
+kunnen, en precies dat is eerder afgewezen. Op een kleine testschool mag
+één persoon gewoon allebei zijn.
+
+**Feedback komt in een tabel, niet in de mail.** Een overzicht in het
+beheer met filters, status, notities en CSV. Geen Edge Function en geen
+maildienst: dat zou een vierde partij in de privacyverklaring zetten en
+geld gaan kosten, voor een handvol testscholen die je toch elke dag
+bekijkt. De mail kan er later bij zonder dat er iets van dit werk
+weggegooid hoeft te worden.
+
+**Het bord gaat op Supabase Realtime.** Nu kijkt het elke 30 seconden of
+er iets veranderd is; de eis is "binnen enkele seconden". Vaker kijken
+haalt dat nét, met zes keer zoveel verkeer. Realtime duwt de wijziging
+meteen door. Het pollen blijft eronder liggen als terugval -- valt de
+verbinding weg, dan werkt het bord door en haalt het daarna alsnog op.
+Dat is de bestaande belofte en die mag een nieuwe techniek niet breken.
