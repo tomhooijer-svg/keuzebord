@@ -84,9 +84,18 @@ const zeg = (n, ok, extra) =>
      bord beslist, niet de proef. */
   await p.reload();
   await p.waitForSelector('.hoek', { timeout: 9000 });
-  const picto = await p.$('.strook .picto');
-  const hoek = await p.$('.hoek');
-  const a = await picto.boundingBox(), c2 = await hoek.boundingBox();
+  /* Locators en geen handles: het bord tekent zichzelf opnieuw zodra er
+     iets verandert, en een handle wijst dan naar een knooppunt dat er
+     niet meer is. Zie test/landing.test.js, waar dat één keer per zoveel
+     rondes misging met een foutmelding die niets zei. */
+  await p.waitForSelector('.strook .picto', { timeout: 9000 });
+  const a = await p.locator('.strook .picto').first().boundingBox();
+  const c2 = await p.locator('.hoek').first().boundingBox();
+  if (!a || !c2) {
+    zeg('er staat een kind en een hoek om mee te slepen', false,
+        'kind: ' + (a ? 'ja' : 'nee') + ', hoek: ' + (c2 ? 'ja' : 'nee'));
+    throw new Error('niets om te slepen');
+  }
   await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await p.mouse.down();
   await p.mouse.move(c2.x + c2.width / 2, c2.y + c2.height / 2, { steps: 14 });

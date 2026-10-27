@@ -15,7 +15,6 @@ create table if not exists auth.users (
   encrypted_password text,
   raw_user_meta_data jsonb default '{}'::jsonb
 );
-alter table auth.users add column if not exists encrypted_password text;
 
 /* Supabase heeft pgcrypto in het schema 'extensions'. Hier staat het in
    public; met dit schema erbij werkt dezelfde SQL op allebei. */
