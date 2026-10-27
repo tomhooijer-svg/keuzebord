@@ -152,11 +152,35 @@ const zeg = (n, ok, extra) => {
      Dus zetten we de manier van sluiten pas aan op het moment dat we ook
      een tijd meegeven. Dan is er geen tel waarin er een tijdstip geldt
      dat deze proef niet zelf heeft gekozen. */
+  /* En hier zat een tweede val van dezelfde soort, die pas 's avonds
+     laat afging. "Een uur later" is om tien voor twaalf 's nachts geen
+     tijdstip van vandaag meer, en de app rekent een sluitingstijd altijd
+     op de dag van vandaag -- 00:50 is dan drieëntwintig uur geleden. De
+     proef zag dus "hij sluit" waar hij "hij sluit nog niet" verwachtte,
+     en dat is geen fout in de app.
+
+     Dus kiezen we een tijdstip dat gegarandeerd later vandaag valt. Zit
+     het einde van de dag te dichtbij om dat te kunnen, dan wachten we
+     die laatste minuut af in plaats van de controle over te slaan -- een
+     proef die 's nachts stilletjes verdwijnt is erger dan een proef die
+     een minuut langer duurt. */
+  const totMiddernacht = () => {
+    const nu = new Date();
+    return (24 * 60) - (nu.getHours() * 60 + nu.getMinutes());
+  };
+  if (totMiddernacht() <= 2) {
+    await p.waitForTimeout((totMiddernacht() * 60 + 20) * 1000);
+  }
+
   await opzet({ sluitenSoort: 'nooit' });
   await p.waitForTimeout(2500);
-  const opTijd = await p.evaluate(() => {
+  const opTijd = await p.evaluate((ruimte) => {
     const k = KB.klas();
-    const straks = new Date(Date.now() + 60 * 60000);
+    /* Een uur later als dat nog vandaag is, anders de laatste minuut van
+       deze dag. Allebei liggen ze in de toekomst, en dat is wat deze
+       controle nodig heeft. */
+    const straks = ruimte > 61 ? new Date(Date.now() + 60 * 60000)
+                               : new Date(new Date().setHours(23, 59, 0, 0));
     k.settings.sluitenTijd = String(straks.getHours()).padStart(2, '0') + ':' +
                              String(straks.getMinutes()).padStart(2, '0');
     k.settings.sluitenSoort = 'tijd';
@@ -166,9 +190,11 @@ const zeg = (n, ok, extra) => {
     k.settings.sluitenTijd = String(net.getHours()).padStart(2, '0') + ':' +
                              String(net.getMinutes()).padStart(2, '0');
     KB.bewaar();
-    return { nogNiet: nogNiet, welNu: KB.moetSluiten() };
-  });
-  zeg('een uur voor de sluitingstijd gebeurt er niets', opTijd.nogNiet === false, String(opTijd.nogNiet));
+    return { nogNiet: nogNiet, welNu: KB.moetSluiten(),
+             gekozen: k.settings.sluitenTijd };
+  }, totMiddernacht());
+  zeg('voor de sluitingstijd gebeurt er niets', opTijd.nogNiet === false,
+      'de tijd stond op ' + opTijd.gekozen);
   zeg('een minuut erna sluit het bord zichzelf af', opTijd.welNu === true, String(opTijd.welNu));
 
   /* het bord doet dat ook echt, uit zichzelf, zonder dat wij iets klikken */

@@ -51,7 +51,13 @@ async function probeerInloggen(p, naam, ww){
      breekt er een van af en je krijgt ERR_ABORTED over iets wat niets
      met inloggen te maken heeft. */
   await p.goto('about:blank');
-  await p.goto(APP + '/inloggen.html', { waitUntil: 'domcontentloaded' });
+  /* Deze eerste keer mag afbreken. Ligt er nog een sessie van de vorige
+     poging, dan stuurt het inlogscherm zichzelf meteen door en breekt de
+     browser onze navigatie af -- ERR_ABORTED over iets wat niets met
+     inloggen te maken heeft. Daarna wissen we de sessie en halen we hem
+     opnieuw op; dán hoort hij gewoon te komen. */
+  await p.goto(APP + '/inloggen.html', { waitUntil: 'domcontentloaded' })
+         .catch(function () {});
   await p.evaluate(() => {
     localStorage.clear();
     localStorage.setItem('kb_server','http://localhost:5455');
