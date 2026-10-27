@@ -409,6 +409,7 @@ function tekenScholen(v){
 
     var acties = el('div', 'knoprij');
     if (deur) acties.appendChild(knop('Meekijken', 'stil', function () { kiesGroep(c, deur); }));
+    acties.appendChild(knop('Accounts', 'stil', function () { toonAccounts(c); }));
     acties.appendChild(knop('Opheffen', 'stil', function () { verwijderSchool(c); }));
     kaart.appendChild(acties);
     rooster.appendChild(kaart);
@@ -755,6 +756,85 @@ function toonKaartje(gegevens){
         function () { meld('Kopi\u00ebren lukte niet \u2014 schrijf het over'); });
     }));
     rij.appendChild(knop('Klaar', 'stil', sluitBlad));
+    blad.appendChild(rij);
+  });
+}
+
+/* ── de accounts van een school ───────────────────────────────────────
+   Wie er bij een school hoort, en hun wachtwoord terug kunnen zetten.
+   Dit is het enige wat de leverancier van een school mag zien zonder
+   dat die school een deur openzet: namen en rollen, geen kinderen,
+   geen borden, geen statistieken. Zie docs/ROLLEN.md.
+
+   Waarom het er is: raakt de schoolbeheerder haar wachtwoord kwijt,
+   dan is er verder niemand die haar kan helpen -- en een school waar
+   niemand meer bij kan is een school die stilstaat. Een wachtwoord
+   zetten geeft geen inzage; het maakt alleen een nieuw kaartje. */
+function toonAccounts(c){
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Accounts van ' + c.naam);
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Namen en rollen \u2014 verder niets. Een nieuw wachtwoord maakt het oude ' +
+      'meteen onbruikbaar en levert een kaartje op om uit te printen.'));
+
+    var vak = el('div');
+    vak.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'));
+    blad.appendChild(vak);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Sluiten', 'stil', sluitBlad));
+    blad.appendChild(rij);
+
+    SB.lees('profielen', { kies:'id,naam,rol,gebruikersnaam',
+                           waar:{ school_id:'eq.' + c.school_id },
+                           volgorde:'rol,naam' }).then(function (mensen) {
+      vak.innerHTML = '';
+      if (!(mensen || []).length) {
+        vak.appendChild(el('p', 'hint', 'Er hoort nog niemand bij deze school.'));
+        return;
+      }
+      mensen.forEach(function (m) {
+        var r = el('div', 'ledenrij');
+        var links = el('div');
+        links.appendChild(el('div', 'ledennaam', m.naam || m.gebruikersnaam || '\u2014'));
+        links.appendChild(el('div', 'ledenmail',
+          (m.gebruikersnaam ? m.gebruikersnaam + ' \u00b7 ' : '') +
+          (m.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht')));
+        r.appendChild(links);
+        r.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+          nieuwWachtwoord(m, c.naam);
+        }));
+        vak.appendChild(r);
+      });
+    }, function (e) {
+      vak.innerHTML = '';
+      vak.appendChild(el('p', 'hint', 'Ophalen lukte niet: ' + (e && e.message)));
+    });
+  });
+}
+
+function nieuwWachtwoord(mens, schoolnaam){
+  var wie = mens.naam || mens.gebruikersnaam;
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Nieuw wachtwoord voor ' + wie + '?');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Het oude wachtwoord werkt daarna niet meer. Je krijgt een kaartje om uit te ' +
+      'printen; daarna kan niemand het meer opzoeken, ook jij niet.'));
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Nieuw wachtwoord', 'primair', function () {
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken.'); return; }
+      SB.roep('wachtwoord_zetten', { wie: mens.id, nieuw: ww }).then(function () {
+        toonKaartje({ naam: wie, gebruikersnaam: mens.gebruikersnaam || '',
+                      wachtwoord: ww, rol: mens.rol, school: schoolnaam });
+      }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    }));
     blad.appendChild(rij);
   });
 }

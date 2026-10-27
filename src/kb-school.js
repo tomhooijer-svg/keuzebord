@@ -1023,8 +1023,12 @@ function mensenPaneel(){
     var links = el('div');
     links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
     links.appendChild(el('div', 'ledenmail',
-      groepen.length ? groepen.sort().join(', ') : 'nog geen groep'));
+      (mens.gebruikersnaam ? mens.gebruikersnaam + ' \u00b7 ' : '') +
+      (groepen.length ? groepen.sort().join(', ') : 'nog geen groep')));
     rij.appendChild(links);
+    rij.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+      vraagNieuwWachtwoord(mens);
+    }));
     p.appendChild(rij);
   });
 
@@ -1033,8 +1037,13 @@ function mensenPaneel(){
     var rij = el('div', 'ledenrij');
     var links = el('div');
     links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
-    links.appendChild(el('div', 'ledenmail', 'schoolbeheerder — mag bij alle groepen'));
+    links.appendChild(el('div', 'ledenmail',
+      (mens.gebruikersnaam ? mens.gebruikersnaam + ' \u00b7 ' : '') +
+      'schoolbeheerder \u2014 mag bij alle groepen'));
     rij.appendChild(links);
+    rij.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+      vraagNieuwWachtwoord(mens);
+    }));
     p.appendChild(rij);
   });
 
@@ -1313,6 +1322,34 @@ function toonCollegaToevoegen(concept){
     blad.appendChild(rij);
     zetCursor(invoer, blad);
   });
+}
+
+/* ── een nieuw wachtwoord ─────────────────────────────────────────────
+   Niemand kan een wachtwoord terugkijken, ook de schoolbeheerder niet.
+   Dat is met opzet: een lijst met wachtwoorden die ergens blijft
+   liggen is gevaarlijker dan een juf die er af en toe een nieuw moet
+   vragen. Wat hier gebeurt is dus geen "opzoeken" maar "vervangen" --
+   en daarmee is het oude wachtwoord meteen onbruikbaar.
+
+   Vandaar de waarschuwing vooraf: staat zij op dit moment ingelogd op
+   het digibord, dan blijft dat werken tot ze uitlogt, maar de volgende
+   keer heeft ze het nieuwe kaartje nodig. */
+function vraagNieuwWachtwoord(mens){
+  var wie = mens.naam || mens.gebruikersnaam || mens.email;
+  vraagBevestiging('Nieuw wachtwoord voor ' + wie + '?',
+    'Het oude wachtwoord werkt daarna niet meer. Je krijgt een nieuw kaartje om ' +
+    'uit te printen; daarna kan niemand het meer opzoeken, ook jij niet.',
+    'Nieuw wachtwoord', function () {
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
+      SB.roep('wachtwoord_zetten', { wie: mens.id, nieuw: ww }).then(function () {
+        toonKaartje({ naam: mens.naam || wie, gebruikersnaam: mens.gebruikersnaam || '',
+                      wachtwoord: ww, rol: mens.rol });
+      }, function (e) {
+        meld('Dat lukte niet: ' + (e && e.message));
+      });
+    });
 }
 
 /* Het kaartje zelf wordt getekend door src/kb-kaartje.js, omdat het

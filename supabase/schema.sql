@@ -545,6 +545,35 @@ begin
     raise exception 'Het wachtwoord is niet opgeslagen zoals verwacht. Meld dit.';
   end if;
 
+  /* En dan het account meteen omzetten naar zijn gebruikersnaam, als
+     dat nog niet is gebeurd.
+
+     Waarom dat hier gebeurt en niet ergens apart: op dit moment rolt er
+     een kaartje uit met "Gebruikersnaam: juf". Een account dat nog op
+     een echt e-mailadres staat, komt met die gebruikersnaam niet
+     binnen -- en dan staat er op papier iets dat niet werkt. Een
+     kaartje dat liegt is erger dan geen kaartje.
+
+     Het is dus geen bijwerking maar de andere helft van dezelfde
+     handeling: een nieuw wachtwoord én de manier om in te loggen die
+     erbij hoort. Daarmee verdwijnt het oude e-mailadres ook uit de
+     database, en dat is precies de bedoeling.
+
+     Zit die gebruikersnaam al op een ander account, dan stoppen we. Het
+     wachtwoord is dan wel gezet; dat is vervelend maar veilig -- veel
+     erger zou zijn dat twee mensen op hetzelfde adres uitkomen. */
+  if doel.gebruikersnaam is not null then
+    if exists (select 1 from auth.users
+                where lower(email) = public.inlogadres(doel.gebruikersnaam)
+                  and id <> wie) then
+      raise exception 'Die gebruikersnaam hoort al bij een ander account. Het wachtwoord is wel gezet; kies een andere gebruikersnaam.';
+    end if;
+    update auth.users set email = public.inlogadres(doel.gebruikersnaam)
+     where id = wie and lower(coalesce(email, '')) is distinct from public.inlogadres(doel.gebruikersnaam);
+    update public.profielen set email = public.inlogadres(doel.gebruikersnaam)
+     where id = wie;
+  end if;
+
   perform public.noteer('wachtwoord opnieuw ingesteld', doel.school_id,
                         coalesce(nullif(doel.naam, ''), doel.gebruikersnaam),
                         jsonb_build_object('gebruikersnaam', doel.gebruikersnaam));
