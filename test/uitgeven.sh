@@ -13,6 +13,10 @@
 # Gebruik:  sh test/uitgeven.sh [doelmap]
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
+# sed -i werkt anders op een Mac dan op Linux (de Mac wil er een lege
+# extensie achter). Dit doet op allebei hetzelfde: lezen, schrijven,
+# terugzetten.
+sedi(){ e=$1; f=$2; sed "$e" "$f" > "$f.sedi" && mv "$f.sedi" "$f"; }
 UIT=${1:-/tmp/keuzebord-uitgaven}
 # De stempel die in het adres van de code komt. Dit was eerst de datum,
 # en dat ging mis: twee keer publiceren op dezelfde dag gaf twee keer
@@ -37,14 +41,33 @@ TESTVERSIE=true
 
 BORDMAP=keuzebord-app
 PLANMAP=planbord
-BORDURL="https://tomhooijer-svg.github.io/$BORDMAP/"
 PLANURL="https://tomhooijer-svg.github.io/$PLANMAP/"
+
+# Keuzebord verhuist van GitHub Pages naar een eigen subdomein op Cloud86
+# (DECISIONS.md, 29-10-2026). Dezelfde uitgave staat dan op twee adressen;
+# allebei horen ze bij de app, zodat de knoppen op elk van de twee goed
+# wijzen. Zie docs/HOSTING-CLOUD86.md.
+#
+# VERHUISD=false  het oude adres is nog het hoofdadres; geen melding.
+# VERHUISD=true   app.pixelplein.nl is het hoofdadres; wie op het oude
+#                 adres werkt krijgt de melding "eerst versturen, dan
+#                 overstappen" (src/kb-verhuizing.js).
+# Zet hem pas op true als app.pixelplein.nl/diagnose.html de juiste versie
+# laat zien en inloggen daar werkt.
+VERHUISD=false
+BORDURL_OUD="https://tomhooijer-svg.github.io/$BORDMAP/"
+BORDURL_NIEUW="https://app.pixelplein.nl/"
+if [ "$VERHUISD" = true ]; then
+  BORDURL=$BORDURL_NIEUW; BORDOOK=$BORDURL_OUD
+else
+  BORDURL=$BORDURL_OUD;   BORDOOK=$BORDURL_NIEUW
+fi
 
 rm -rf "$UIT"; mkdir -p "$UIT"
 
 # ── wat elke uitgave krijgt ──────────────────────────────────────────
 # De motor: overal hetzelfde.
-KERN="kb-app.js kb-testbanner.js kb-feedback.js kb-rondleiding.js kb-pictobank.js kb-kaartje.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
+KERN="kb-app.js kb-verhuizing.js kb-testbanner.js kb-feedback.js kb-rondleiding.js kb-pictobank.js kb-kaartje.js kb-data.js kb-demo.js kb-supabase.js kb-media.js kb-sync.js kb-verbinding.js kb-statistiek.js kb-beheer.js"
 BORD_SCHERMEN="kb-bord.js kb-school.js kb-platform.js kb-statistiekpaneel.js kb-docx.js"
 PLAN_SCHERMEN="kb-school.js kb-doelzoeker.js kb-verslag.js kb-plan.js kb-thema.js"
 
@@ -56,7 +79,9 @@ bouw(){
 
   # manifest.json en de pictogrammen: daarmee kan het bord op een digibord
   # als app worden geopend, over het hele scherm en zonder adresbalk.
-  for f in $paginas robots.txt _headers .nojekyll .gitignore \
+  # .htaccess is voor Cloud86 (Apache in Plesk): dezelfde koppen als
+  # _headers, dat alleen Cloudflare leest. GitHub Pages negeert allebei.
+  for f in $paginas robots.txt _headers .htaccess .nojekyll .gitignore \
            manifest.json keuzebord.svg keuzebord-192.png keuzebord-512.png; do
     [ -e "$R/$f" ] && cp "$R/$f" "$D/"
   done
@@ -108,10 +133,15 @@ window.KB_APP = {
      bij als terugval voor een testserver of een ander domein. Dit is de
      enige plek waar die adressen staan. */
   apps: {
-    keuzebord: { naam:'Keuzebord', map:'$BORDMAP', url:'$BORDURL' },
+    keuzebord: { naam:'Keuzebord', map:'$BORDMAP', url:'$BORDURL',
+                 ook:['$BORDOOK'] },
     planbord:  { naam:'Planbord',  map:'$PLANMAP', url:'$PLANURL' }
   },
-  ander: '$ander'
+  ander: '$ander',
+  /* De verhuizing naar het nieuwe adres. Staat 'aan' op true, dan ziet
+     wie op het oude adres werkt een melding: eerst versturen, dan pas
+     overstappen. Zie src/kb-verhuizing.js. */
+  verhuizing: { aan:$VERHUISD, van:'$BORDURL_OUD', naar:'$BORDURL_NIEUW' }
 };
 EOF
 
@@ -119,29 +149,29 @@ EOF
   # Keuzebord is dat het bord; Planbord heeft geen bord, dus daar het
   # beheer -- anders kom je op een 404 uit.
   if [ -f "$D/index.html" ]; then
-    sed -i "s|<title>[^<]*</title>|<title>$naam</title>|" "$D/index.html"
+    sedi "s|<title>[^<]*</title>|<title>$naam</title>|" "$D/index.html"
     if [ "$app" != "keuzebord" ]; then
-      sed -i 's|bord\.html|beheer.html|g; s|ga naar het keuzebord|ga naar het planbord|' "$D/index.html"
+      sedi 's|bord\.html|beheer.html|g; s|ga naar het keuzebord|ga naar het planbord|' "$D/index.html"
     fi
   fi
 
   # Hetzelfde voor de app-omschrijving: Planbord heeft geen bord om mee
   # te beginnen, dus daar opent de snelkoppeling het beheer.
   if [ -f "$D/manifest.json" ]; then
-    sed -i "s|\"Keuzebord\"|\"$naam\"|g" "$D/manifest.json"
+    sedi "s|\"Keuzebord\"|\"$naam\"|g" "$D/manifest.json"
     if [ "$app" != "keuzebord" ]; then
       # Planbord is geen digibord: dat hoort gewoon een venster te zijn,
       # met de knoppen van de browser erbij.
-      sed -i 's|"start_url": "bord.html"|"start_url": "beheer.html"|; s|"orientation": "landscape",||; s|"display": "fullscreen"|"display": "standalone"|; s|\["fullscreen", "standalone"\]|["standalone"]|' "$D/manifest.json"
-      sed -i 's|Het digitale keuzebord voor de kleutergroep.|Weekplan, thema'"'"'s en doelen voor de kleutergroep.|' "$D/manifest.json"
+      sedi 's|"start_url": "bord.html"|"start_url": "beheer.html"|; s|"orientation": "landscape",||; s|"display": "fullscreen"|"display": "standalone"|; s|\["fullscreen", "standalone"\]|["standalone"]|' "$D/manifest.json"
+      sedi 's|Het digitale keuzebord voor de kleutergroep.|Weekplan, thema'"'"'s en doelen voor de kleutergroep.|' "$D/manifest.json"
     fi
   fi
 
   # de schermen die deze uitgave niet heeft uit beheer.html knippen
   if [ -f "$D/beheer.html" ]; then
     weg=$([ "$app" = "keuzebord" ] && echo planbord || echo keuzebord)
-    sed -i "/<!-- $weg -->/,/<!-- \/$weg -->/d" "$D/beheer.html"
-    sed -i "/<!-- $app -->/d; /<!-- \/$app -->/d" "$D/beheer.html"
+    sedi "/<!-- $weg -->/,/<!-- \/$weg -->/d" "$D/beheer.html"
+    sedi "/<!-- $app -->/d; /<!-- \/$app -->/d" "$D/beheer.html"
   fi
 
   # de versie in de adressen van de code: GitHub Pages leest _headers
@@ -149,7 +179,7 @@ EOF
   if [ -n "$V" ]; then
     for f in "$D"/*.html; do
       [ -e "$f" ] || continue
-      sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g; s|\(href=\"stijl/css/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
+      sedi "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g; s|\(href=\"stijl/css/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
     done
   fi
 
@@ -196,7 +226,7 @@ kop(){
   d=$1
   { cat "$2"; echo; cat "$d/README.md"; } > "$d/README.tmp" && mv "$d/README.tmp" "$d/README.md"
 }
-cat > /tmp/kb-kop-keuzebord.md <<'MD'
+cat > /tmp/kb-kop-keuzebord.md <<MD
 # Keuzebord
 
 Het digibord in de kleutergroep: kinderen kiezen een hoek, jij ziet wie
@@ -205,13 +235,13 @@ met hun foto's en wat het bord kan -- en je ziet de statistieken over wat
 er in de hoeken gebeurde.
 
 Het planwerk -- weekplan, thema's, taken, doelen en observaties -- zit in
-**[Planbord](https://tomhooijer-svg.github.io/planbord/)**. De twee delen
+**[Planbord]($PLANURL)**. De twee delen
 dezelfde gegevens en hetzelfde inloggen; een knop onderin het menu brengt
 je van de een naar de ander, met de groep mee.
 
 ---
 MD
-cat > /tmp/kb-kop-planbord.md <<'MD'
+cat > /tmp/kb-kop-planbord.md <<MD
 # Planbord
 
 Het werk van vóór en ná het spelen: de week plannen, thema's uitwerken
@@ -219,7 +249,7 @@ langs verwonderen, vragen, onderzoeken en betekenis geven, taken maken
 die aan doelen hangen, en observeren wat een kind al kan.
 
 Het bord zelf -- kiezen, hoeken, picto's, statistieken -- zit in
-**[Keuzebord](https://tomhooijer-svg.github.io/keuzebord-app/)**. De twee
+**[Keuzebord]($BORDURL)**. De twee
 delen dezelfde gegevens en hetzelfde inloggen; een knop onderin het menu
 brengt je van de een naar de ander, met de groep mee.
 

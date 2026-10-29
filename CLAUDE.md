@@ -39,7 +39,7 @@ Planbord: blijft live, maar wordt nu niet doorontwikkeld.
   - Planwerk: `doelen`, `groep_doelen`, `thema_doelen`, `taken`, `taak_doelen`, `weekplannen`, `week_doelen`, `weekplan_taken`, `taak_toewijzing`, `observaties`
   - Rechten via functies o.a. `mijn_school()`, `mag_bij_groep()`, `ben_schoolbeheerder()`, `ben_platformbeheerder()`; login via `inlogadres()`
   - Rem: 30 in-/aanmeldingen per 5 min per IP (Supabase), herkend door `SB.isTeVaak()`
-- Hosting: GitHub Pages via de twee uitgaverepo's. Eén adres voor iedereen; de school volgt uit de login (geen pad of subdomein per school).
+- Hosting: GitHub Pages via de twee uitgaverepo's. Keuzebord verhuist naar `https://app.pixelplein.nl/` (Cloud86, Plesk haalt op uit `keuzebord-app`); stappen in `docs/HOSTING-CLOUD86.md`, schakelaar `VERHUISD` in `test/uitgeven.sh`. Adressen alleen daar, nooit los in de code. Eén adres voor iedereen; de school volgt uit de login (geen pad of subdomein per school).
 - Lokaal testen:
   - Snel kijken: `python3 -m http.server 8000 --bind 127.0.0.1`, open http://127.0.0.1:8000/demo.html (geen account, alles in de browser)
   - Proeven (Postgres + nep-Supabase op 5455 + webserver op 8899): `npm install`, `sh test/opzetten.sh`, `sh test/proefschool.sh`, `sh test/alles.sh` (of `sh test/alles.sh doelen verslag`). Laatste volle ronde: 54 proeven, 890 controles, groen. Zie `test/LEESMIJ.md`.

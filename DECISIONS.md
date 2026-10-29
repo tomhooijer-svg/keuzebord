@@ -946,3 +946,65 @@ heeft uitgezet.
 **En de werkplaats blijft werken.** Weet de browser van geen school, dan
 mag het gewoon — anders kan niemand de app uitproberen zonder eerst een
 school te hebben. Daar staat geen echt kind in.
+
+## 2026-10-29 · Het keuzebord gaat naar Cloud86, op app.pixelplein.nl
+
+Het keuzebord verhuist van `tomhooijer-svg.github.io/keuzebord-app/` naar
+een eigen subdomein, `https://app.pixelplein.nl/`, op het Cloud86-pakket
+(Webhosting Start, Plesk) waar ook de website staat. GitHub Pages vervalt
+voor het keuzebord zodra alle apparaten over zijn. Planbord blijft voorlopig
+op GitHub Pages; dat wordt niet doorontwikkeld.
+
+**Waarom:** GitHub Pages is niet bedoeld voor een commerciële dienst, en
+vóór de eerste betalende school moet de app op een eigen adres staan. Een
+eigen domein is ook wat een school verwacht: `app.pixelplein.nl` naast
+`pixelplein.nl`. Cloud86 is al betaald voor de website, dus het kost niets
+extra.
+
+**Plesk haalt zelf op uit de publieke repo `keuzebord-app`**, met de
+Git-functie van Plesk, alleen lezen, zonder bouwstap. Zo blijft er één
+uitgave voor beide adressen en hoeft Tom geen bestanden te uploaden. Na een
+uitgave klikt hij op "Nu ophalen" (of hangt hij er een webhook aan). Stappen
+in `docs/HOSTING-CLOUD86.md`.
+
+**De code kent geen vast adres meer.** Alle adressen staan in
+`test/uitgeven.sh` en daaruit in `src/kb-app.js`. Het keuzebord heeft er
+nu twee die allebei "eigen" zijn (`url` plus `ook`), zodat de knoppen naar
+Planbord en de 404-pagina op allebei goed wijzen. Daarvoor wees een knop op
+het subdomein naar `../planbord/`, een map die daar niet bestaat.
+
+**`.htaccess` naast `_headers`.** Plesk draait Apache en leest `_headers`
+niet. Dezelfde koppen (CSP, `noindex`, geen cache voor de app) staan nu ook
+in `.htaccess`, plus een eigen 404 en `.sql`/`.md` niet op te vragen. Wie het
+een aanpast, past het ander ook aan.
+
+## 2026-10-29 · Verhuizen zonder iets kwijt te raken: een melding, geen overdracht
+
+De opslag zit per adres in de browser. Voor de browser is het nieuwe adres
+een andere website: wat op het oude adres nog niet naar de server is
+gestuurd (een bord dat offline doorwerkte), ziet het nieuwe adres nooit.
+
+**Gekozen: een melding op het oude adres** (`src/kb-verhuizing.js`). Staat de
+verhuizing aan, dan ziet wie op het oude adres werkt onderaan "Keuzebord
+verhuist naar app.pixelplein.nl". Staat er nog iets klaar (de vlag
+`kb_wachtend` van de sync), dan zegt de melding dat en is er géén knop naar
+het nieuwe adres; is alles verstuurd, dan wel. Op het bord nooit een knop,
+alleen tekst: één tik van een kleuter zou het bord van de klas naar een leeg
+inlogscherm sturen. Op het nieuwe adres, op een testserver en in de demo
+staat er niets.
+
+**Niet gekozen:** de opslag overzetten (kan niet tussen twee adressen zonder
+een tussenpagina met `postMessage`, en dat is veel code voor een eenmalige
+stap), en automatisch doorsturen (dan stap je juist over vóórdat er verstuurd
+is). De server is al de plek waar alles staat; de melding zorgt er alleen
+voor dat het er ook echt staat voordat je weggaat.
+
+**Eén schakelaar:** `VERHUISD` in `test/uitgeven.sh`. Op `false` is het oude
+adres nog hoofdadres en is er geen melding. Pas op `true` als
+`app.pixelplein.nl/diagnose.html` de goede versie toont en inloggen daar
+werkt. Het oude adres blijft tot dan gewoon werken.
+
+**Supabase:** inloggen met wachtwoord werkt op elk adres. Alleen de
+Redirect-URL's (inloglink, wachtwoord vergeten) moeten het nieuwe adres
+kennen, en de Site URL gaat om bij de overstap. CORS hoeft niet: Supabase
+laat elk adres toe, de beveiliging zit in RLS. Tom stelt dit zelf in.

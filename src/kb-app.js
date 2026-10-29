@@ -61,11 +61,26 @@ window.KB_APP = {
      domein klopt het volledige adres niet en vallen we terug op de buur
      naast ons. Zo werkt het in de klas én in de proeven. */
   apps: {
+    /* 'ook' zijn de andere adressen waar dezelfde uitgave staat. Het bord
+       draait tijdens de verhuizing naar Cloud86 op twee plekken tegelijk:
+       het oude GitHub-adres en app.pixelplein.nl. Op allebei is dit "ons
+       eigen adres", dus wijzen de knoppen naar de andere app daar ook
+       goed -- en niet naar een buurmap die er op het subdomein niet is. */
     keuzebord: { naam:'Keuzebord', map:'keuzebord-app',
-                 url:'https://tomhooijer-svg.github.io/keuzebord-app/' },
+                 url:'https://tomhooijer-svg.github.io/keuzebord-app/',
+                 ook:['https://app.pixelplein.nl/'] },
     planbord:  { naam:'Planbord',  map:'planbord',
                  url:'https://tomhooijer-svg.github.io/planbord/' }
   },
+
+  /* De verhuizing van het oude naar het nieuwe adres. Zolang 'aan' op
+     false staat gebeurt er niets. Staat hij aan, dan ziet wie op het oude
+     adres werkt een melding: eerst alles opsturen, dan pas overstappen.
+     De opslag zit per adres in de browser; wat hier nog niet verstuurd
+     is, ziet het nieuwe adres nooit. Zie src/kb-verhuizing.js. */
+  verhuizing: { aan:false,
+                van:'https://tomhooijer-svg.github.io/keuzebord-app/',
+                naar:'https://app.pixelplein.nl/' },
 
   /* Welke van die twee de andere is. null betekent: er is er maar één --
      dat is de werkplaats, waar alles nog bij elkaar zit. */
