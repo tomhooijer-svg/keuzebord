@@ -1008,3 +1008,94 @@ werkt. Het oude adres blijft tot dan gewoon werken.
 Redirect-URL's (inloglink, wachtwoord vergeten) moeten het nieuwe adres
 kennen, en de Site URL gaat om bij de overstap. CORS hoeft niet: Supabase
 laat elk adres toe, de beveiliging zit in RLS. Tom stelt dit zelf in.
+
+## 2026-10-29 · Rechtencontrole vóór echte kindernamen
+
+Gelezen in `supabase/schema.sql` (stand af764b0), niets veranderd. De
+RLS-proeven (`test-0*.sql`) zijn **niet gedraaid**: op deze Mac staan
+geen Postgres en geen Node. Inhalen bij de volgende volle proefronde.
+
+**Wat goed is.** Alle 29 tabellen hebben RLS aan én `force row level
+security`, en elke tabel heeft regels. De inhoudstabellen (leerlingen,
+borden, plaatsingen, gebeurtenissen, observaties, ...) lopen allemaal langs
+`van_mijn_school()` en `mag_bij_groep()`. Daarin komt de platformbeheerder
+alleen binnen via `ondersteuning_actief()`, dus alleen als de school de deur
+heeft opengezet. Alleen de schoolbeheerder zet die deur open, en hooguit voor
+een dag. Het logboek (`handelingen`) kan alleen worden bijgeschreven, niet
+gewist. De bucket `kb-media` wordt niet-openbaar aangemaakt. Statistiek gaat
+alleen als aantallen per school naar de leverancier (`schoolcijfers()`), niet
+per kind.
+
+**Bevindingen, op ernst.** Er is niets dat een buitenstaander binnenlaat.
+Wel zijn er drie wegen waarlangs de leverancier, met de knoppen van het
+platformbeheer, bij kinderen kan komen zónder dat de school de deur
+openzet. Dat botst met de regel "meekijken alleen als de school de deur
+openzet".
+
+1. **Hoog: account aanmaken in een school met kinderen, zonder logboekregel.**
+   De regel "beheerder nodigt uit" op `uitnodigingen` laat de
+   platformbeheerder voor elke school een uitnodiging invoegen, ook met de rol
+   schoolbeheerder. "Account aanmaken" in het platformbeheer doet dat, en toont
+   het wachtwoord op het kaartje. `nieuw_profiel()` schrijft niets in het
+   logboek van de school. Wie dat kaartje heeft, ziet alle kinderen van die
+   school, en de school ziet alleen een nieuwe collega in de lijst.
+   *Kleinste oplossing:* een trigger na een insert op `uitnodigingen` die een
+   regel "account aangemaakt door platformbeheer" in het logboek van die school
+   zet. *Strenger:* de platformbeheerder mag alleen uitnodigen voor een school
+   zonder leerlingen, of met de deur open. `school_aanmaken()` blijft gewoon
+   werken, want dat is een eigen functie.
+2. **Middel: wachtwoord zetten voor elk account.** `wachtwoord_zetten()` laat
+   de platformbeheerder elk wachtwoord zetten, dus ook dat van een
+   leerkracht. Daarna kan hij als haar inloggen. Het wordt wel gelogd, en de
+   leerkracht merkt het omdat haar wachtwoord niet meer werkt. Het commentaar
+   "geeft hem geen inzage" klopt niet.
+   *Kleinste oplossing:* de platformbeheerder alleen toestaan bij open deur,
+   of voor een schoolbeheerder (de noodroute voor een school die niemand meer
+   binnen heeft). Het commentaar rechtzetten.
+3. **Middel: account verplaatsen of rol geven.** Met `account_verplaatsen()`
+   en `account_rol()` kan een tweede account naar een school worden verplaatst
+   en schoolbeheerder worden. Dit wordt gelogd ("account erbij gekomen",
+   "rol gewijzigd").
+   *Kleinste oplossing:* dezelfde open-deur-eis als bij 2, voor verplaatsen
+   naar een school die al leerlingen heeft.
+4. **Middel, en dit ligt buiten de app: het Supabase-dashboard.** Als
+   eigenaar van het project ziet Tom via het dashboard alles. Daar gelden de
+   RLS-regels niet. Dat valt niet in de code op te lossen.
+   *Oplossing:* tweestapsverificatie op het account
+   (`docs/SUPABASE-ECHTE-DATA.md`, punt 1), het eerlijk opschrijven in de
+   verwerkersovereenkomst met de school, en de vaste regel dat rijen met
+   kindgegevens nooit in de Table Editor worden geopend.
+5. **Laag: foto's per school, niet per groep.** De storage-regels kijken alleen
+   naar de map van de school. Een leerkracht van groep 1A kan via de
+   storage-API dus ook bestanden van groep 1B opvragen. Het scherm doet dat
+   niet. De paden bevatten uuid's, maar zijn wel op te sommen.
+   *Kleinste oplossing:* in "kb media lezen" ook de tweede map (de groep)
+   langs `mag_bij_groep()` laten lopen.
+6. **Laag: de live bucket.** `insert ... on conflict do nothing` past een
+   bestaande bucket niet aan. Of `kb-media` live echt niet-openbaar is, is
+   vanuit de repo niet te zien. Tom kijkt het na (checklist punt 4).
+7. **Laag: feedback is vrije tekst.** Daar kan een kindernaam in komen, en
+   alleen de leverancier leest het. Het scherm waarschuwt er al voor ("Schrijf
+   hier geen namen van kinderen"). Geen wijziging nodig.
+
+Geen van deze punten is gerepareerd. Tom beslist. Bevinding 1 hoort besloten
+te zijn vóór de eerste echte naam.
+
+## 2026-10-29 · Checklist echte data
+
+Vóór de eerste school met echte kindernamen loopt Tom
+`docs/SUPABASE-ECHTE-DATA.md` af. Elk punt is gemarkeerd als "nu doen" of
+"bij eerste echte school". Het Pro-plan gaat in op de dag van de eerste echte
+naam, niet eerder. Dat scheelt geld zolang er alleen nepdata is, en het
+gratis plan is te riskant zodra het echte data wordt (het pauzeert en maakt
+geen back-ups).
+
+**Aanmelden blijft aan.** De app maakt collega-accounts aan via de openbare
+aanmeldroute van Supabase. "Allow new users to sign up" uitzetten zou dat
+breken. Een account zonder school ziet niets, dus het risico is klein.
+**Bevestigen per mail blijft uit**, want `.invalid`-adressen ontvangen nooit
+mail. De rem blijft op 30 pogingen per 5 minuten (27-10).
+
+**Terugzetten oefenen gebeurt nooit op het echte project**, maar in een
+tijdelijk nieuw project dat meteen weer weg gaat. Een terugzetting op het
+echte project zet alle scholen tegelijk terug.
