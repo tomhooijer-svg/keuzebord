@@ -140,6 +140,55 @@ async function rijen(p){
   await p.selectOption('.kiesveld', { label: 'Alle scholen' });
   await p.waitForTimeout(250);
 
+  // ── deur dicht: bij een school met kinderen kan de leverancier niets ──
+  /* Mijn school heeft drie kinderen (Bram, Isa, Kees) en heeft de deur niet
+     opengezet. Een rol geven of een account erbij maken zou de leverancier
+     dan langs een omweg bij die kinderen brengen: een account met een
+     wachtwoord dat hij kent. Dus: geweigerd, met een melding die zegt wat
+     je moet doen in plaats van een foutcode. DECISIONS.md, 29-10-2026. */
+  const DICHT = 'Deze school heeft kinderen. Vraag de schoolbeheerder om meekijken aan te zetten.';
+  const logVoor = psql("select count(*) from public.handelingen where gegevens->>'door' = 'leverancier'");
+  {
+    const rij = p.locator('.mensrij', { hasText: 'juf' }).first();
+    await rij.locator('button:has-text("Aanpassen")').click();
+    await p.waitForSelector('.overlay.open', { timeout: 4000 });
+    await p.click('.blad .chip:has-text("Schoolbeheerder")');
+    await p.waitForTimeout(200);
+    await p.click('.blad button:has-text("Opslaan")');
+    await p.waitForTimeout(1200);
+    const m = (await p.textContent('#melding')).trim();
+    zeg('deur dicht: een rol geven wordt geweigerd met een duidelijke melding', m === DICHT, m.slice(0, 60));
+    zeg('zonder "Dat lukte niet" ervoor', !/lukte niet/i.test(m));
+    zeg('en de rol is niet veranderd',
+        psql("select rol from public.profielen where gebruikersnaam='juf'") === 'leerkracht');
+    await p.click('.blad button:has-text("Annuleren")');
+    await p.waitForTimeout(300);
+  }
+  {
+    await p.click('button:has-text("Account toevoegen")');
+    await p.waitForSelector('.overlay.open', { timeout: 4000 });
+    await p.selectOption('.blad select', { label: 'Mijn school' });
+    await p.fill('.blad input >> nth=0', 'Stiekem Account');
+    await p.waitForTimeout(500);
+    await p.click('.blad button:has-text("Aanmaken")');
+    await p.waitForTimeout(1500);
+    const m = (await p.textContent('#melding')).trim();
+    zeg('deur dicht: een account aanmaken wordt geweigerd met dezelfde melding', m === DICHT, m.slice(0, 60));
+    zeg('er is geen account bijgekomen',
+        psql("select count(*) from auth.users where email like 'stiekem%'") === '0');
+    zeg('en er rolt geen kaartje uit', (await p.$('.kaartje')) === null);
+    await p.click('.blad button:has-text("Annuleren")').catch(() => {});
+    await p.waitForTimeout(300);
+  }
+  zeg('een geweigerde actie komt niet als iets wat gebeurd is in het logboek',
+      psql("select count(*) from public.handelingen where gegevens->>'door' = 'leverancier'") === logVoor);
+
+  /* De schoolbeheerder zet de deur open (twee uur). Daarna loopt alles
+     hieronder zoals het altijd liep. */
+  psql("insert into public.ondersteuning (school_id, door, reden, tot) " +
+       "select p.school_id, p.id, 'proef', now() + interval '2 hours' " +
+       "from public.profielen p where p.gebruikersnaam='beheerder'");
+
   // ── de enige schoolbeheerder mag je niet degraderen ──
   // Dit is de regel waar de hele beheerkant op staat of valt: een school
   // zonder beheerder is een school die stilstaat zodra er iets moet.
@@ -301,6 +350,30 @@ async function rijen(p){
       String(regels.length) + ' regels');
   zeg('en de nieuwe schoolnaam', regels.some(r => /schoolnaam gewijzigd/.test(r)),
       String(regels.length) + ' regels');
+
+  // ── en de school ziet het in haar eigen logboek ──
+  const bijSchool = psql("select count(*) from public.handelingen h " +
+    "join public.scholen s on s.id = h.school_id " +
+    "where s.naam = 'Mijn school' and h.gegevens->>'door' = 'leverancier'");
+  zeg('wat de leverancier met de deur open deed, staat bij de school als leverancier',
+      Number(bijSchool) >= 3, bijSchool + ' regels');
+  {
+    const baas = await apparaat(b);
+    await baas.fill('#email', 'beheerder@mijnschool.nl');
+    await baas.fill('#ww', 'proefproef');
+    await baas.click('#verstuur');
+    await baas.waitForTimeout(3000);
+    if (!/school\.html/.test(baas.url())) await baas.goto(APP + '/school.html');
+    // het logboek staat onder "De school"
+    await baas.waitForSelector('.zij-knop', { timeout: 9000 }).catch(() => {});
+    await baas.click('.zij-knop:has-text("De school")').catch(() => {});
+    await baas.waitForSelector('.paneelkop:has-text("Logboek")', { timeout: 9000 }).catch(() => {});
+    await baas.waitForTimeout(800);
+    const tekst = await baas.textContent('body');
+    zeg('het schoolbeheer zet er "Pixelplein (leverancier)" voor',
+        /Pixelplein \(leverancier\): (rol gewijzigd|account aangemaakt)/.test(tekst));
+    await baas.context().close();
+  }
 
   // ── wie geen platformbeheerder is, kan hier niets ──
   /* Dit kijkt in de database en niet via het scherm. De nabootsing van

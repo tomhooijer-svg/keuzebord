@@ -4,6 +4,7 @@
 # Draai dit na test/opzetten.sh -- die maakt de database elke keer leeg.
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
+. "$R/test/mac.sh"
 SERVER=${SERVER:-http://localhost:5455}
 BAAS=beheerder@mijnschool.nl
 JUF=juf@mijnschool.nl

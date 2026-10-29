@@ -174,14 +174,70 @@ Zo oefen je veilig:
 **Waarom:** een back-up waarvan je niet weet hoe je hem terugzet, is geen
 back-up.
 
-## 11. Vóór de eerste echte naam: nog drie dingen buiten het dashboard
+## 11. De nieuwe rechtenregels op het live project zetten — NU DOEN (na elke wijziging aan schema.sql)
+
+Sinds 29-10-2026 kan de leverancier (jij, als platformbeheerder) bij een
+school met kinderen geen accounts meer maken, geen wachtwoorden zetten en
+niemand verplaatsen of een rol geven, tenzij de school "meekijken" heeft
+aangezet. Die regel zit in `supabase/schema.sql` en moet ook in het live
+project komen. Je hebt daarvoor **geen sleutel** nodig: je bent in het
+dashboard al ingelogd als eigenaar.
+
+**Wanneer:** 's avonds of in het weekend, niet tijdens schooltijd. Het
+script haalt alle rechtenregels even weg en zet ze direct opnieuw neer;
+in die paar seconden kan een bord een foutmelding krijgen.
+
+**Zo doe je het:**
+1. Op het Pro-plan (punt 7): kijk eerst bij **Database** → **Backups** of
+   er een back-up van vandaag of gisteren staat. Op het gratis plan is er
+   geen back-up, en daarom kan dit dan beter vóór er echte namen in staan.
+2. Open in de repo het bestand `supabase/schema.sql` en kopieer de hele
+   inhoud (Cmd+A, Cmd+C).
+3. In het dashboard: **SQL Editor** → **New query** → plak alles → **Run**.
+4. Onderaan hoort *Success* te staan. Meldingen die met `NOTICE` beginnen
+   zijn geen fouten. Staat er `ERROR`? Stop dan, kopieer de foutregel en
+   stuur hem naar Claude. Het script is herhaalbaar: na een reparatie draai
+   je gewoon het hele bestand nog een keer.
+
+**Controleren dat het werkt** (alleen-lezen, raakt geen kindgegevens).
+Plak dit in een **nieuwe** query en klik **Run**:
+
+```sql
+select
+  (select count(*) from pg_proc
+    where proname in ('platform_mag_bij_school','platform_moet_mogen','school_heeft_kinderen'))
+    as nieuwe_functies,
+  (select count(*) from pg_trigger where tgname = 'uitnodiging_op_slot')
+    as nieuwe_trigger,
+  (select count(*) from pg_policies
+    where tablename = 'uitnodigingen' and policyname = 'beheerder nodigt uit'
+      and with_check like '%platform_mag_bij_school%')
+    as nieuwe_regel;
+```
+
+Je hoort te zien: `nieuwe_functies = 3`, `nieuwe_trigger = 1`,
+`nieuwe_regel = 1`.
+
+**En in de app** (alleen met nepdata):
+1. Log in als platformbeheerder → **Accounts** → **Account toevoegen** →
+   kies een proefschool waar nepkinderen in staan → **Aanmaken**. Je hoort
+   te zien: *"Deze school heeft kinderen. Vraag de schoolbeheerder om
+   meekijken aan te zetten."*, en er komt geen kaartje.
+2. Log in als schoolbeheerder van die proefschool → **Schoolbeheer** →
+   **Hulp van de leverancier** → zet de deur open.
+3. Probeer stap 1 opnieuw: nu lukt het.
+4. Als schoolbeheerder: in het **Logboek** staat nu
+   *"Pixelplein (leverancier): account aangemaakt — …"*.
+5. Haal het proefaccount daarna weer weg en zet de deur dicht.
+
+## 12. Vóór de eerste echte naam: nog drie dingen buiten het dashboard
 
 Geen dashboard-werk, maar ze horen op dezelfde dag af te zijn:
 
 - `privacy.html` ingevuld met je bedrijfsgegevens (STATUS.md, punt 3).
 - Verwerkersovereenkomst met de school getekend.
-- De voorstellen uit de rechtencontrole (DECISIONS.md, 29-10-2026)
-  besloten: met name het account aanmaken door de leverancier (bevinding 1).
+- De rechtenregels van punt 11 staan op het live project (bevindingen 1–3
+  uit de rechtencontrole zijn daarmee opgelost).
 
 ---
 

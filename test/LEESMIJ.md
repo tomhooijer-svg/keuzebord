@@ -25,6 +25,69 @@ Alles achter elkaar, elke proef op een verse database:
 sh test/alles.sh           # of: sh test/alles.sh doelen verslag
 ```
 
+## Op een Mac
+
+De proeven zijn op Linux gebouwd (Postgres in `/usr/lib/postgresql/16`,
+Chromium in `/opt/pw-browsers`, alles als root). Op een Mac regelt
+`test/mac.sh` de verschillen; `opzetten.sh`, `proefschool.sh` en `alles.sh`
+lezen dat zelf in. Eén keer klaarzetten, in deze volgorde:
+
+```sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install node@22 postgresql@16
+npm install
+npx playwright install chromium
+```
+
+Homebrew installeren vraagt om je Mac-wachtwoord; dat doe je zelf in
+Terminal. Start Postgres **niet** met `brew services`: `opzetten.sh` draait
+een eigen database op poort 5439 in `/var/tmp/kbpg`.
+
+Daarna gewoon:
+
+```sh
+sh test/opzetten.sh && sh test/proefschool.sh && sh test/alles.sh
+```
+
+Wat `mac.sh` doet, en waarom:
+- **Pad:** Homebrew zet `node@22` en `postgresql@16` niet vanzelf in je pad
+  (versies met een @ zijn "keg-only"). `mac.sh` zet ze ervoor.
+- **Taal:** zonder `LC_ALL` start Postgres op een Mac niet ("postmaster became
+  multithreaded during startup"). `mac.sh` zet `en_US.UTF-8`.
+- **Geen aparte gebruiker:** op Linux draait Postgres als gebruiker `kb`
+  (root mag niet); op een Mac gewoon als jij.
+- **Chromium:** `CHROME` wijst naar de browser van `npx playwright install`.
+  Draai je één proef los (`node test/sync.test.js`), lees dan eerst
+  `. test/mac.sh` in, anders zoekt hij Chromium op de Linux-plek.
+
+Twee valkuilen die op Linux niet opvielen:
+- **Tijdzone.** De proeven draaiden op Linux in UTC; een Mac staat op
+  Nederlandse tijd. De nabootsing gaf een datum (`date`-kolom) toen terug als
+  middernacht lokale tijd, en in JSON werd dat de dag ervoor. Nu geeft hij
+  hem als tekst, zoals Supabase zelf (`nep-supabase-server.js`). Zie je ooit
+  een weekplan "op de verkeerde maandag", denk dan eerst hieraan.
+- **Een tool die blijft wachten.** `opzetten.sh` start de nabootsing en de
+  webserver op de achtergrond. Een programma dat wacht tot alle processen
+  klaar zijn (sommige terminals, of Claude Code) blijft dan hangen terwijl
+  het script allang klaar is. Dat is geen fout: de servers draaien.
+
+## De SQL-rechtenproeven
+
+`supabase/test-02-opzet.sql`, `test-03-rechten.sql` en `test-04-platform.sql`
+zetten twee scholen neer en lopen de rechtenregels langs, met bij elke stap
+"verwacht: ...". `node test/rechten.test.js` draait ze op een eigen database
+(`kbrechten`) en legt elke uitkomst naast zijn verwachting; hij zit ook in
+`alles.sh`. Vroeger las je ze met de hand, en zo stond test-02 lang stuk
+(twee accounts met dezelfde gebruikersnaam) zonder dat iemand het zag.
+
+test-04 gaat over de leverancier: bij een school met kinderen kan de
+platformbeheerder geen account maken, geen wachtwoord zetten en niemand
+verplaatsen of een rol geven, tenzij de school de deur heeft opengezet. De
+noodroute (het wachtwoord van de enige schoolbeheerder) blijft open, en alles
+wat de leverancier doet staat in het logboek van de school.
+
+## Wat de eerste proef doet
+
 De test loopt vijftien dingen langs: registreren, een school beginnen,
 groepen maken, een juf uitnodigen, haar laten registreren en zien dat ze
 automatisch bij de goede school en groep zit, dat ze niet bij de groep

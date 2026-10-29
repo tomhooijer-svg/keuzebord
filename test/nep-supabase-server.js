@@ -4,7 +4,13 @@
    het testen -- op de echte site praat de app met Supabase zelf. */
 const http = require('http');
 const crypto = require('crypto');
-const { Client } = require('pg');
+const { Client, types } = require('pg');
+/* Een datum (zonder tijd) als tekst laten, zoals PostgREST dat doet.
+   Standaard maakt node-pg er een Date van om middernacht in de tijdzone
+   van deze computer; in JSON wordt dat de dag ervoor in UTC. Op een
+   server in UTC zie je dat niet, op een Mac in Nederland wel: dan stond
+   elk weekplan een dag te vroeg. */
+types.setTypeParser(1082, v => v);
 
 /* De opslag nabootsen: bestanden in het geheugen, met dezelfde adressen
    als Supabase gebruikt. De rechten komen uit dezelfde regels als de rest,

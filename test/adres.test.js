@@ -36,7 +36,9 @@ async function metConfig(p, staart){
   p.on('pageerror', e => fouten.push(e.message));
 
   // ── 1. de knoppen naar de andere app ──
-  await p.goto(APP + '/demo.html');
+  // testbord.html laadt kb-data.js zonder account; daar staat KB.appAdres.
+  await p.goto(APP + '/testbord.html');
+  await p.waitForFunction(() => window.KB && KB.appAdres, null, { timeout: 10000 });
   const adressen = await p.evaluate((APP) => {
     const bewaar = window.KB_APP;
     window.KB_APP = { id:'keuzebord', apps:{

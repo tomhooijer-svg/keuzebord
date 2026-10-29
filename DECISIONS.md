@@ -1099,3 +1099,90 @@ mail. De rem blijft op 30 pogingen per 5 minuten (27-10).
 **Terugzetten oefenen gebeurt nooit op het echte project**, maar in een
 tijdelijk nieuw project dat meteen weer weg gaat. Een terugzetting op het
 echte project zet alle scholen tegelijk terug.
+
+## 2026-10-29 · Platformbeheer alleen bij open deur op scholen met leerlingen, noodroute voor schoolbeheerder
+
+Dit lost bevindingen 1, 2 en 3 van de rechtencontrole hierboven op.
+
+**De regel.** Eén functie in `schema.sql`, `platform_mag_bij_school(school)`:
+de platformbeheerder mag iets aan een school doen als die school **geen
+leerlingen** heeft, **of** als de school de deur heeft opengezet
+(`ondersteuning_actief`). `platform_moet_mogen(school)` is dezelfde vraag als
+stop, met één vaste melding: *"Deze school heeft kinderen. Vraag de
+schoolbeheerder om meekijken aan te zetten."* Het platformbeheer toont alleen
+die zin, zonder "Dat lukte niet" ervoor.
+
+De regel geldt voor:
+- **uitnodigingen invoegen, dus een account aanmaken** (de rechtenregel én een
+  trigger, zodat ook een direct API-verzoek er niet langs kan);
+- **`wachtwoord_zetten()`**;
+- **`account_verplaatsen()`** naar een school;
+- **`account_rol()`** binnen een school.
+
+Wat blijft werken: `school_aanmaken()` (een nieuwe school is leeg), en alles
+wat een schoolbeheerder zelf doet.
+
+**Waarom leerlingen als grens, en niet "altijd"?** Een school die net is
+aangemaakt moet de leverancier kunnen inrichten: de eerste beheerder, een
+paar accounts. Daar staat nog geen kind in, dus er valt niets te zien. Zodra
+er één kind in staat, is elke account-knop een mogelijke omweg naar dat kind.
+
+**De noodroute.** Het wachtwoord van een schoolbeheerder mag ook zonder open
+deur, maar alleen als die school geen andere schoolbeheerder heeft die kan
+inloggen (een account met een wachtwoord). Een school die niemand meer binnen
+heeft, kan de deur niet openzetten: daar is juist een schoolbeheerder voor
+nodig. Ook dit komt in het logboek. Het oude commentaar ("een wachtwoord
+zetten geeft hem geen inzage") was onjuist en is rechtgezet.
+
+**Alles in het logboek van de school.** `noteer()` zet bij elke actie van de
+platformbeheerder `door: leverancier` in de gegevens. Het logboek in het
+schoolbeheer zet er dan "Pixelplein (leverancier):" voor. `wat` zelf blijft
+gelijk (daar wordt op gezocht). Nieuw gelogd: een account aangemaakt of een
+uitnodiging ingetrokken door de leverancier, en naam- of
+gebruikersnaamwijzigingen door de leverancier. Een schoolnaam of het planbord
+aan/uit logt nu de database zelf (`school_bewaken`) in plaats van het scherm;
+zo kan ook een wijziging buiten het platformbeheer om er niet omheen. Een
+geweigerde actie komt niet in het logboek: er is niets gebeurd.
+
+**Proeven.** `supabase/test-04-platform.sql` (19 stappen: school met en zonder
+leerlingen, deur open en dicht, noodroute, logboek) en `test/rechten.test.js`,
+die test-02 t/m test-04 automatisch naast hun verwachting legt. Die draait nu
+mee in `alles.sh`. `platformcms.test.js` controleert de weigering en de
+melding in het scherm, zet daarna de deur open en loopt verder zoals altijd.
+
+**Live zetten.** Tom zet de nieuwe `schema.sql` zelf op het live project, via
+de SQL Editor, zonder sleutel (`docs/SUPABASE-ECHTE-DATA.md`, punt 11).
+
+**Aangevuld na de privacyreview (zelfde dag).** De review vond omwegen
+die de eerste versie nog openliet. Ze zijn allemaal dicht, met een proef
+erbij (test-04, P20–P27):
+- *Rol of school direct wijzigen* via de update-regel op `profielen`, buiten
+  `account_rol`/`account_verplaatsen` om. Dat kan niet meer: voor de
+  platformbeheerder lopen rol en school alleen nog via die twee functies.
+- *Een uitnodigingscode lezen en zelf verzilveren.* De leverancier ziet en
+  verwijdert uitnodigingen alleen nog waar `platform_mag_bij_school` geldt.
+  Een uitnodiging die hij met de deur open maakt bij een school met kinderen,
+  verloopt als de deur dichtgaat. `nieuw_profiel()` kijkt nu ook naar
+  `verloopt`; `uitnodiging_verzilveren()` deed dat al.
+- *Eerst andere beheerders weghalen, dan de noodroute.* Een account
+  verwijderen of uit een school met kinderen weghalen vraagt nu ook een open
+  deur. De noodroute krijgt een eigen regel in het logboek: "wachtwoord
+  schoolbeheerder hersteld (noodroute)".
+- *Kindfoto's.* Aan of uit zetten doet alleen de schoolbeheerder (27-10); de
+  database weigert het nu ook voor de leverancier.
+- *Logboek vervalsen.* Bijschrijven kan alleen nog in het logboek van je eigen
+  school, en `door: leverancier` kan alleen de leverancier zelf zetten.
+- Een naam-, gebruikersnaam- of e-mailwijziging door de leverancier komt in het
+  logboek, met wat het was en wat het werd.
+
+**Bewust zo gelaten.** De noodroute staat open bij elke school met maar één
+schoolbeheerder die kan inloggen, en dat komt vaak voor. Dat is de prijs van
+"een school die zichzelf heeft buitengesloten kan altijd geholpen worden". Het
+staat wel in het logboek van de school, en de beheerder merkt het, want haar
+oude wachtwoord werkt niet meer. **Advies aan Tom:** zet in de
+verwerkersovereenkomst en de privacyverklaring dat de leverancier (1) lege
+scholen inricht en (2) via de noodroute het wachtwoord van een enige
+schoolbeheerder kan herstellen, altijd zichtbaar in het logboek. En: de grens
+is "heeft de school leerlingen". Een school die al haar leerlingen verwijdert
+(zelf, want de leverancier kan dat niet zonder open deur), staat daarna weer
+open voor inrichten. Er is dan geen kind meer om te zien.
