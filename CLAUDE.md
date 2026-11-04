@@ -50,7 +50,7 @@ Planbord: blijft live, maar wordt nu niet doorontwikkeld.
 - Touch-first: grote raakvlakken, geen hover-afhankelijkheid, werkt op Prowise-digibord.
 - Een 4-jarige moet het zonder lezen kunnen bedienen.
 - Alleen nepdata: nooit echte kindernamen of foto's in de repo, proeven of schermafdrukken.
-- Rechten horen in de database (RLS in `schema.sql`), niet alleen in de app. Tabel wijzigen → `privacy-avg` laten meekijken.
+- Rechten horen in de database (RLS in `schema.sql`), niet alleen in de app. Tabel wijzigen → de privacy-reviewer laten meekijken.
 - De leverancier ziet nooit kinderen, borden of statistieken; meekijken alleen als de school de deur openzet.
 - Grenzen: geen AI, geen per-kind-statistiek bij de leverancier, geen ParnasSys, geen betalingen in de app.
 - De `service_role`-sleutel nooit vragen, tonen of committen.
