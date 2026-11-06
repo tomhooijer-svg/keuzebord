@@ -184,8 +184,15 @@ project komen. Je hebt daarvoor **geen sleutel** nodig: je bent in het
 dashboard al ingelogd als eigenaar.
 
 **Wanneer:** 's avonds of in het weekend, niet tijdens schooltijd. Het
-script haalt alle rechtenregels even weg en zet ze direct opnieuw neer;
-in die paar seconden kan een bord een foutmelding krijgen.
+script haalt de rechtenregels van het keuzebord even weg en zet ze direct
+opnieuw neer; in die paar seconden kan een bord een foutmelding krijgen.
+
+**Volgorde (sinds 06-11-2026):** eerst het keuzebord-schema
+(`keuzebord/supabase/schema.sql`), dan het startpagina-schema
+(`startpagina/supabase/schema.sql`). Het keuzebord-schema raakt de regels
+en functies van de startpagina (`sp_*`, `app_*`) en van de oude
+observatie-app "Kijk mee" (`observatie_*`, `periode*`, `obs_*`) niet meer
+aan; het startpagina-schema heeft het keuzebord-schema wél nodig.
 
 **Zo doe je het:**
 1. Op het Pro-plan (punt 7): kijk eerst bij **Database** → **Backups** of
@@ -217,6 +224,20 @@ select
 
 Je hoort te zien: `nieuwe_functies = 3`, `nieuwe_trigger = 1`,
 `nieuwe_regel = 1`.
+
+**Controleren dat anon (wie niet is ingelogd) niets meer kan** (sinds
+06-11-2026, alleen-lezen). Plak in een **nieuwe** query en klik **Run**:
+
+```sql
+select proname from pg_proc
+ where pronamespace = 'public'::regnamespace
+   and proname !~ '^(sp|app|obs)_'
+   and has_function_privilege('anon', oid, 'execute');
+```
+
+Je hoort te zien: **geen rijen**. (De functie `sp_pagina` van de
+startpagina en de `obs_*`-functies van "Kijk mee" vallen hier bewust
+buiten.)
 
 **En in de app** (alleen met nepdata):
 1. Log in als platformbeheerder → **Accounts** → **Account toevoegen** →

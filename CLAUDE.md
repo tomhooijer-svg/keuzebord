@@ -42,7 +42,7 @@ Planbord: blijft live, maar wordt nu niet doorontwikkeld.
 - Hosting: GitHub Pages via de twee uitgaverepo's. Keuzebord verhuist naar `https://app.pixelplein.nl/` (Cloud86, Plesk haalt op uit `keuzebord-app`); stappen in `docs/HOSTING-CLOUD86.md`, schakelaar `VERHUISD` in `test/uitgeven.sh`. Adressen alleen daar, nooit los in de code. Eén adres voor iedereen; de school volgt uit de login (geen pad of subdomein per school).
 - Lokaal testen:
   - Snel kijken: `python3 -m http.server 8000 --bind 127.0.0.1`, open http://127.0.0.1:8000/demo.html (geen account, alles in de browser)
-  - Proeven (Postgres + nep-Supabase op 5455 + webserver op 8899): `npm install`, `sh test/opzetten.sh`, `sh test/proefschool.sh`, `sh test/alles.sh` (of `sh test/alles.sh doelen verslag`). Laatste volle ronde: 54 proeven, 890 controles, groen. Zie `test/LEESMIJ.md`.
+  - Proeven (Postgres + nep-Supabase op 5455 + webserver op 8899): `npm install`, `sh test/opzetten.sh`, `sh test/proefschool.sh`, `sh test/alles.sh` (of `sh test/alles.sh doelen verslag`). Laatste volle ronde: 56 proeven, 985 controles, groen. Zie `test/LEESMIJ.md`.
   - Uitgeven: `sh test/uitgeven.sh` → `/tmp/keuzebord-uitgaven/{keuzebord,planbord}`; controleert zelf op echte e-mailadressen
   - Op het digibord: na publiceren `diagnose.html` voor de versie
 

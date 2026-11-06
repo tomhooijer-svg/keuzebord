@@ -1186,3 +1186,49 @@ schoolbeheerder kan herstellen, altijd zichtbaar in het logboek. En: de grens
 is "heeft de school leerlingen". Een school die al haar leerlingen verwijdert
 (zelf, want de leverancier kan dat niet zonder open deur), staat daarna weer
 open voor inrichten. Er is dan geen kind meer om te zien.
+
+## 2026-11-06 · Het schema raakt alleen nog zijn eigen tabellen en functies; anon krijgt niets
+
+Het Supabase-project wordt gedeeld met de startpagina (`sp_*`, `app_*`) en de
+oude observatie-app "Kijk mee" (`observatie_*`, `periode*`, `obs_*`). Drie
+punten van de privacy-reviewer:
+
+- *Opruimlus.* `schema.sql` haalde bij elke run alle rechtenregels in
+  `public` weg, ook die van de andere apps. Nu alleen die van de 29
+  keuzebord-tabellen, bij naam. Waarom een lijst en geen uitsluiting
+  (`not like 'sp\_%'`): dan blijft elke volgende app vanzelf buiten schot.
+  Een tabel die in de lijst ontbreekt valt meteen op: de tweede run
+  struikelt over "policy already exists", en `test/rechten.test.js` draait
+  het schema twee keer.
+- *`school_beginnen()`.* Een startpagina-account heeft in `profielen` geen
+  school en kon zichzelf daarmee een keuzebord-school en de rol
+  schoolbeheerder geven. Wie een rij in `app_leden` heeft wordt nu
+  geweigerd. Via `to_regclass` en dynamische SQL, zodat het schema ook
+  zonder de startpagina werkt.
+- *anon.* Supabase geeft anon apart uitvoerrecht op elke nieuwe functie;
+  `revoke ... from public` alleen was dus niet genoeg (anon kon onder meer
+  met `gebruikersnaam_vrij()` namen aflopen, en met `school_heeft_kinderen()`
+  en `laatste_beheerder()` iets over een school of account te weten komen
+  als hij een id had). Onderaan het schema staat nu een lijst met alle 39
+  keuzebord-functies: van public en anon ingetrokken, de 34 gewone aan
+  authenticated gegeven (die houden dus wat ze hadden), de 5 trekkers voor
+  niemand (een trekker vuurt ook zonder uitvoerrecht, nagegaan). Ook de 29
+  tabellen en de twee tellers zijn voor anon dicht.
+  Anon krijgt van het keuzebord **niets** terug: inloggen, aanmelden en de
+  rem lopen via `/auth/v1` (de inlogdienst, eigen databaserol), het
+  inlogadres rekent de app zelf uit (`SB.inlogadres`), en de demo draait
+  in de browser.
+- *Bewust niet:* `revoke ... on all functions in schema public` en
+  `alter default privileges` voor het hele schema. Dat zou ook de functies
+  van de andere apps raken. In plaats daarvan faalt `test/rechten.test.js`
+  zodra een keuzebord-functie open staat voor anon; daarvoor geeft
+  `test-01-nepsupabase.sql` anon nu dezelfde standaardrechten als Supabase.
+- *Volgorde live:* eerst het keuzebord-schema, dan het startpagina-schema
+  (`docs/SUPABASE-ECHTE-DATA.md`, punt 11).
+- *Aanvulling, zelfde dag.* Ook de tabelrechten voor authenticated gaan nu
+  bij naam (de 29 tabellen en de twee tellers) in plaats van "on all tables /
+  all sequences in schema public": dat gaf ook rechten op de tabellen van
+  de andere apps. En `uitnodiging_verzilveren()` weigert een account uit
+  `app_leden` op dezelfde manier als `school_beginnen()`, anders kon een
+  startpagina-account met een code alsnog bij een (andere) keuzebord-school
+  komen.
