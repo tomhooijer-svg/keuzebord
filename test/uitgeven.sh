@@ -37,7 +37,10 @@ V="$DATUM-$VINGER"
 # Draaien deze uitgaven op proef bij scholen? Dan krijgen bord en beheer
 # een kleine chip met het versienummer erin. Eén regel voor allebei de
 # uitgaven; zet hem op false als de app echt in gebruik gaat.
-TESTVERSIE=true
+# Uit sinds 06-11-2026: vanaf de schooltest (januari 2027) ziet het bord
+# er precies zo uit als het betaalde bord. "Iets melden" blijft staan, die
+# hangt niet aan deze schakelaar. Terug? Zet hem weer op true.
+TESTVERSIE=false
 
 BORDMAP=keuzebord-app
 PLANMAP=planbord
@@ -54,7 +57,8 @@ PLANURL="https://tomhooijer-svg.github.io/$PLANMAP/"
 #                 overstappen" (src/kb-verhuizing.js).
 # Zet hem pas op true als app.pixelplein.nl/diagnose.html de juiste versie
 # laat zien en inloggen daar werkt.
-VERHUISD=false
+# Aan sinds 06-11-2026: stap 6 uit docs/HOSTING-CLOUD86.md is groen.
+VERHUISD=true
 BORDURL_OUD="https://tomhooijer-svg.github.io/$BORDMAP/"
 BORDURL_NIEUW="https://app.pixelplein.nl/"
 if [ "$VERHUISD" = true ]; then

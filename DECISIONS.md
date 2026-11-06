@@ -1232,3 +1232,17 @@ punten van de privacy-reviewer:
   `app_leden` op dezelfde manier als `school_beginnen()`, anders kon een
   startpagina-account met een code alsnog bij een (andere) keuzebord-school
   komen.
+
+## 2026-11-06 · Testchip uit in de uitgave, verhuizing aan
+- *Testchip.* `TESTVERSIE=false` in `test/uitgeven.sh`. Vanaf de test op
+  de eigen school (januari 2027) ziet het bord eruit als het betaalde bord:
+  geen chip "Testversie" op het bord, geen merk in de zijbalk van beheer,
+  schoolbeheer en platform. Het geldt voor iedereen (één adres, één
+  uitgave), niet per school. "Iets melden" blijft: die hangt niet aan de
+  schakelaar en stuurt de versie nog steeds mee. De werkplaats
+  (`src/kb-app.js`) houdt `testversie: true`, zodat `test/testbanner.test.js`
+  de chip blijft bewaken voor als hij terug moet.
+- *Verhuizing.* `VERHUISD=true`: app.pixelplein.nl is het hoofdadres. Op het
+  oude GitHub-adres verschijnt de melding uit `src/kb-verhuizing.js` (eerst
+  versturen, dan knop naar het nieuwe adres; op het bord alleen tekst).
+  Bewust geen automatisch doorsturen (zie 29-10-2026).

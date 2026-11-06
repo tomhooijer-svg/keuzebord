@@ -158,6 +158,9 @@ mag, maar het hoeft niet.
 
 ## 8. Overstappen (pas als stap 6 helemaal goed is)
 
+> **Stand 06-11-2026:** `VERHUISD=true` staat klaar in `test/uitgeven.sh`
+> (nog niet gepubliceerd). Na publiceren: de stappen onder "Daarna doe jij".
+
 Zeg tegen Claude: **"zet de verhuizing aan"**. Claude zet dan in
 `test/uitgeven.sh` de regel `VERHUISD=true` en publiceert. Daarmee:
 
